@@ -16,10 +16,12 @@ export class Spawn implements System {
     const settingsObject = await Settings.get();
     const listenerFn = (userId: number, userProfileId: number, discordRoleIds: string[], discordId?: string) => {
       const { startPoints } = settingsObject;
+      const mp = ctx.svr as unknown as Mp;
       // TODO: Show race menu if character is not created after relogging
       let actorId = ctx.svr.getActorsByProfileId(userProfileId)[0];
       if (actorId) {
         this.log("Loading character", actorId.toString(16));
+        // The client stages cold interior loading locally; retain the saved server location.
         ctx.svr.setEnabled(actorId, true);
         ctx.svr.setUserActor(userId, actorId);
       } else {
@@ -36,7 +38,6 @@ export class Spawn implements System {
         ctx.svr.setRaceMenuOpen(actorId, true);
       }
 
-      const mp = ctx.svr as unknown as Mp;
       mp.set(actorId, "private.discordRoles", discordRoleIds);
 
       if (discordId !== undefined) {

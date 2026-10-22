@@ -7,6 +7,7 @@ import { ClientListener, CombinedController, Sp } from '../services/services/cli
 import { logTrace } from "../logging";
 import { SinglePlayerService } from "../services/services/singlePlayerService";
 import { RemoteServer } from "../services/services/remoteServer";
+import { isSpawnResumeHeld } from "../services/services/spawnResume";
 
 export class WorldView extends ClientListener {
   constructor(private sp: Sp, private controller: CombinedController) {
@@ -34,6 +35,7 @@ export class WorldView extends ClientListener {
   }
 
   syncFormArray(model: WorldModel) {
+    if (isSpawnResumeHeld()) return;
     const { settings } = this.sp;
     const showMe = settings['skymp5-client']['show-me'];
     this.state.formViews.syncFormView(model, !!showMe);
@@ -50,6 +52,7 @@ export class WorldView extends ClientListener {
   }
 
   private onUpdate() {
+    if (isSpawnResumeHeld()) return;
     this.resetAllFormViewsIfPlayerChangedWorld();
 
     const singlePlayerService = this.controller.lookupListener(SinglePlayerService);

@@ -63,6 +63,8 @@ import { logTrace, logError } from '../../logging';
 import { SpellCastMessage } from '../messages/spellCastMessage';
 import { UpdateAnimVariablesMessage } from '../messages/updateAnimVariablesMessage';
 import { MsgType } from '../../messages';
+import { isSpawnResumeHeld } from './spawnResume';
+import { WorldCleanerService } from './worldCleanerService';
 
 export const getPcInventory = (): Inventory | undefined => {
   const res = storage['pcInv'];
@@ -78,6 +80,7 @@ const setPcInventory = (inv: Inventory): void => {
 
 let pcInvLastApply = 0;
 on('update', () => {
+  if (isSpawnResumeHeld()) return;
   if (isBadMenuShown()) {
     return;
   }
@@ -158,7 +161,11 @@ export class RemoteServer extends ClientListener {
     this.numSetInventory++;
 
     const msg = event.message;
+    this.latestInventory = msg.inventory;
+    const loadGameService = this.controller.lookupListener(LoadGameService);
+    const epoch = loadGameService.getSpawnEpoch();
     once('update', () => {
+      if (!loadGameService.isCurrentSpawn(epoch)) return;
       setPcInventory(msg.inventory);
 
       let blocked = false;
@@ -453,168 +460,83 @@ export class RemoteServer extends ClientListener {
       }
     };
 
-    if (msg.isMe && msg.props && msg.props.learnedSpells) {
-      const learnedSpells = msg.props.learnedSpells;
-
-      once('update', () => {
-        Utility.wait(1).then(() => {
-          const player = Game.getPlayer();
-
-          if (player) {
-            removeAllSpells(player);
-            learnSpells(player, learnedSpells);
-            logTrace(this,
-              `player learnedSpells:`, JSON.stringify(learnedSpells),
-            );
-          }
-        });
-      });
-    }
-
     if (msg.isMe) {
-      if (msg.props?.isDead) {
-        once("update", () => {
-          this.controller.emitter.emit("applyDeathStateEvent", {
-            actor: Game.getPlayer()!,
-            isDead: true
-          });
-        });
-      }
-    }
-
-    if (msg.isMe) {
-      const spawnTask = { running: false };
-      once('update', () => {
-        // Use MoveRefrToPosition to spawn if possible (not in main menu)
-        // In case of connection lost this is essential
-        if (!spawnTask.running) {
-          spawnTask.running = true;
-          logTrace(this, 'Using moveRefrToPosition to spawn player');
-          (async () => {
-            while (true) {
-              logTrace(this, 'Spawning...');
-              TESModPlatform.moveRefrToPosition(
-                Game.getPlayer(),
-                Cell.from(Game.getFormEx(msg.transform.worldOrCell)),
-                WorldSpace.from(Game.getFormEx(msg.transform.worldOrCell)),
-                msg.transform.pos[0],
-                msg.transform.pos[1],
-                msg.transform.pos[2],
-                msg.transform.rot[0],
-                msg.transform.rot[1],
-                msg.transform.rot[2],
-              );
-              await Utility.wait(1);
-              const pl = Game.getPlayer();
-              if (!pl) {
-                break;
-              }
-              const pos = [
-                pl.getPositionX(),
-                pl.getPositionY(),
-                pl.getPositionZ(),
-              ];
-              const sqr = (x: number) => x * x;
-              const distance = Math.sqrt(
-                sqr(pos[0] - msg.transform.pos[0]) +
-                sqr(pos[1] - msg.transform.pos[1]),
-              );
-              if (distance < 256) {
-                break;
-              }
-            }
-          })();
-          // Unfortunatelly it requires two calls to work
-          Utility.wait(1).then(applyPcInv);
-          Utility.wait(1.3).then(applyPcInv);
-          // Note: appearance part was copy-pasted
-          if (msg.appearance) {
-            applyAppearanceToPlayer(msg.appearance);
+      const loadGameService = this.controller.lookupListener(LoadGameService);
+      const loadOrder = new Array<string>();
+      for (let i = 0; i < Game.getModCount(); ++i) loadOrder.push(Game.getModName(i));
+      loadGameService.spawnPlayer(msg.transform,
+        msg.appearance ? {
+          name: msg.appearance.name,
+          raceId: msg.appearance.raceId,
+          // @ts-expect-error SP expects isFemale at the top level.
+          isFemale: msg.appearance.isFemale,
+          face: {
+            hairColor: msg.appearance.hairColor,
+            bodySkinColor: msg.appearance.skinColor,
+            headTextureSetId: msg.appearance.headTextureSetId,
+            headPartIds: msg.appearance.headpartIds,
+            presets: msg.appearance.presets
           }
-        }
-
-        if (msg.props) {
-          const baseActorValues = new Map<string, unknown>([
-            ['healRate', msg.props.healRate],
-            ['healRateMult', msg.props.healRateMult],
-            ['health', msg.props.health],
-            ['magickaRate', msg.props.magickaRate],
-            ['magickaRateMult', msg.props.magickaRateMult],
-            ['magicka', msg.props.magicka],
-            ['staminaRate', msg.props.staminaRate],
-            ['staminaRateMult', msg.props.staminaRateMult],
-            ['stamina', msg.props.stamina],
-            ['healthPercentage', msg.props.healthPercentage],
-            ['staminaPercentage', msg.props.staminaPercentage],
-            ['magickaPercentage', msg.props.magickaPercentage],
-          ]);
-
-          const player = Game.getPlayer();
-          if (player) {
-            baseActorValues.forEach((value, key) => {
-              if (typeof value === 'number') {
-                if (key.includes('Percentage')) {
-                  const subKey = key.replace('Percentage', '');
-                  const subValue = baseActorValues.get(subKey);
-                  if (typeof subValue === 'number') {
-                    setActorValuePercentage(player, subKey, value);
-                  }
-                } else {
-                  player.setActorValue(key, value);
-                }
-              }
-            });
+        } : undefined,
+        loadOrder,
+        { minutes: 0, seconds: 0, hours: this.controller.lookupListener(TimeService).getTime().newGameHourValue },
+        () => {
+          const epoch = loadGameService.getSpawnEpoch();
+          const inventory = numSetInventory === this.numSetInventory ? msg.props?.inventory : this.latestInventory;
+          if (inventory) {
+            setPcInventory(inventory);
+            applyInventory(Game.getPlayer()!, inventory, false, true);
           }
-        }
-      });
-      once('tick', () => {
-        once('tick', () => {
-          if (!spawnTask.running) {
-            spawnTask.running = true;
-
-            let loadOrder = new Array<string>();
-            for (let i = 0; i < this.sp.Game.getModCount(); ++i) {
-              loadOrder.push(this.sp.Game.getModName(i));
-            }
-
-            logTrace(this, `loading game in world/cell`, msg.transform.worldOrCell.toString(16));
-            const loadGameService = this.controller.lookupListener(LoadGameService);
-            loadGameService.loadGame(
-              msg.transform.pos,
-              msg.transform.rot,
-              msg.transform.worldOrCell,
-              msg.appearance
-                ? {
-                  name: msg.appearance.name,
-                  raceId: msg.appearance.raceId,
-
-                  // TODO: In types, isFemale is under face, but in the reality SP expects it here. Fix required.
-                  // @ts-expect-error
-                  isFemale: msg.appearance.isFemale,
-
-                  face: {
-                    hairColor: msg.appearance.hairColor,
-                    bodySkinColor: msg.appearance.skinColor,
-                    headTextureSetId: msg.appearance.headTextureSetId,
-                    headPartIds: msg.appearance.headpartIds,
-                    presets: msg.appearance.presets
-                  },
-                }
-                : undefined,
-              loadOrder,
-              { minutes: 0, seconds: 0, hours: this.controller.lookupListener(TimeService).getTime().newGameHourValue }
-            );
+          applyPcInv();
+          Utility.wait(0.3).then(() => {
+            if (!loadGameService.isCurrentSpawn(epoch)) return;
             once('update', () => {
-              applyPcInv();
-              Utility.wait(0.3).then(applyPcInv);
-              // Note: appearance part was copy-pasted
-              if (msg.appearance) {
-                applyAppearanceToPlayer(msg.appearance);
-              }
+              if (loadGameService.isCurrentSpawn(epoch)) applyPcInv();
             });
+          });
+          if (msg.appearance) applyAppearanceToPlayer(msg.appearance);
+          const player = Game.getPlayer();
+          if (player && msg.props?.learnedSpells) {
+            removeAllSpells(player);
+            learnSpells(player, msg.props.learnedSpells);
+          }
+          if (msg.props) {
+            const baseActorValues = new Map<string, unknown>([
+              ['healRate', msg.props.healRate],
+              ['healRateMult', msg.props.healRateMult],
+              ['health', msg.props.health],
+              ['magickaRate', msg.props.magickaRate],
+              ['magickaRateMult', msg.props.magickaRateMult],
+              ['magicka', msg.props.magicka],
+              ['staminaRate', msg.props.staminaRate],
+              ['staminaRateMult', msg.props.staminaRateMult],
+              ['stamina', msg.props.stamina],
+              ['healthPercentage', msg.props.healthPercentage],
+              ['staminaPercentage', msg.props.staminaPercentage],
+              ['magickaPercentage', msg.props.magickaPercentage],
+            ]);
+
+            const player = Game.getPlayer();
+            if (player) {
+              baseActorValues.forEach((value, key) => {
+                if (typeof value === 'number') {
+                  if (key.includes('Percentage')) {
+                    const subKey = key.replace('Percentage', '');
+                    const subValue = baseActorValues.get(subKey);
+                    if (typeof subValue === 'number') {
+                      setActorValuePercentage(player, subKey, value);
+                    }
+                  } else {
+                    player.setActorValue(key, value);
+                  }
+                }
+              });
+            }
+          }
+          if (msg.props?.isDead) {
+            this.controller.emitter.emit("applyDeathStateEvent", { actor: Game.getPlayer()!, isDead: true });
           }
         });
-      });
     }
   }
 
@@ -800,8 +722,18 @@ export class RemoteServer extends ClientListener {
           });
         } catch (e) {
           if (e instanceof RespawnNeededError) {
-            actor.disableNoWait(false);
-            actor.delete();
+            const actorId = actor.getFormID();
+            if (actorId >= 0xff000000 && actorId !== 0x14) {
+              const formViews = getViewFromStorage()?.getFormViews();
+              const owningView = formViews?.getNthFormView(id);
+              if (owningView && owningView.getLocalRefrId() === actorId) {
+                // Detach the owner so its next update creates the replacement.
+                // FormView.destroy retires its own lease exactly once.
+                formViews!.destroyForm(id);
+              } else {
+                this.controller.lookupListener(WorldCleanerService).retireForm(actorId);
+              }
+            }
           } else {
             throw e;
           }
@@ -811,12 +743,15 @@ export class RemoteServer extends ClientListener {
   }
 
   private handleConnectionAccepted(): void {
+    this.latestInventory = undefined;
     this.worldModel.forms = [];
     this.worldModel.playerCharacterFormIdx = -1;
     this.worldModel.playerCharacterRefrId = 0;
 
     logTrace(this, "Handle connection accepted");
   }
+
+  private latestInventory?: Inventory;
 
   private onChangeValuesMessage(event: ConnectionMessage<ChangeValuesMessage>): void {
     const msg = event.message;

@@ -14,6 +14,7 @@ export class BrowserService extends ClientListener {
     super();
 
     this.sp.browser.setVisible(false);
+    this.sp.storage['__rpChatNativeKeysV2'] = true;
 
     this.controller.emitter.on("queryKeyCodeBindings", (e) => this.onQueryKeyCodeBindings(e));
     this.controller.once("update", () => this.onceUpdate());
@@ -24,6 +25,12 @@ export class BrowserService extends ClientListener {
 
   // TODO: keycodes should be configurable
   private onQueryKeyCodeBindings(e: QueryKeyCodeBindings) {
+    let rpOwnsKeys = false;
+    try {
+      const owner = this.sp.storage['__rpChatClientV1'] as {handleKeys?:(f7:boolean,escape:boolean)=>boolean};
+      if(owner && typeof owner==='object' && typeof owner.handleKeys==='function')
+        rpOwnsKeys=owner.handleKeys(e.isDown([DxScanCode.F7]),e.isDown([DxScanCode.Escape]));
+    }catch{/* RP source unavailable: preserve the original browser controls. */}
     if (e.isDown([DxScanCode.F1])) {
       FormView.isDisplayingNicknames = !FormView.isDisplayingNicknames;
     }
@@ -44,7 +51,16 @@ export class BrowserService extends ClientListener {
       this.sp.browser.executeJavaScript(focusEventString);
     }
     if (e.isDown([DxScanCode.Escape])) {
-      if (this.sp.browser.isFocused()) {
+      // RP CEF composition owns Escape while cancelling an IME candidate.
+      // Legacy SP storage uses a callable placeholder for missing values.
+      let composing = false;
+      try {
+        const owner = this.sp.storage['__rpChatClientV1'];
+        const compositionOwner = owner as {isComposing?:()=>boolean};
+        composing = !!owner && typeof owner === 'object' &&
+          typeof compositionOwner.isComposing === 'function' && compositionOwner.isComposing() === true;
+      } catch { /* Ordinary browser Escape remains available. */ }
+      if (!rpOwnsKeys && !composing && this.sp.browser.isFocused()) {
         this.sp.browser.setFocused(false);
         this.sp.browser.executeJavaScript(unfocusEventString);
       }

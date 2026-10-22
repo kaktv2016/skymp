@@ -1,3 +1,4 @@
+import {readPluginFileInfo} from './plugin-file-info';
 import { Game, Utility, printConsole, createText, setTextSize } from "skyrimPlatform";
 import { getScreenResolution } from "../../view/formView";
 import { ClientListener, CombinedController, Sp } from "./clientListener";
@@ -25,10 +26,12 @@ export class LoadOrderVerificationService extends ClientListener {
     const settingsService = this.controller.lookupListener(SettingsService);
 
     this.resetText();
-    const clientMods = this.getClientMods();
-    this.printModOrder('Client load order:', clientMods);
-    return settingsService.getServerMods()
-      .then((serverMods) => {
+    // Capture all native data now; asynchronous Node IO never calls Papyrus.
+    const clientRequest=this.getClientMods();
+    const serverRequest=settingsService.getServerMods();
+    Promise.all([clientRequest,serverRequest]).then(([clientMods,serverMods])=>{
+      this.controller.once('update',()=>{try{
+        this.printModOrder('Client load order:', clientMods);
         this.printModOrder('Server load order:', serverMods);
         if (clientMods.length < serverMods.length) {
           throw new Error(`Missing some server mods. Server has ${serverMods.length}, we have ${clientMods.length}`);
@@ -56,8 +59,11 @@ export class LoadOrderVerificationService extends ClientListener {
         if (fail.length !== 0) {
           throw new Error('Load order check failed! Indices: ' + JSON.stringify(fail));
         }
-      })
-      .catch((err) => {
+
+      }catch(err){this.reportError(err);}});
+    }).catch(err=>this.controller.once('update',()=>this.reportError(err)));
+  };
+  private reportError(err:unknown){
         printConsole(err);
         if (this.sp.settings['skymp5-client']['ignoreLoadOrderMismatch']) {
           this.updateText(
@@ -72,8 +78,8 @@ export class LoadOrderVerificationService extends ClientListener {
           'LOAD ORDER ERROR!\nCheck console for details.',
           [255, 0, 0, 1],
         );
-      });
-  };
+
+  }
 
   private getState(): State {
     if (typeof this.sp.storage[STATE_KEY] !== 'object') {
@@ -109,11 +115,11 @@ export class LoadOrderVerificationService extends ClientListener {
     }
   }
 
-  private enumerateClientMods(getCount: (() => number), getAt: ((idx: number) => string)) {
+  private async enumerateClientMods(getCount: (() => number), getAt: ((idx: number) => string)) {
     const result = [];
-    for (let i = 0; i < getCount(); ++i) {
-      const filename = getAt(i);
-      const { crc32, size } = this.getFileInfoSafe(filename);
+    const filenames = Array.from({length:getCount()},(_,i)=>getAt(i));
+    for (const filename of filenames) {
+      const { crc32, size } = await readPluginFileInfo(filename);
       result.push({ filename, crc32, size });
     }
     return result;
@@ -130,18 +136,4 @@ export class LoadOrderVerificationService extends ClientListener {
     }
   };
 
-  private getFileInfoSafe(filename: string) {
-    try {
-      return this.sp.getFileInfo(filename);
-    } catch (e) {
-      const message = (e as Record<string, unknown>).message;
-
-      if (typeof message === "string" && message.includes('is not a valid argument')) {
-        logTrace(this, `Failed to get file info for`, filename);
-        return { crc32: 0, size: 0 };
-      } else {
-        throw e;
-      }
-    }
-  }
 }

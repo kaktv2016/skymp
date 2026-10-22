@@ -76,8 +76,18 @@ function harness() {
   }
 
   const root = path.resolve(__dirname, '../src/services/services');
-  const gate = load(path.join(root, 'spawnResume.ts'));
-  const { LoadGameService } = load(path.join(root, 'loadGameService.ts'));
+  let bundled;
+  if (process.env.FROSTVEIL_TEST_BUNDLE) {
+    const bytes = fs.readFileSync(process.env.FROSTVEIL_TEST_BUNDLE, 'utf8');
+    const boundary = bytes.lastIndexOf('var __webpack_exports__ = {};');
+    assert.ok(boundary > 0);
+    const context = { require: name => { if(name === 'skyrimPlatform') return sp; throw Error(name); },
+      Date: class extends Date { static now(){ return now; } }, console, Number, Math, JSON };
+    vm.runInNewContext(bytes.slice(0,boundary)+'globalThis.bundleRequire=__webpack_require__;})();',context);
+    bundled = name => context.bundleRequire('./src/services/services/'+name+'.ts');
+  }
+  const gate = bundled ? bundled('spawnResume') : load(path.join(root, 'spawnResume.ts'));
+  const { LoadGameService } = bundled ? bundled('loadGameService') : load(path.join(root, 'loadGameService.ts'));
   const controller = { on: (n, f) => native.on(n, f), once: (n, f) => native.once(n, f), emitter: events };
   const svc = new LoadGameService(sp, controller);
   events.emit('connectionAccepted', {});
@@ -263,4 +273,31 @@ test('Maximum relocation attempts cap prevents continuous engine thrashing', () 
 
   assert.ok(h.moves.length <= h.gate.MAX_SPAWN_RELOCATION_ATTEMPTS, 'Relocation attempts capped at MAX_SPAWN_RELOCATION_ATTEMPTS');
   assert.ok(h.notices.some(n => n.includes('Exceeded maximum relocation attempts') || n.includes('restore stopped')), 'Diagnostic notice posted');
+});
+
+test('Facing differences never hold a player already standing at the destination', () => {
+  const h = harness(); let ready = 0;
+  const destination = { worldOrCell: 0x3c, pos: [100, 200, 300], rot: [0, 0, 90] };
+  h.controls[1] = false; // Owned by another system before spawn.
+  h.svc.spawnPlayer(destination, undefined, [], undefined, () => ready++);
+  h.cold(); h.native.emit('loadGame');
+  h.observe(0x3c, [100, 200, 268], [0, 0, 180]); h.update(); h.update();
+  assert.equal(ready, 1); assert.equal(h.gate.isSpawnResumeHeld(), false);
+  assert.equal(h.controls[0], true); assert.equal(h.controls[1], false);
+  assert.equal(h.changed.length, 1); assert.equal(h.moves.length, 0);
+  const completed = h.logs.find(l => l.text.includes('restored'));
+  assert.ok(completed && completed.text.includes('elapsedMs') && completed.text.includes('moveAttempts'));
+});
+
+test('Networking deadline cannot finish restoration or restore controls outside update', () => {
+  const h = harness(); let ready = 0;
+  const destination = { worldOrCell: 0x3c, pos: [100, 200, 300], rot: [0, 0, 90] };
+  h.svc.spawnPlayer(destination, undefined, [], undefined, () => ready++);
+  h.cold(); h.native.emit('loadGame');
+  h.observe(0x3c, [120, 200, 370]); h.update();
+  h.time(125000);
+  assert.equal(ready, 0); assert.equal(h.gate.isSpawnResumeHeld(), true);
+  // A stale safe observation must not be accepted after the player changed cell.
+  h.observe(0x13a8c, [120, 200, 370]); h.update();
+  assert.equal(ready, 0); assert.equal(h.gate.isSpawnResumeHeld(), true);
 });

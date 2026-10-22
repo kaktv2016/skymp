@@ -7,6 +7,7 @@ import { AnyMessage } from "../messages/anyMessage";
 import { ClientListener, CombinedController, Sp } from "./clientListener";
 import { RemoteServer } from "./remoteServer";
 import { SendRawMessageEvent } from "../events/sendRawMessageEvent";
+import { canSendDuringSpawnResume, isSpawnResumeHeld } from "./spawnResume";
 
 export class NetworkingService extends ClientListener {
   constructor(private sp: Sp, private controller: CombinedController) {
@@ -19,15 +20,18 @@ export class NetworkingService extends ClientListener {
   }
 
   private onSendMessage(e: SendMessageEvent<AnyMessage>) {
+    if (!canSendDuringSpawnResume(e.message)) return;
     this.sp.mpClientPlugin.send(JSON.stringify(e.message), this.isReliable(e.reliability));
   }
 
   private onSendRawMessage(e: SendRawMessageEvent) {
+    if (isSpawnResumeHeld()) return;
     // @ts-expect-error
     this.sp.mpClientPlugin.sendRaw(e.rawMessage, e.rawMessage.byteLength, this.isReliable(e.reliability));
   }
 
   private onSendMessageWithRefrId(e: SendMessageWithRefrIdEvent<AnyMessage>) {
+    if (!canSendDuringSpawnResume(e.message)) return;
     const refrId = e.message._refrId;
 
     const remoteServer = this.controller.lookupListener(RemoteServer);

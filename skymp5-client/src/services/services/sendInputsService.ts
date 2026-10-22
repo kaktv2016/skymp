@@ -23,6 +23,7 @@ import { UpdateAppearanceMessage } from "../messages/updateAppearanceMessage";
 import { RemoteServer } from "./remoteServer";
 import { DeathService } from "./deathService";
 import { logTrace } from "../../logging";
+import { isSpawnResumeHeld } from "./spawnResume";
 
 const playerFormId = 0x14;
 
@@ -37,6 +38,7 @@ export class SendInputsService extends ClientListener {
     }
 
     private onUpdate() {
+        if (isSpawnResumeHeld()) return;
         if (!this.singlePlayerService.isSinglePlayer) {
             this.sendInputs();
 
@@ -52,6 +54,7 @@ export class SendInputsService extends ClientListener {
     }
 
     private onEquip(event: EquipEvent) {
+        if (isSpawnResumeHeld()) return;
         if (!event.actor || !event.baseObj) {
             return;
         }

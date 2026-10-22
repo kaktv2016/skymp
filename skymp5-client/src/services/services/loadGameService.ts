@@ -1,7 +1,7 @@
 import { ClientListener, CombinedController, Sp } from "./clientListener";
 import { ChangeFormNpc } from "skyrimPlatform";
 import { SpawnDestination, isSpawnResumeHeld, setSpawnResumeHeld, validSpawnDestination,
-    sameSpawnDestination, matchesSpawnPosition, matchesSpawnDestination,
+    sameSpawnDestination, matchesSpawnPosition,
     isVerifiedSafeSpawn, MAX_SPAWN_RELOCATION_ATTEMPTS } from "./spawnResume";
 
 export class LoadGameService extends ClientListener {
@@ -9,7 +9,7 @@ export class LoadGameService extends ClientListener {
         super();
         this.controller.on("loadGame", () => this.onLoadGame());
         this.controller.on("update", () => this.updateSpawn());
-        this.controller.on("tick", () => this.checkDeadline());
+        // Deadlines and native completion are evaluated only by updateSpawn.
         for (const event of ['connectionAccepted', 'connectionDisconnect', 'connectionDenied', 'connectionFailed'] as const) {
             this.controller.emitter.on(event, () => {
                 if (event === 'connectionAccepted') this.foreignLoad = false;
@@ -24,7 +24,7 @@ export class LoadGameService extends ClientListener {
     private lastDestination?: SpawnDestination;
     private pending?: {
         epoch: number; destination: SpawnDestination; phase: 'queued' | 'loading' | 'restoring' | 'failed';
-        deadline: number; nextMove: number; moveAttempts: number; lastObserved?: SpawnDestination; onReady?: () => void;
+        startedAt: number; deadline: number; nextMove: number; moveAttempts: number; lastObserved?: SpawnDestination; onReady?: () => void;
     };
     private changedControls = [false, false, false, false];
 
@@ -57,7 +57,7 @@ export class LoadGameService extends ClientListener {
             worldOrCell: destination.worldOrCell, pos: destination.pos.slice(), rot: destination.rot.slice()
         } : destination;
         this.lastDestination = validSpawnDestination(copy) ? copy : undefined;
-        this.pending = { epoch, destination: copy, phase: 'queued', deadline: Date.now() + 120000, nextMove: 0, moveAttempts: 0, onReady };
+        this.pending = { epoch, destination: copy, phase: 'queued', startedAt: Date.now(), deadline: Date.now() + 120000, nextMove: 0, moveAttempts: 0, onReady };
         // spawnPlayer is called by the networking tick, including at the main menu:
         // validate only data here; Papyrus form lookup/classification requires update.
         if (!validSpawnDestination(copy)) {
@@ -81,7 +81,7 @@ export class LoadGameService extends ClientListener {
     private failSpawn(reason: string) {
         if (!this.pending || this.pending.phase === 'failed') return;
         this.pending.phase = 'failed';
-        this.diagnostic('failed', { reason, destination: this.pending.destination, lastObserved: this.pending.lastObserved });
+        this.diagnostic('failed', { reason, elapsedMs: Date.now() - this.pending.startedAt, moveAttempts: this.pending.moveAttempts, destination: this.pending.destination, lastObserved: this.pending.lastObserved });
         const message = `Character location restore stopped: ${reason} Saved location is preserved.`;
         this.sp.printConsole(message);
         const epoch = this.epoch;
@@ -103,7 +103,7 @@ export class LoadGameService extends ClientListener {
             try { pending.onReady?.(); }
             catch (_) { this.failSpawn('Unable to apply saved character state. Reconnect to retry.'); return; }
             if (this.pending !== pending) return;
-            this.diagnostic('recovered', { reason, destination: pending.destination, actual });
+            this.diagnostic('recovered', { reason, elapsedMs: Date.now() - pending.startedAt, moveAttempts: pending.moveAttempts, destination: pending.destination, actual });
             this.pending = undefined;
             this.restoreControls();
             setSpawnResumeHeld(false);
@@ -117,7 +117,9 @@ export class LoadGameService extends ClientListener {
     private checkDeadline() {
         if (this.pending && this.pending.phase !== 'failed' && Date.now() > this.pending.deadline) {
             this.checkRecoveryOrTimeout('Timed out waiting for the saved cell. Reconnect to retry.');
+            return true;
         }
+        return false;
     }
 
     private holdControls() {
@@ -138,8 +140,8 @@ export class LoadGameService extends ClientListener {
         const pending = this.pending;
         if (!pending || !isSpawnResumeHeld()) return;
         this.holdControls();
-        this.checkDeadline();
-        if (pending.phase === 'failed' || pending.phase === 'loading') return;
+        if (pending.phase === 'failed') return;
+        if (pending.phase === 'loading') { this.checkDeadline(); return; }
         if (pending.phase === 'queued') pending.phase = 'restoring';
         const player = this.sp.Game.getPlayer();
         if (!player) return;
@@ -156,30 +158,28 @@ export class LoadGameService extends ClientListener {
             pos: [player.getPositionX(), player.getPositionY(), player.getPositionZ()],
             rot: [player.getAngleX(), player.getAngleY(), player.getAngleZ()] } : undefined;
         pending.lastObserved = actual;
-        if (actual && matchesSpawnDestination(actual, pending.destination)) {
+        if (actual && matchesSpawnPosition(actual, pending.destination)) {
             try { pending.onReady?.(); }
             catch (_) { this.failSpawn('Unable to apply saved character state. Reconnect to retry.'); return; }
             if (this.pending !== pending) return;
-            this.diagnostic('restored', { destination });
+            this.diagnostic('restored', { elapsedMs: Date.now() - pending.startedAt, moveAttempts: pending.moveAttempts, destination, actual });
             this.pending = undefined;
             this.restoreControls();
             setSpawnResumeHeld(false);
             return;
         }
+        // Use the observation from this update, never a cached networking-tick position.
+        if (this.checkDeadline()) return;
         if (Date.now() < pending.nextMove) return;
         pending.nextMove = Date.now() + 250;
         try {
-            if (actual && matchesSpawnPosition(actual, destination)) {
-                // Never reopen scene loading only to adjust facing. Papyrus SetAngle uses degrees.
-                player.setAngle(destination.rot[0], destination.rot[1], destination.rot[2]);
-                return;
-            }
             if (++pending.moveAttempts > MAX_SPAWN_RELOCATION_ATTEMPTS) {
                 this.checkRecoveryOrTimeout('Exceeded maximum relocation attempts. Reconnect to retry.');
                 return;
             }
             // GetAngle* / network transforms use degrees; native MoveTo_Impl uses radians.
             // Wrong units prevent settling and repeatedly restart scene transitions.
+            this.diagnostic('relocate', { elapsedMs: Date.now() - pending.startedAt, moveAttempts: pending.moveAttempts, actual, destination });
             const radians = destination.rot.map(angle => angle * Math.PI / 180);
             this.sp.TESModPlatform.moveRefrToPosition(player, cell, world,
                 destination.pos[0], destination.pos[1], destination.pos[2], radians[0], radians[1], radians[2]);
@@ -211,7 +211,10 @@ export class LoadGameService extends ClientListener {
             this.foreignLoad = true;
             this.cancelSpawn(false);
         }
-        if (this.pending?.phase === 'loading') this.pending.phase = 'restoring';
+        if (this.pending?.phase === 'loading') {
+            this.pending.phase = 'restoring';
+            this.diagnostic('scene-loaded', { elapsedMs: Date.now() - this.pending.startedAt });
+        }
         const serial = this.loadSerial;
         try {
             const gameLoadEvent = {

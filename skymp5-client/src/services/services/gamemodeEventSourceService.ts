@@ -12,10 +12,13 @@ import { GamemodeApiEventSourceCtx } from "../messages_gamemode/gamemodeApiEvent
 import * as skyrimPlatform from "skyrimPlatform";
 import { logError, logTrace } from "../../logging";
 import { ServerJsVerificationService } from "./serverJsVerificationService";
+import { rpChatDiagnostic } from '../rpChatDiagnostics';
 
 export class GamemodeEventSourceService extends ClientListener {
     constructor(private sp: Sp, private controller: CombinedController) {
         super();
+        rpChatDiagnostic('event-source service initialized');
+        this.controller.emitter.on('connectionAccepted', () => rpChatDiagnostic('connection accepted'));
 
         if (Array.isArray(this.sp.storage['eventSourceContexts'])) {
             this.sp.storage['eventSourceContexts'] = this.sp.storage['eventSourceContexts'].filter(
@@ -30,9 +33,14 @@ export class GamemodeEventSourceService extends ClientListener {
     }
 
     private onUpdateGamemodeDataMessage(event: ConnectionMessage<UpdateGamemodeDataMessage>) {
+        rpChatDiagnostic('gamemode message received', {
+            eventNames: Array.isArray(event.message.eventSources) ? event.message.eventSources.map(pair => pair.name) : 'invalid',
+            ownerUpdaterCount: Array.isArray(event.message.updateOwnerFunctions) ? event.message.updateOwnerFunctions.length : 'invalid',
+        });
 
         if (this.sp.settings["skymp5-client"]["disable-gamemode-updates"]) {
             if (this.sp.storage['GamemodeEventSourceService_sawEventSources'] === true) {
+                rpChatDiagnostic('gamemode message skipped by existing first-update setting');
                 logTrace(this, `Gamemode updates are disabled by settings`);
                 return;
             }
@@ -70,6 +78,7 @@ export class GamemodeEventSourceService extends ClientListener {
             const result = serverJsVerificationService.verifyServerJs(eventSourcesRecord[eventName]!);
 
             if (result.src === null) {
+                rpChatDiagnostic('source verification rejected', { eventName, reason: result.error });
                 logError(this, `'eventSources`, eventName, 'Verification failed:', result.error);
                 return;
             }
@@ -121,17 +130,22 @@ export class GamemodeEventSourceService extends ClientListener {
                 (this.sp.storage['eventSourceContexts'] as Record<string, any>).push(ctx);
                 this.setupEventSource(ctx);
             } catch (e) {
+                rpChatDiagnostic('source setup failed', { eventName, error: e instanceof Error ? e.message : String(e) });
                 logError(this, `'eventSources`, eventName, `-`, e);
             }
         });
     }
 
     private setupEventSource = (ctx: any) => {
+        rpChatDiagnostic('source scheduled for update', { eventName: ctx._eventName });
         this.controller.once('update', () => {
             try {
+                rpChatDiagnostic('source execution entered', { eventName: ctx._eventName });
                 ctx._fn(ctx);
+                rpChatDiagnostic('source execution returned', { eventName: ctx._eventName });
                 logTrace(this, `'eventSources`, ctx._eventName, `- Added`);
             } catch (e) {
+                rpChatDiagnostic('source execution failed', { eventName: ctx._eventName, error: e instanceof Error ? e.message : String(e) });
                 logError(this, `'eventSources`, ctx._eventName, `-`, e);
             }
         });

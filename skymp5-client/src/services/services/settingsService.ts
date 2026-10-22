@@ -159,7 +159,7 @@ export class SettingsService extends ClientListener {
         return manifest.mods;
       } catch (e) {
         printConsole(`Request/parse error: ${e}`);
-        await Utility.wait(0.1 + Math.random());
+        await new Promise<void>(resolve=>setTimeout(resolve,100+Math.random()*1000));
       }
     }
 

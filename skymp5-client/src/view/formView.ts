@@ -255,7 +255,9 @@ export class FormView {
         }
 
         if (refr !== null) {
-          SpApiInteractor.getControllerInstance().lookupListener(WorldCleanerService).modWcProtection(refr.getFormID(), 1);
+          const cleaner = SpApiInteractor.getControllerInstance().lookupListener(WorldCleanerService);
+          cleaner.modWcProtection(refr.getFormID(), 1);
+          this.retirementGuard = cleaner.getFormRetirementGuard();
         }
 
         // TODO: reset all states?
@@ -314,20 +316,15 @@ export class FormView {
     this.isOnScreen = false;
     this.spawnMoment = 0;
     const refrId = this.refrId;
-    once("update", () => {
-      if (refrId >= 0xff000000) {
-        const refr = ObjectReference.from(Game.getFormEx(refrId));
-        if (refr) {
-          refr.delete();
-        }
-        SpApiInteractor.getControllerInstance().lookupListener(WorldCleanerService).modWcProtection(refrId, -1);
-        const ac = Actor.from(refr);
-        if (ac) {
-          TESModPlatform.setWeaponDrawnMode(ac, -1);
-        }
-      }
-    })
+    // Detach immediately so repeated destroy calls cannot retire or release the
+    // same actor twice. The cleaner owns update/session/protection validation.
+    this.refrId = 0;
+    this.ready = false;
+    if (refrId >= 0xff000000) {
+      SpApiInteractor.getControllerInstance().lookupListener(WorldCleanerService).retireForm(refrId, this.retirementGuard);
+    }
 
+    this.retirementGuard = undefined;
     this.localImmortal = false;
     this.removeNickname();
   }
@@ -669,6 +666,7 @@ export class FormView {
     return this.remoteRefrId as number;
   }
 
+  private retirementGuard?: () => boolean;
   private refrId = 0;
   private ready = false;
   private animState = this.getDefaultAnimState();
