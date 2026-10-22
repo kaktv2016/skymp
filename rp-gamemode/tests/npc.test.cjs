@@ -28,3 +28,4 @@ test('neighbor pose defeats stale movement, wraps yaw, stops offsets, and reacqu
  // Parse in an isolated VM as the distributed gamemode does, without module closures.
  vm.runInNewContext('(function(ctx){'+f.properties.frostveilNpcPose.updateNeighbor+'})')({...ctx,refr:null});
 });
+test('NPC neighbor properties survive installed SkyMP owner visibility gate',t=>{const f=fixture(t);for(const key of ['frostveilNpcName','frostveilNpcPose']){const p=f.properties[key];const visible=p.isVisibleByNeighbors&&p.isVisibleByOwner;assert.equal(visible,true,key+' would be filtered out by PartOne');assert.equal(p.updateOwner,'');}});

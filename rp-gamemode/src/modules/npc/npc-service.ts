@@ -54,8 +54,10 @@ export class NpcService {
  start(){try{
   for(const name of ['place','get','set','setEnabled','lookupEspmRecordById','makeProperty'] as const)if(typeof this.native[name]!=='function')throw Error('NPC API missing: '+name);
   if(this.native.lookupEspmRecordById(0x39f83).record?.type!=='NPC_')throw Error('Clerk template is not NPC_');
-  this.native.makeProperty(LABEL,{isVisibleByOwner:false,isVisibleByNeighbors:true,updateOwner:'',updateNeighbor:'if(ctx.refr && !ctx.refr.isDeleted() && typeof ctx.value === "string" && ctx.state.lastNpcName !== ctx.value){ if(ctx.refr.setDisplayName(ctx.value,true)) ctx.state.lastNpcName=ctx.value; }'});
-  this.native.makeProperty(POSE,{isVisibleByOwner:false,isVisibleByNeighbors:true,updateOwner:'',updateNeighbor:'('+updateNpcPose.toString()+')(ctx);'});
+  // PartOne requires owner visibility for any neighbor payload/updater.
+  // Owner updater remains empty; these properties belong only to NPC actors.
+  this.native.makeProperty(LABEL,{isVisibleByOwner:true,isVisibleByNeighbors:true,updateOwner:'',updateNeighbor:'if(ctx.refr && !ctx.refr.isDeleted() && typeof ctx.value === "string" && ctx.state.lastNpcName !== ctx.value){ if(ctx.refr.setDisplayName(ctx.value,true)) ctx.state.lastNpcName=ctx.value; }'});
+  this.native.makeProperty(POSE,{isVisibleByOwner:true,isVisibleByNeighbors:true,updateOwner:'',updateNeighbor:'('+updateNpcPose.toString()+')(ctx);'});
   this.definitions=validate(this.journal.read(KEY)??[]);
   for(const d of this.definitions){if(d.formId===null)throw Error('Interrupted NPC provisioning: '+d.id);this.verify(d);this.apply(d);}
   this.ready=true;this.log('[rp-npc] ready definitions='+this.definitions.length);
