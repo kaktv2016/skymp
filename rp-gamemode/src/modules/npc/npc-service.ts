@@ -26,13 +26,13 @@ function updateNpcPose(ctx:any){
  // Do not move a streamed actor across cells here; the server owns streaming.
  if(!current||current.getFormID()!==worldId)return;
  const id=r.getFormID();
- if(ctx.state.npcPoseActor!==id){actor.enableAI(false);ctx.state.npcPoseActor=id;}
+ if(ctx.state.npcPoseActor!==id){actor.enableAI(true);actor.setDontMove(true);ctx.state.npcPoseActor=id;}
  actor.clearKeepOffsetFromActor();
  const movement=ctx._model.movement;
  if(movement){Object.assign(movement,{pos:p.pos.slice(),rot:p.rot.slice(),worldOrCell:worldId,runMode:'Standing',direction:0,speed:0,isInJumpState:false,lookAt:undefined});}
  const yaw=Math.abs(((r.getAngleZ()-p.rot[2]+540)%360)-180);
  if(Math.hypot(r.getPositionX()-p.pos[0],r.getPositionY()-p.pos[1])>2||Math.abs(r.getPositionZ()-p.pos[2])>64||yaw>1||Math.abs(r.getAngleX())>1||Math.abs(r.getAngleY())>1){
-  sp.TESModPlatform.moveRefrToPosition(r,cell,world,p.pos[0],p.pos[1],p.pos[2],0,0,p.rot[2]);
+  sp.TESModPlatform.moveRefrToPosition(r,cell,world,p.pos[0],p.pos[1],p.pos[2],0,0,p.rot[2]*Math.PI/180);
  }
 }
 function upright(location:TransformLocation):TransformLocation{return {...location,rot:[0,0,((location.rot[2]%360)+360)%360]};}
