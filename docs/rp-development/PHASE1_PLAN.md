@@ -1,5 +1,13 @@
 # SkyMP Phase 1 execution plan
 
+## Superseding checkpoint — approved Phase 2.1 foundation
+
+2026-10-13: the user's Phase 2.1 specification confirms the working solo baseline, including inventory/equipment/position and real restart persistence. Older pending statements below are retained as historical evidence. The original engine/source and `develop` baseline remain unchanged; no Phase 1 system was replaced.
+
+The approved original additive RP foundation is built/deployed with 67/67 automated tests and isolated actual native save/new-process reload verification. The user confirmed pre-restart native-state checks and reconnect; live logs/save show the same actor/profile and RP metadata. Latest 13-file world/config backed up, actual development server restarted as PID20076 / localhost7777/HTTP3000; ready/listeners/metrics and unchanged saved metadata/world verified. Only post-restart gameplay/live RP association remain NOT TESTED. Phase 2.2 is not started and no automatic commit was made.
+
+See [Phase 2.1 plan](PHASE21_IMPLEMENTATION_PLAN.md), [current report](PHASE21_BUILD_REPORT.md) and [manual gate](MULTIPLAYER_TEST_CHECKLIST.md). Two-player synchronization and historical log warnings remain separate outstanding work.
+
 ## Item persistence restart test — server restarted; client check pending
 
 2026-10-13: user explicitly requested an item-save restart test. Backed up all 10 development `rp-world` files before stopping the original server PID 15836 with Ctrl+C. Its process and both listeners exited. All 10 files remained byte-identical through shutdown; the player save contains 25 `inv.entries` (inventory entries, not necessarily 25 individual items). Restarted the same configuration/world as PID 17280, foreground tool session 3057; log confirms 10 ChangeForms loaded, including 1 player character. UDP localhost:7777, HTTP localhost:3000 and authenticated metrics 200 verified. Persisted inventory JSON remains identical to the pre-restart snapshot. Evidence is in ignored `build/rp-audit/installation/restart-20261013-121242/`; live restart log: `build/dist/server/logs/phase16-restart-items.log`.

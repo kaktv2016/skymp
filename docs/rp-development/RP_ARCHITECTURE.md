@@ -1,5 +1,7 @@
 # Future RP integration architecture
 
+Current planning status (2026-10-13): the design notes below predate the implemented RP foundation/chat. Typed adapter, module/command/event registry, private RP identity and real solo chat now exist; use [SYSTEM_CAPABILITY_REPORT](SYSTEM_CAPABILITY_REPORT.md) and [CHATGPT_PLANNING_CONTEXT](CHATGPT_PLANNING_CONTEXT.md) to distinguish implemented systems from proposals. Baseline solo character/inventory/equipment/position/restart passed by user confirmation; two-player checks remain deferred. Keep native systems as authority and extend existing modules rather than implementing these layers again. The paragraph below records the original audit state.
+
 Source-based design notes for commit `2849e676fe008925384b26f34476e382a30bd877`, 2026-10-13. No RP gameplay systems were implemented. The foundation now supports the recorded single-client smoke test; multiplayer/stability validation remains pending as described in [BUILD_REPORT](BUILD_REPORT.md). The following module boundaries are recommendations, not existing features or validated performance claims.
 
 ## Existing extension surface

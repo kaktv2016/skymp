@@ -1,5 +1,44 @@
 # Multiplayer verification checklist
 
+## Latest user acceptance — Phase 2.3
+
+2026-10-14: Phase2.3 five-item solo handoff checklist PASSED by user confirmation: profile Save/Thai edits; reopen/Cancel/blank validation; Escape/F7 gameplay controls; reconnect/server-restart profile retention; existing `/whoami`/`/me`/`/do` and character/items. Final Phase2.2 solo checks are also confirmed. [PHASE23](../../rp-gamemode/PHASE23.md) is the current evidence scope. Do not require these same checks again for unrelated changes; additional checks follow change impact. Automated output/count, direct edit-command variants and two-player behavior are not newly verified. Older pending checklists below remain historical. No gameplay/test operation performed in this update.
+
+## Current checkpoint and change-based testing
+
+2026-10-13: the user confirmed baseline solo native state/restart and all Phase 2.1 regressions. Phase 2.2 real chat display, Enter submission, normal/Thai self-echo and `/whoami`, `/me`, `/do` replies are now SOLO PASS from screenshot plus five server/client deliveries. Remaining relevant chat acceptance: close/focus, menu interference, invalid-input/throttling, reconnect/duplicate cleanup and native-state preservation after this change. Two-player proximity/movement/combat/cell transition checks remain deferred, not failed and not missing source implementations. See [SYSTEM_CAPABILITY_REPORT](SYSTEM_CAPABILITY_REPORT.md). Do not turn every historical checklist below into mandatory full regression for each new phase: reuse baseline and select checks based on changed paths. Documentation-only planning does not require game tests. No tests run by the agent in this audit.
+
+## Historical Phase 2.1 one-client acceptance gate
+
+2026-10-13: the user confirmed the post-deployment character/items/equipment/appearance/position and reconnect checks passed and exited the game. Live logs/save verify actor ff000000/profile1, RP schema1 metadata and one profile1 actor. Fresh world/config backup taken; server restarted at 19:32 as PID20076 / session86951 on localhost7777/HTTP3000. Loaded the latest 13 ChangeForms/one player; RP ready, metrics and unchanged world/metadata/config verified. **Only the post-restart game/live identity check remains pending for this phase.** No two-player test is required. Older pending items/PIDs below are historical checkpoints.
+
+| Check | Current status | Required evidence |
+| --- | --- | --- |
+| RP build/domain/source-contract/deployment tests | PASSED 67/67 | Phase 2.1 automated-tests.log; strict TS/type contracts |
+| Real native metadata persistence in copied world | PASSED | Separate write/reload processes; same actor/native physical state |
+| Actual wrapper/temp loader + idle local startup | PASSED | RP ready marker, authenticated metrics 200, unchanged 10 world files/5 artifacts |
+| Existing character/inventory/equipment/appearance/position with RP bundle before restart | PASSED — user confirmation | Existing native state retained in gameplay |
+| Identity assigned to the same native actor/profile before restart | PASSED | Native login/RP association ff000000/profile1; saved schema1 metadata |
+| Disconnect/reconnect with RP bundle before restart | PASSED — user + server evidence | Same actor on both logins; one profile1 saved actor; metadata present on disk after reconnect |
+| Actual development server restart / saved metadata retention | PASSED | Save captured before stop, latest backup, same world/config/bundle; 13 file hashes/metadata match afterward |
+| Post-restart game/native state/live RP identity | NOT TESTED | Relaunch same SKSE/profile1; compare character/items/equipment/appearance/position; verify new native/RP association and saved metadata |
+| `/whoami` domain | PASSED | Read-only handler/contract tests |
+| `/whoami` in game | NOT EXPOSED | No verified compatible input/output transport |
+| Two-player sync / 50–100 players | NOT TESTED | Future explicit validation, no claim from solo or mocks |
+
+User steps:
+
+1. Launch the existing `C:\Program Files (x86)\Steam\steamapps\common\Skyrim Special Edition\skse64_loader.exe` (Skyrim1.6.1170 / SKSE2.2.6). Use the same localhost7777/offline profile1; do not create a new character/profile.
+2. Compare the existing character, inventory counts, worn equipment, appearance and initial position. Report anything missing, reset, duplicated or any new crash/error. Walk briefly.
+3. Stay connected for at least 5 seconds, then exit Skyrim normally. RP metadata is private and has no in-game display. Server evidence should contain `Loading character ff000000`, profile1 login and `[rp] identity associated actor=ff000000 profile=1 schema=1`.
+4. Wait 5 seconds and relaunch through the same SKSE loader/profile. Check the same character/items/equipment and most recent position. Exit and report reconnect results. A second connection ID is normal; a second native actor for profile1 is not.
+5. After exiting the game, request the Phase 2.1 metadata restart test. Before stopping, inspect the actual `rp-world/changeForms` profile1 record for `dynamicFields["private.rp.v1.identity"]`, record actor/profile and metadata, and back up the latest world/config. Wait until metadata is actually on disk; do not assume Ctrl+C flushes it.
+6. Restart the same server/world and log in again. Compare user-visible native state, metadata before/after, and the count of native actors associated with profile1. Confirm all checks individually. A new-process fixture result alone cannot mark this row PASSED.
+
+Steps 1–5 above are now performed; continue with step6 using the already restarted server. Stay in-game at least 15 seconds, then exit/report. Current server log: `build/dist/server/logs/phase21-restart.log`; restart evidence: ignored `build/rp-audit/phase21/20261013-131609/restart-20261013-193146/`; initial deployment/rollback remains in its parent. Record fresh SKSE/SkyrimPlatform logs if any regression occurs, with private credentials omitted. Exact procedures: [RP README](../../rp-gamemode/README.md); results/contracts: [Phase 2.1 report](PHASE21_BUILD_REPORT.md).
+
+Historic mod-count warning, Equipment/Inventory NUMBER_OUT_OF_RANGE and OnHit unknown-target errors remain unresolved. Record recurrence and effects separately; do not suppress checks or reset the world. If a new state-loss/duplicate-actor regression appears, stop the game, preserve the current world and logs, and roll back only bundle/config after review. Phase 2.1 acceptance and Phase 2.2 readiness remain pending.
+
 ## Item persistence restart test — server restarted; client check pending
 
 2026-10-13: user explicitly requested an item-save restart test. Backed up all 10 development `rp-world` files before stopping the original server PID 15836 with Ctrl+C. Its process and both listeners exited. All 10 files remained byte-identical through shutdown; the player save contains 25 `inv.entries` (inventory entries, not necessarily 25 individual items). Restarted the same configuration/world as PID 17280, foreground tool session 3057; log confirms 10 ChangeForms loaded, including 1 player character. UDP localhost:7777, HTTP localhost:3000 and authenticated metrics 200 verified. Persisted inventory JSON remains identical to the pre-restart snapshot. Evidence is in ignored `build/rp-audit/installation/restart-20261013-121242/`; live restart log: `build/dist/server/logs/phase16-restart-items.log`.
@@ -62,7 +101,7 @@ Only after this one-client pass proceed to the existing two-client table. Prefer
 Run only after the approval/installation/asset-alignment gates in [SETUP_WINDOWS](SETUP_WINDOWS.md). Selected configuration is isolated **Steam 1.6.1170.0 + Steam SKSE 2.2.6**, this checkout's paired native distribution, and matching five-master server/client files. No verified 1.7.104 port was found; the current installed game is not the selected test runtime. New client logs do not exist yet because no game launch was attempted.
 
 1. Verify `C:\SkyrimDev\SE-1.6.1170\SkyrimSE.exe` reports 1.6.1170.0. Verify the archive/readme, `skse64_loader.exe` and `skse64_1_6_1170.dll` belong to Steam SKSE 2.2.6. Confirm separate test INI/saves and the virtual profile's complete SkyMP distribution; no unrelated mods. Save fingerprints and the profile manifest.
-2. With the aligned/validated server assets, start the real server from `C:\Users\basba\OneDrive\Desktop\skyrim-rp\skymp\build\dist\server`: `node dist_back/skymp5-server.js`. Capture a new startup log and verify both localhost binds, UDP 7777/HTTP 3000 and private metrics. Do not run destructive CTest while it is active.
+2. With the aligned/validated server assets, start the real server from `<SKYMP_REPO>\build\dist\server`: `node dist_back/skymp5-server.js`. Capture a new startup log and verify both localhost binds, UDP 7777/HTTP 3000 and private metrics. Do not run destructive CTest while it is active.
 3. Start Steam under the owning account, select the isolated profile and run its **isolated SKSE loader through the mod manager**. Verify the resulting SkyrimSE process actually uses the isolated path/version; a main menu alone does not prove plugin loading. Do not open an existing personal save. Follow the client's new-session flow if prompted.
 4. Inspect SKSE logs and `skyrim-platform.log` for successful platform initialization and the client settings/plugin load. After connection, inspect the running process's modules for the SKSE runtime DLL, SkyrimPlatform.dll, SkyrimPlatformImpl.dll and MpClientPlugin.dll at the intended physical/virtual profile paths. MpClientPlugin is loaded by the platform API, not an SKSE plugin entry point: a missing SKSE export for that DLL alone is not proof of client failure.
 5. Check script traces/errors in the in-game console and platform log. This source's client logging uses `printConsole`, so do not assume every trace is automatically written to a client log file. Capture console screenshots on failure. The source's optional `writeLogs` API writes `Data/Platform/Logs/<plugin>-logs.txt`; collect these only if they actually exist, without adding a custom logging plugin. Stop on address-library/version mismatch, missing implementation/CEF/Node DLLs, native hook errors or script exceptions; retain the first error and reproduce it before changing anything.

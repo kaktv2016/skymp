@@ -1,5 +1,25 @@
 # Phase 1 build and verification report
 
+## Latest checkpoint — Phase 2.3 solo acceptance passed
+
+2026-10-14: user confirms the Phase2.3 handoff checks1–5 PASSED: real profile UI save/Thai input, reopen/Cancel/blank-name rejection, Escape/F7 controls, reconnect/manual-server-restart persistence, and existing chat commands/character/items. All final Phase2.2 solo checks are also confirmed in the Phase2.3 request. [PHASE23](../../rp-gamemode/PHASE23.md) records exact acceptance scope; automated totals/direct edit-command/live-rollback results are not invented. Earlier pending checkpoints below are historical. No Phase2.4, code changes, test execution or commit in this documentation update.
+
+## Current planning checkpoint — Phase 2.2 solo chat verified
+
+2026-10-13: use [SYSTEM_CAPABILITY_REPORT](SYSTEM_CAPABILITY_REPORT.md) for the current implemented/configured/verified system inventory and [CHATGPT_PLANNING_CONTEXT](CHATGPT_PLANNING_CONTEXT.md) when planning the next phase. The user has confirmed the solo character/inventory/equipment/position/restart foundation and all Phase 2.1 manual regressions. Phase 2.2 is implemented/deployed by the user: real screenshot plus client/server logs verify normal chat, Thai text, `/whoami`, `/me`, `/do` and client-to-server-to-client replies. Current phase's focus/menu/validation/reconnect/native-state regression and real two-client checks are still pending; no new automated count is claimed. Historical missing-assets/toolchain/pending game checks and PIDs below must not be used as current blockers or missing implementations. This system audit ran no builds/tests/processes and changed documentation only; no Phase 2.3 or commit.
+
+## Historical checkpoint — Phase 2.1 additive RP foundation
+
+2026-10-13: the user's Phase 2.1 specification confirms the original solo character/inventory/equipment/position and real server restart validation passed. Pending Phase 1 confirmations below describe earlier checkpoints. Two-player synchronization and historic equipment/hit/mod-count warnings remain outside that confirmation.
+
+Custom `rp-gamemode/` is now built and deployed on unchanged `develop` baseline `5397cd3bf4666c942f78193107881d8cf0ac2748`. **67/67 new automated tests PASSED**, actual native copied-world metadata write/new-process reload PASSED with native physical state unchanged, and unchanged server wrapper/temp loader/metrics checks PASSED. Existing five native/server/client artifact hashes remain unchanged. No native rebuild, dependency download, donor source merge, game modification or commit.
+
+Current development server after the coordinated 19:32 restart: PID20076 / tool session86951, UDP127.0.0.1:7777 and HTTP127.0.0.1:3000; RP ready marker and metrics unauth401/auth200 verified. Loaded 13 ChangeForms / 1 player after the user's gameplay. Config/bundle stayed unchanged; all 13 latest world files and saved RP metadata remained byte-identical through stop/restart. Fresh backup/evidence: ignored `build/rp-audit/phase21/20261013-131609/restart-20261013-193146/`; current log `build/dist/server/logs/phase21-restart.log`. Initial deployment PID27544/10-file results remain historical in the Phase 2.1 report.
+
+**Pre-restart one-client native-state regression and reconnect PASSED by user confirmation.** Server log shows the same ff000000/profile1, one saved player and schema1 RP metadata on disk. No server error/RP failure lines occurred in that logged session; fresh client logs were not reviewed. Actual development restart and on-disk metadata retention PASSED; **post-restart gameplay/live RP association remain NOT TESTED**, awaiting the user. `/whoami` domain handler passed tests, but in-game transport is NOT EXPOSED. Phase 2.1 remains pending that final check; Phase 2.2 not started. Exact evidence and rollback: [Phase 2.1 report](PHASE21_BUILD_REPORT.md), [RP README](../../rp-gamemode/README.md), [manual checklist](MULTIPLAYER_TEST_CHECKLIST.md).
+
+The sections below are chronological historical evidence; old PIDs and pending statuses are superseded by this checkpoint.
+
 ## Git baseline — Phase 1 working foundation
 
 This baseline records the unchanged upstream implementation at parent commit `2849e676fe008925384b26f34476e382a30bd877` on `develop`, plus the six Phase 1 audit/setup/plan documents. Pinned vcpkg remains `cb2981c4e03d421fa03b9bb5044cd1986180e7e4`. The current supported local environment is Steam Skyrim 1.6.1170.0, SKSE 2.2.6, VS 2022 x64/v143, Release server/client distribution, offline profile 1 and loopback server. Prior recorded unfiltered CTest: 12/12 targets passed; this documentation-only baseline does not rerun destructive integration fixtures against the live player world.
@@ -203,7 +223,7 @@ cmake --build build --config Release --target skymp5-functions-lib skymp5-client
 cmake --build build --config Release --parallel 2
 ```
 
-Verified artifacts under `C:\Users\basba\OneDrive\Desktop\skyrim-rp\skymp`:
+Verified artifacts under `<SKYMP_REPO>`:
 
 - `build/dist/server/scam_native.node` (5,569,536 bytes), `dist_back/skymp5-server.js` (3,155,763 bytes), source map, generated `launch_server.bat`, settings and upstream `gamemode.js`. The server runs through the installed Node executable, not a new dedicated-server EXE.
 - `build/unit/Release/unit.exe` (5,656,064 bytes).
@@ -219,7 +239,7 @@ Remaining actions: supply legally owned matching Skyrim Data (masters and the sc
 
 ## Repository baseline and changes
 
-- Checkout: `C:\Users\basba\OneDrive\Desktop\skyrim-rp\skymp`.
+- Checkout: `<SKYMP_REPO>`.
 - Original branch `main`, clean working tree, HEAD `2849e676fe008925384b26f34476e382a30bd877`.
 - Created and selected `develop` at the same HEAD. No commits, pushes, history rewrites or remote changes.
 - `origin`: `https://github.com/skyrim-multiplayer/skymp` (fetch/push).

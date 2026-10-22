@@ -1,0 +1,29 @@
+# RP Chat Implementation Plan
+
+> Execute inline using the existing implementation workflow. User explicitly requires source edits and unexecuted tests only: do not build, run tests, launch/deploy server/game, install dependencies or commit. The supplied Phase 2.2 specification is the implementation scope.
+
+**Goal:** One-player-verifiable local RP chat over existing gamemode transport, preserving all native character state.
+
+**Manual result, 2026-10-13 23:00 Bangkok:** User screenshot confirms stable chat, normal self-echo, visible Thai text and `/whoami`, `/me`, `/do` responses. Logs confirm five client submissions, five server chat-event receipts/returns and five updated owner inbox deliveries. These solo checks PASS; automated test output/count is not supplied. Remaining manual checks: close/focus, menu interaction, validation/throttling, reconnect/duplicate cleanup and current-phase native character-state preservation. Two-player proximity remains deferred. No Phase 2.3, agent-run tests or commit.
+**Architecture:** Existing CEF page receives a small namespaced DOM overlay via a self-contained event source. Native CustomEvent prepends authoritative actor; checked server session supplies RP name. Owner-only bounded inbox property delivers text via updateOwner. Add an owned event router because Phase 2.1 did not actually contain one. Local recipients use native cell and squared distance; invalid location fails closed, never broadcasts. F7 opens; Enter submits only within focused input; Escape restores prior browser state.
+**Tech stack:** Existing TS/esbuild/CommonJS; plain DOM, no dependencies. Source APIs: ScampServer MakeProperty/MakeEventSource; CustomEvent.cpp; LocationalDataBinding.cpp; GamemodeEventSourceService/GamemodeUpdateService; SkyrimPlatform Browser/UI/buttonEvent/unsubscribe declarations and implementations.
+
+- [ ] User validates all source/build/runtime results; no executions by agent.
+- [x] Write focused unexecuted tests for routing, commands, validation, throttling, deduplication, transport ownership and client lifecycle.
+- [x] Extend the checked adapter only for native location and the owned inbox; add narrowly typed transport/event router preserving existing handlers.
+- [x] Implement chat module dependent on identity; reuse registry whoami, register me/do; bound server inbox and session state.
+- [x] Implement standalone browser/client functions serialized into the runtime bundle; no imports at client execution site, no HTML message rendering.
+- [x] Add repeatable versioned deployment selection/rollback with latest world backup; user executes only after stopping server/game.
+- [x] Provide short build/deploy/manual instructions and explicitly label unexecuted/unverified state.
+
+Configuration: F7 scan code65, max280 Unicode code points, 750ms minimum message interval, 2000 Skyrim-unit range in same native cell/world, server inbox40, client history100. All fixed limits are validated. No named actor/recipient/client position is accepted. Native property/event definitions have server-process lifetime because no individual unregister API exists; no hot reload or mp.clear. Commands/hooks/timers clean up through module ownership. Existing server public-key verification is preserved; deployments need full client exit/relaunch because first-update-only client settings may cache sources.
+
+2026-10-13 client diagnostic confirms accepted connection and chat-source receipt, then initialization fails at `old.dispose is not a function`. Legacy SP storage returns a function for unset keys. Source checks now distinguish real chat managers from those placeholders in initialization and owner delivery; two focused proxy-storage regression tests added, not executed. User must build/test and deploy with a fresh `phase22-storage-fix1` label, then verify client initialization, CEF readiness and Fn+7 in-game. No runtime PASS claimed.
+
+Next user session verifies client installed, UI ready and actor resolved in logs. F7 raises an undefined `isTextInputEnabled` receiver: actual export is `Ui`, while our interface/mock used `UI`. Source and mock corrected to actual `Ui` spelling, with focused unexecuted F7/menu guard and native declaration tests. User build/test/deploy label: `phase22-ui-api-fix1`. Chat display and commands are still pending real validation.
+
+User now sees chat briefly then it closes. Native Tilted focus opens Cursor Menu; our unconditional menuOpen cleanup closed chat on that event. Source now closes only for the configured blocking menus; Cursor/HUD events keep it open. Added unexecuted focus/submit/inventory/Escape regression. Next user build/test/deploy label: `phase22-cursor-menu-fix1`. Stable visibility and command submission remain unverified.
+
+User confirms stable chat/input; submission and commands have no visible result. Added source-only Enter/control-key, CEF submit, native event, server handler and owner inbox diagnostics without text/account content; numeric control-key compatibility and IME/repeat regression cases remain unexecuted. Next user label: `phase22-submit-debug1`, server log `logs/phase22-submit-debug1.log`. Sending/replies still unverified. Native Tilted input explicitly switches layouts using Alt+Shift or Ctrl+Shift; manual Thai validation is pending, with no native modifications.
+
+Submission log verifies Enter plus seven client custom-event sends, but no server receipt. Native ActionListener::OnCustomEvent rejects names without a leading `_`; our event name was invalid for client dispatch. Changed shared event constant to `_onRpChatV1` and our Event Router name validation to allow that native naming convention. Added unexecuted source/hook dispatch regression with native prefix gate. User build/test/deploy label `phase22-event-prefix-fix1`; full client relaunch and real response validation required. Native guard remains intact.
