@@ -18,8 +18,9 @@ import {EconomyService,EconomyOptions} from './modules/economy/economy-service';
 import {AdminService,AdminOptions,adminHints} from './modules/admin/admin-service';
 import {questDetails} from './modules/courier/quest-details';
 import {mapDiscoveryModule} from './modules/map-discovery/map-discovery-module';
+import {NpcService,npcHints} from './modules/npc/npc-service';
 
-export interface RuntimeOptions { scheduler?: Scheduler; logger?: Logger; chat?: false | (Partial<ChatConfig> & { now?: () => number }); profile?:Partial<ProfileLimits>&{now?:()=>number}; dice?: Partial<DiceSettings> & { rng?: DiceRng }; courier?: CourierOptions; economy?:EconomyOptions;admin?:AdminOptions; }
+export interface RuntimeOptions { scheduler?: Scheduler; logger?: Logger; chat?: false | (Partial<ChatConfig> & { now?: () => number }); profile?:Partial<ProfileLimits>&{now?:()=>number}; dice?: Partial<DiceSettings> & { rng?: DiceRng }; courier?: CourierOptions; economy?:EconomyOptions;admin?:AdminOptions; npc?:{storageRoot:string}; }
 export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
   const adapter = new SkyMpAdapter(rawMp);
   const identity = new IdentityService(adapter,options.profile);
@@ -75,6 +76,14 @@ export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
       return economy ? economy.quest(actor) : questDetails(courier.waypoint(actor));
     });
     modules.register(courierModule(courier,commands,economy));
+    if(options.npc){
+      const npc=new NpcService(rawMp as ConstructorParameters<typeof NpcService>[0],adapter,options.npc.storageRoot,actor=>admin.state(actor)!==null,logger.info);
+      modules.register({id:'rp-npc',dependencies:['rp-chat'],initialize(scope){
+        scope.defer(()=>npc.stop());npc.start();
+        scope.defer(commands.register('npc',(ctx,args)=>npc.execute(ctx.actorId,args),'rp-npc',npcHints));
+        scope.defer(scheduler.every(1000,()=>npc.prune()));
+      }});
+    }
     modules.register({id:'rp-admin',dependencies:['rp-chat'],initialize(scope){
       scope.defer(()=>admin.clear());
       scope.defer(commands.register('admin',(ctx,args)=>admin.execute(ctx.actorId,args),'rp-admin',adminHints));

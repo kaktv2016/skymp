@@ -1,0 +1,50 @@
+# Frostveil G2.1 — NPC Foundation & Admin Management
+
+Date: 2026-10-23. Implemented and deployed to the existing loopback test server. Gameplay acceptance remains pending owner testing.
+
+## Audit and evidence
+
+- Active server configuration retains `npcEnabled:false` and empty `npcSettings`.
+- `WorldCleanerService.processOneActor()` samples actors within 8192 units and disables unprotected living actors. Registered streamed actors receive `modWcProtection(...,1)` in `FormView`. This confirms the mechanism that can make distant vanilla actors disappear when approached; no particular animal/NPC from an owner session was identified. The latest available Skyrim Platform log did not contain a per-actor cleanup trace. Its missing PluginsDev directory message explicitly says Skyrim Platform continues working.
+- No vanilla records, cleanup policy, native code, client installation, Launcher or modpack were changed. Unverified Papyrus allocator work remains isolated on its pre-existing WIP branch; this feature is based on `develop`.
+- Installed `scam_native.node` was exercised in a disposable instance without attaching real world storage. `lookupEspmRecordById` resolved Courier reference `39fb7` to base `39f83:Skyrim.esm`, verified as `NPC_`. `place`, private metadata, `setEnabled`, `locationalData`, `baseDesc` and `getAllForms(255)` were called successfully. Source signatures match installed runtime behavior.
+- Installed Skyrim Platform declarations expose `ObjectReference.setDisplayName(string,boolean)`. Existing gamemode `updateNeighbor` executes against a currently resolved reference; the label handler uses it synchronously and retains no wrapper across asynchronous boundaries.
+
+## Implementation
+
+- Added `rp-gamemode/src/modules/npc/npc-service.ts`: UUID registry, validated clerk template, authored worldspace/cell and XYZ/rotation, display name, enabled/soft-deleted state and reserved null appearance/equipment/dialogue profile references.
+- One native server actor and tagged identity per definition; all relevant neighbors use normal SkyMP streaming. No owner-local stand-in, client polling or per-player actor duplication.
+- Registry uses the existing checksummed/fsynced journal implementation in a separate `rp-npcs` directory, never the economy directory. Exclusive writer lease, bounded entries (64 including tombstones), native identity validation and no append for unchanged definitions. The existing committed-prefix recovery handles incomplete append records.
+- Creation first commits a provisioning reservation, then binds the native form ID. If provisioning is interrupted or an identity does not match, NPC management fails closed rather than automatically spawning duplicates. Existing unrelated modules continue running.
+- Startup restores authored transforms, labels and enabled states on the same tagged native actor. Soft deletion disables the actor without deleting vanilla data or freeing/reusing another actor's identity. Tombstones intentionally count toward the limit.
+- Added all requested `/npc` commands through the existing command registry, chat replies and autocomplete. Hints are restricted to authorized admins; every operation rechecks the existing account/session authority. Selection is session-bound, limited to registered actors within 256 units, favors the forward cone, and rejects ambiguous candidates. Hidden/deleted NPCs can be selected near their authored anchor for restore. Selection is pruned on loss of authority/session.
+- `rotate` accepts absolute degrees, normalized to 0–360; `rename` accepts Unicode with length/control-character validation. No arbitrary template IDs, native calls, console execution, player mutations or economy transactions are exposed.
+- Integrated only the NPC option/module in `runtime.ts`/`index.ts` and command transport handling/filtering in `chat-service.ts`.
+
+## Verification
+
+- RP build/typechecks and complete regression suite: **281/281 passed**, including seven NPC tests: CRUD transforms, authorization, malformed input, session isolation, cell/proximity selection, restart, interrupted provisioning, native identity mismatch and restore after soft deletion/restart.
+- Existing client Spawn Recovery, spawn location, interior/remote resume and NPC retirement suites: **47/47 passed**.
+- Disposable native storage test ran two separate processes against an isolated fixture: first created one actor; second loaded the same definition and native actor after restart. Dynamic form count remained **1**, with matching identity and enabled state. Diagnostic files are retained under ignored `.local/g21/`.
+- Source diffs reviewed; whitespace check passed. No installed client change or distribution update was required. Name rendering, visual stability, cell streaming and simultaneous visibility still require real Skyrim clients; simulation/native storage tests alone do not establish gameplay acceptance.
+
+## Deployment and rollback
+
+- Bundle SHA-256: `4a65bf05a4c3faf2255d5d6c344b8d2036583f276d59744bc48f92ea22193092`.
+- Local evidence/backup: `build/rp-audit/g21/deploy-1792688865334/`; contains prior config/bundle, protected-data copies/manifests, visible startup script and console log. Additional deployment metadata: `.local/g21/active-deployment.json`.
+- Restarted the verified loopback Node server in visible PowerShell. UDP 7777 and resource listener 3000 are available; log reports `[rp-npc] ready definitions=0`. No test NPC was injected into the actual world automatically.
+- All **60** protected world/economy files match pre-deployment hashes; backup copies also match. World/player/economy data were not reset or migrated.
+- Rollback: stop this test server, restore `server-settings-before.json` as `server-settings.json`, and launch the previous visible startup script. Retain `rp-npcs` and any newly authored NPC data; do not overwrite world/economy data with backups merely to roll back code. The backup copies are for explicit recovery if needed.
+- Source is committed on local `develop`. Configured upstream previously rejects writes for the current account (HTTP 403); no authorized fork is configured. Push is attempted without force; final response records its result.
+
+## Exact owner gameplay acceptance
+
+1. Enter through the existing Launcher. Obtain the normal session-bound owner grant (restart clears old grants). Server operator uses `node rp-gamemode/scripts/admin-local.cjs build/dist/server/rp-admin list`, then `grant <verified-actor-hex> owner` with the same directory argument. Never grant an unverified session.
+2. `/npc help` → `/npc create clerk`; step away, face the clerk, `/npc select` → `/npc info` → `/npc rename Guild Clerk` → `/npc rotate 90`.
+3. Move a few steps, `/npc move here`; step aside and verify position/name/rotation. `/npc disable` → `/npc enable` → `/npc delete` → `/npc restore`. Confirm only one actor appears.
+4. Leave/reenter the cell, reconnect, regrant admin, `/npc select` → `/npc info`. Restart the test server, reconnect/regrant and repeat; verify the same registry ID and exactly one actor. For hidden NPC restore, stand near its saved anchor before selecting.
+5. With a second actual client nearby, verify both see the same actor and changes. Verify a non-admin cannot mutate/select and has no NPC autocomplete. Repeat in an interior, then verify normal spawn, Courier/compass, discoveries and wallet remain intact.
+
+## Remaining limits
+
+No dialogue, guild quests, advanced AI, equipment editor, RaceMenu or GUI. Clerk uses the existing Courier base as a foundation; in-game behavior/appearance and collision remain owner verification items. Registry corruption, missing native actors or interrupted provisioning intentionally require operator diagnosis, with no automatic respawn that might duplicate an actor. Journal capacity is bounded by the existing 16 MiB storage limit and fails closed when exhausted. No real two-client gameplay test was available during implementation. G2.2 was not started.

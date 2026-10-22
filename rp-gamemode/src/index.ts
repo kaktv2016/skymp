@@ -24,7 +24,7 @@ if (globals.mp !== undefined) {
     native.on('connect',authority.connectionEvent);native.on('disconnect',authority.connectionEvent);
     console.log('[rp-admin] Local operator approval enabled, no session has permission by default. Use scripts/admin-local.cjs from the server machine.');
   }
-  const runtime = createRuntime(globals.mp,{economy:{storageRoot:'rp-economy'},...(authority?{admin:{authorize:authority.authorize}}:{}),...(preview?{courier:{...courierConfig,development:true,beaconPreview:true}}:{})});
+  const runtime = createRuntime(globals.mp,{npc:{storageRoot:'rp-npcs'},economy:{storageRoot:'rp-economy'},...(authority?{admin:{authorize:authority.authorize}}:{}),...(preview?{courier:{...courierConfig,development:true,beaconPreview:true}}:{})});
   globals[key] = runtime;
   runtime.start().then(() => {
     console.log('[rp] Phase 2.1 foundation ready; Phase 2.2 chat transport registered; in-game verification pending');
