@@ -1,0 +1,24 @@
+{
+  "name": "skyrim-rp-gamemode",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0",
+  "description": "Original additive RP foundation for the pinned SkyMP engine",
+  "scripts": {
+    "build": "node scripts/build.cjs",
+    "test": "node scripts/build.cjs && node --test tests/*.test.cjs",
+    "test:profile": "node scripts/build.cjs && node --test tests/profile.test.cjs tests/profile-client.test.cjs tests/chat.test.cjs tests/chat-client.test.cjs tests/engine-identity.test.cjs tests/runtime.test.cjs tests/command-registry.test.cjs",
+    "test:dice": "node scripts/build.cjs && node --test tests/dice.test.cjs tests/chat.test.cjs tests/command-registry.test.cjs tests/profile.test.cjs",
+    "test:courier": "node scripts/build.cjs && node --test tests/courier.test.cjs tests/chat.test.cjs tests/dice.test.cjs tests/command-registry.test.cjs",
+    "test:native": "node scripts/native-integration.cjs",
+    "test:wrapper": "node scripts/wrapper-smoke.cjs",
+    "deploy": "node scripts/deploy.cjs",
+    "install:ui": "node scripts/install-ui.cjs",
+    "rollback": "node scripts/rollback.cjs"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5",
+    "esbuild": "0.28.1",
+    "@types/node": "22.10.2"
+  }
+}

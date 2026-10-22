@@ -1,0 +1,6 @@
+dist/
+.test-build/
+deployed/
+node_modules/
+.local/
+rp-economy/

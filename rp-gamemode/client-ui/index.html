@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="th">
+<head><meta charset="utf-8"><title>RP chat bootstrap</title>
+<style>html,body{margin:0;background:transparent!important;color:#eee;font-family:Tahoma,"Segoe UI",sans-serif;overflow:hidden}</style>
+</head><body>
+<script>
+// Isolated fallback page; never overwrites the upstream frontend.
+window.addEventListener('DOMContentLoaded',function(){
+  if(window.skyrimPlatform && typeof window.skyrimPlatform.sendMessage==='function') {
+    window.skyrimPlatform.sendMessage('rp-chat-root-ready');
+  }
+});
+window.addEventListener('error',function(event){
+  if(window.skyrimPlatform && typeof window.skyrimPlatform.sendMessage==='function') {
+    window.skyrimPlatform.sendMessage('rp-chat-root-error',String(event.message));
+  }
+});
+</script>
+</body></html>
