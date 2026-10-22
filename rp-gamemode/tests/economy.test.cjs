@@ -50,3 +50,12 @@ test('G1.1 a corrupt/future economic record is preserved and cannot reset funds 
  const {EconomyJournal}=require('../.test-build/modules/economy/journal.js');
  for(const change of [{schemaVersion:99},{balance:-1},{balance:Number.MAX_SAFE_INTEGER},{activeJob:{id:'bad',reward:1000}},{extra:'unknown'}]){const e=fixture();await e.runtime.start();await earn(e);const state=e.wallet();await e.runtime.stop();const journal=new EconomyJournal(e.root);journal.append(state.identity,{...state,...change});journal.close();const file=path.join(e.root,state.identity,'journal.jsonl'),before=fs.readFileSync(file,'utf8'),reloaded=fixture({root:e.root,values:e.values});await reloaded.runtime.start();try{assert.equal((await reloaded.send('/wallet')).ok,false);assert.equal((await reloaded.send('/job deliver')).ok,false);assert.equal(fs.readFileSync(file,'utf8'),before);}finally{await reloaded.runtime.stop();}}
 });
+test('G2.2 dialogue reuses durable economy and rejects repeated accept/purchase without payouts',async()=>{
+ const {DialogueRuntime,clerkGraph,validateGraph}=require('../.test-build/modules/dialogue/dialogue-runtime.js');
+ const e=fixture();await e.runtime.start();try{let view;const npc={id:'clerk',name:'Clerk',enabled:true,deleted:false,formId:42,location:{cell:route.pickup.cell,pos:[0,0,0]}};
+ const d=new DialogueRuntime({sessionForActor:a=>e.runtime.adapter.sessionForActor(a),fullLocation:()=>npc.location,readCourier:a=>e.runtime.adapter.readCourier(a)},validateGraph(clerkGraph([route.id],['regional']),[route.id],['regional']),id=>id===42||id==='clerk'?npc:undefined,(a,args)=>e.runtime.economy.execute(a,args),(_a,p)=>view=p);
+ assert.equal(d.receive(e.actor,{op:'open',npc:42}),true);
+ const choose=id=>({op:'choose',choice:id,node:view.node,token:view.token});const request=choose('accept-'+route.id);e.advance();assert.equal(d.receive(e.actor,request),true);assert.equal(e.wallet().courier.lifecycle,'active');const before=JSON.stringify(e.wallet());assert.equal(d.receive(e.actor,request),false);assert.equal(JSON.stringify(e.wallet()),before);
+ e.advance();assert.equal(d.receive(e.actor,choose('buy-regional')),true);assert.equal(e.wallet().balance,0);assert.deepEqual(e.wallet().progression.permits,[]);assert.equal(e.wallet().courier.completedDeliveries,0);d.clear();
+ }finally{await e.runtime.stop();fs.rmSync(e.root,{recursive:true,force:true});}
+});

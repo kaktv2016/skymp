@@ -57,6 +57,7 @@ export function installChatClient(ctx:ClientContext, config:ChatConfig, uiSource
   function blocked() { return sp.Ui.isTextInputEnabled() || badMenus.some(function(menu){return sp.Ui.isMenuOpen(menu);}); }
   function install() { ready=false;profileReady=false;lastInstall=Date.now(); execute('('+uiSource+')('+JSON.stringify(config)+');('+profileSource+')();'); }
   function toggleChat(){
+    if(sp.storage.__fvDialogueOpen===true)return;
     if(opened && sp.browser.isFocused()){close();return;}
     if(sheetOpened){
       if(!connected || !ready || badMenus.some(function(menu){return sp.Ui.isMenuOpen(menu);})){close();return;}

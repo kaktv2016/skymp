@@ -1,3 +1,7 @@
+import {DialogueRuntime,DialogueStore} from './modules/dialogue/dialogue-runtime';
+import {dialogueSources} from './client/dialogue';
+import {courierProgressionConfig} from './config/courier-progression';
+import {actorId} from './engine/ids';
 import { CommandRegistry } from './core/command-registry';
 import { ModuleRegistry } from './core/module-registry';
 import { SkyMpAdapter } from './engine/adapter';
@@ -82,6 +86,18 @@ export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
         scope.defer(()=>npc.stop());npc.start();
         scope.defer(commands.register('npc',(ctx,args)=>npc.execute(ctx.actorId,args),'rp-npc',npcHints));
         scope.defer(scheduler.every(1000,()=>npc.prune()));
+        const native=rawMp as any,sources=dialogueSources();
+        const store=new DialogueStore(options.npc!.storageRoot+'-dialogues',courier.routes().map(r=>r.id),courierProgressionConfig.permits.map(p=>p.id));
+        scope.defer(()=>store.close());const graph=store.load();
+        native.makeProperty('frostveilDialogue',{isVisibleByOwner:true,isVisibleByNeighbors:false,updateOwner:sources.owner,updateNeighbor:''});
+        const dialogue=new DialogueRuntime(adapter,graph,id=>npc.lookup(id),(a,args)=>economy?economy.execute(a,args):courier.execute(a,args),(a,value)=>native.set(a,'frostveilDialogue',value));
+        scope.defer(()=>dialogue.clear());
+        if(typeof native.on==='function'){let active=true;const connection=(user:unknown)=>{if(active)dialogue.connectionEvent(user);};native.on('connect',connection);native.on('disconnect',connection);scope.defer(()=>{active=false;});}
+        scope.defer(events.register('_frostveilDialogue',(sender,packet,...extra)=>{if(extra.length)return;try{dialogue.receive(actorId(sender),packet);}catch{logger.error('[rp-dialogue] rejected invalid sender');}}));
+        native.makeEventSource('_frostveilDialogue',sources.event);
+        scope.defer(scheduler.every(250,()=>dialogue.prune()));
+        logger.info('[rp-dialogue] clerk graph v'+graph.version+' ready; native Activate-key transport registered');
+
       }});
     }
     modules.register({id:'rp-admin',dependencies:['rp-chat'],initialize(scope){
