@@ -48,3 +48,17 @@ Date: 2026-10-23. Implemented and deployed to the existing loopback test server.
 ## Remaining limits
 
 No dialogue, guild quests, advanced AI, equipment editor, RaceMenu or GUI. Clerk uses the existing Courier base as a foundation; in-game behavior/appearance and collision remain owner verification items. Registry corruption, missing native actors or interrupted provisioning intentionally require operator diagnosis, with no automatic respawn that might duplicate an actor. Journal capacity is bounded by the existing 16 MiB storage limit and fails closed when exhausted. No real two-client gameplay test was available during implementation. G2.2 was not started.
+
+## Owner feedback: pose correction (2026-10-23)
+
+Owner confirmed checks 1 and 3 passed, but rename caused spinning, rotate returned to the original yaw, and move returned toward the old anchor until delete/restore.
+
+Evidence: `NpcService.apply` unconditionally teleported on every mutation, including rename and visibility. The clerk inherited the Courier NPC's native AI, while `FormView.applyAll`/`movementApply` retained old movement and `keepOffsetFromActor` steering. The registry itself saved the new anchor correctly, as confirmed by the owner's delete/restore result. Player camera pitch was also copied into NPC rotation.
+
+Correction: metadata/visibility edits no longer teleport. Create/move normalize actor pitch and roll. An owner-independent neighbor property publishes the registry anchor to every streamed copy, disables AI only for registered stationary clerks, clears stale offset steering, synchronizes the existing movement model to Standing at the saved pose, and corrects actual pose drift in update context using installed `TESModPlatform.moveRefrToPosition`. It resolves references on each update and skips unloaded/deleted/wrong-cell actors. No asynchronous native wrappers or generic NPC cleanup changes. This intentionally establishes a stationary clerk; roaming AI remains outside G2.1.
+
+Verification: failing tests reproduced unwanted rename teleports and copied pitch before the fix. Build/typechecks and all 284 regression tests pass afterward (including 10 NPC tests). Neighbor fixture exercises stale movement, yaw correction, unloaded/wrong-cell guards, reference replacement and no repeated relocation at a stable pose. Installed native fixture restart reports one existing actor and registry ready; no duplicate is created. Actual multi-client/gameplay correction remains owner verification pending.
+
+Deployed bundle SHA-256: `3b001a313fe7f33a9ecd4bfeee8693ebe9380e4ca9fb3b136de0d6e7f4e2bf9c`. Backup and rollback record: `build/rp-audit/g21/pose-fix-1792691879011/`. All 63 world/economy/NPC files match their pre-deployment hashes before startup. Server restarted in visible PowerShell, UDP 7777/resource port 3000 confirmed, `[rp-npc] ready definitions=1`. No installed player, Launcher or modpack files changed. Session admin grants expire on this restart as designed.
+
+Owner retest: reconnect, obtain a fresh owner grant, `/npc select`, rename, rotate 90 then 180, move to B and step away for 15 seconds. Verify no spinning/return to A. Disable/enable and delete/restore; reconnect and verify one NPC at B. Repeat with a second client when available.
