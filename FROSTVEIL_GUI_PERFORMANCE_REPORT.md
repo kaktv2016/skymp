@@ -40,8 +40,8 @@ Native percentiles describe at most the latest 4096 samples; counts/means descri
 - Native Release `skyrim_platform` target: PASS, including the new header and instrumented renderer. Complete log: `build/rp-audit/gui-performance-build.log`.
 - RP typechecks/build and regressions: **313/313 PASS**, zero skipped. Includes new profiler lifecycle/bounded-output/default-off tests and existing Spawn Recovery, Map Discovery, Courier, Economy, Chat, NPC and Dialogue suites. Complete log: `rp-gamemode/.local/gui-performance-tests.log`.
 - git diff whitespace check: PASS.
-- Server-only diagnostic source deployed with the established local backup workflow. Immutable bundle SHA256: `3c67e316eb06f58421ebe788b20bc9223330692b3b46d812be6760ce8779151a`.
-- Backup/rollback metadata: `build/rp-audit/g22/dialogue-1792741899461`; 84 protected files hashed and unchanged during deployment. Visible PowerShell startup binds verified loopback UDP 7777, resources port 3000, and logs NPC/dialogue startup success.
+- Server-only diagnostic source deployed with the established local backup workflow. Immutable bundle SHA256: `50fb7dc200ee7c604804eda5cf1c0dee9a427cfc7af1d4ec1e9d492355898fb7`.
+- Backup/rollback metadata: `build/rp-audit/g22/dialogue-1792742442730`; 86 protected files hashed and unchanged during deployment. Visible PowerShell startup binds verified loopback UDP 7777, resources port 3000, and logs NPC/dialogue startup success.
 - Installed game files unchanged. Existing Launcher 0.1.23 works for the server-delivered browser diagnostics.
 - The native profiling DLL is a **local build candidate only**, not installed or published. Signed R2/Launcher delivery and its update/install gates have not run for this candidate. Installed clients therefore cannot yet produce the new native timing series. No optimization release has been approved by performance evidence, and no signing or update checks were bypassed.
 
@@ -64,3 +64,5 @@ After the native candidate passes the established signed release workflow, launc
 Need actual browser and native timings before selecting a renderer/DOM optimization, followed by measured before/after comparison and owner acceptance. Profiling overhead must be compared with diagnostics off. No full-frame-copy, dirty-rectangle, row-pitch, command-list, cursor rendering, GPU-sharing, or Scaleform replacement change has been shipped. A measured Scaleform prototype is also pending; there is no evidence yet justifying a GUI rewrite.
 
 Current work is a recoverable diagnostic foundation, not completion of the requested performance fix.
+
+Diagnostic source commit: `30b5cba`, branch `wip/gui-performance-profiling`. Native candidate SHA256: `8549f8be88fefec1341399a64293b3798c8ea5f20c34a60204d0088759d4025b`. Final server revision includes the corrected mouse proxy; reconnect is needed to load its owner-only scripts.
