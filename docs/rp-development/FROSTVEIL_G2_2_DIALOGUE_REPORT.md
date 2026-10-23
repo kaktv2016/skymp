@@ -50,3 +50,11 @@ Source branch is develop; push target is authorized fork `frostveil` (`kaktv2016
 5. With admin disable/delete the Clerk during conversation, verify close; restore it and reopen. With two real clients, verify one player's choices/focus/purchases never affect the other's conversation. Restart the server and verify Clerk/graph/world/economy persistence.
 
 No in-game E or real two-client success claimed. No G2.3, RaceMenu, dialogue editor, new quests or appearance/equipment features started.
+
+## Dialogue cursor follow-up
+
+Owner requested a smaller custom cursor because the native Skyrim cursor appears scaled and clicks can target unexpected controls. Installed TPInputService forwards window-client mouse coordinates to CEF. The dialogue now draws an original 28x36 gold SVG at CEF mouse clientX/clientY, with the visible tip anchored to the actual pointer and pointer-events:none. Scoped cursor:none prevents the browser cursor from overlapping. Gold hover/focus highlighting exposes the actual button hit target. No synthetic clicks or independent coordinate conversion is introduced.
+
+Native cursor rendering is hidden only while dialogue owns focus: installed Ui.getBool/setBool target Cursor Menu `_root._visible`; drawing is enabled only after false readback. The prior root visibility is restored in update context before releasing focus. If the root/API cannot be hidden, the native cursor remains the fallback. No global CursorMenu asset, native code, installed player file or Launcher change. Actual GFx root path behavior, DPI/resolution alignment and appearance require owner gameplay confirmation.
+
+Build/typechecks and 309/309 regressions pass, including owned-root hide/restore, deferred focus release, no repeated per-frame CEF redraw, and existing keyboard/ESC/Unicode/cancellation tests. Deployed bundle `4b91eff0e1210793b348b581520c2b8b169ea5e1fe095b82018207b174d9c9ab`; reversible backup `build/rp-audit/g22/dialogue-1792730667446/`, 74 protected files unchanged before startup. Server restarted in visible PowerShell. Owner retest: reconnect, E on Clerk, move over each choice and confirm tip/hover/click alignment, ESC restores Skyrim cursor; verify F7 and map/inventory cursor afterward. Repeat at the owner's current resolution/window mode; no in-game cursor success claimed yet.
