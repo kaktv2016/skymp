@@ -98,3 +98,5 @@ Candidate DLL 52b7572f75f5b09fe8db8bf6f04931522c11d6573181bf88ac5039042e09338d:
 - Native Release build passes; existing RP build/typechecks/regressions 313/313 pass. Renderer resource failure and visual/frametime acceptance remain real-game checks.
 
 No after-optimization in-game numbers exist yet. Signed client distribution and owner comparison must finish before calling the performance problem fixed.
+
+Optimization candidate delivered through verified signed Launcher 0.1.25 / recipe 1.0.19: https://github.com/kaktv2016/frostveil-launcher/releases/tag/v0.1.25 . Launcher regressions 486/486 PASS, native surface regressions/native Release build PASS, RP regressions 313/313 PASS; public payload hashes and signed update envelope verified. Native source commit 1dd5a6ff, candidate hash 52b7572f75f5b09fe8db8bf6f04931522c11d6573181bf88ac5039042e09338d. No server restart or direct installed-player-file write. Await owner Play installation and measured after-fix result; retain prior native baseline/archive for rollback.
