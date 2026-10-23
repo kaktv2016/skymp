@@ -35,6 +35,12 @@ struct DX11RenderHandler : MyRenderHandler
     return visible;
   }
 
+  static std::atomic_bool& FrostveilCursorEnabled()
+  {
+    static std::atomic_bool enabled{false};
+    return enabled;
+  }
+
   struct Renderer
   {
     Renderer() = default;
@@ -71,6 +77,7 @@ private:
   Microsoft::WRL::ComPtr<ID3D11Texture2D> m_pTexture;
   Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_pCursorTexture;
   Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_pTextureView;
+  Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_pGoldCursorTexture;
   std::mutex m_textureLock;
   GuiSurface m_surface;
   bool m_textureReady = false; // render thread only

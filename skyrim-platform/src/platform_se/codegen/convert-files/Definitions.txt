@@ -71,6 +71,8 @@ export interface Browser {
   setFocused(focused: boolean): void
   isFocused(): boolean
   /** Tilted renderer only; feature-detect on older clients/other backends. */
+  setFrostveilCursorEnabled?(enabled: boolean): void
+  isFrostveilCursorEnabled?(): boolean
   setCursorVisible?(visible: boolean): void
   isCursorVisible?(): boolean
   loadUrl(url: string): void

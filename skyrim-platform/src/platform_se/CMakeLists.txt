@@ -70,6 +70,7 @@ if(NOT "${SKIP_SKYRIM_PLATFORM_BUILDING}")
   set(ASSET_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/skyrim_platform/assets/template.ess
     ${CMAKE_CURRENT_SOURCE_DIR}/skyrim_platform/assets/cursor.png
+    ${CMAKE_CURRENT_SOURCE_DIR}/skyrim_platform/assets/frostveil-cursor.png
     ${CMAKE_CURRENT_SOURCE_DIR}/skyrim_platform/assets/sp3.js
     ${CMAKE_CURRENT_SOURCE_DIR}/skyrim_platform/assets/storageProxy.js
   )

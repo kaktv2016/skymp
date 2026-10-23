@@ -54,6 +54,18 @@ Napi::Value BrowserApiTilted::IsCursorVisible(const Napi::CallbackInfo& info)
     CEFUtils::DX11RenderHandler::CursorVisible().load());
 }
 
+Napi::Value BrowserApiTilted::SetFrostveilCursorEnabled(const Napi::CallbackInfo& info)
+{
+  CEFUtils::DX11RenderHandler::FrostveilCursorEnabled().store(
+    NapiHelper::ExtractBoolean(info[0], "enabled"));
+  return info.Env().Undefined();
+}
+Napi::Value BrowserApiTilted::IsFrostveilCursorEnabled(const Napi::CallbackInfo& info)
+{
+  return Napi::Boolean::New(info.Env(),
+    CEFUtils::DX11RenderHandler::FrostveilCursorEnabled().load());
+}
+
 Napi::Value BrowserApiTilted::SetFocused(const Napi::CallbackInfo& info)
 {
   bool& v = CEFUtils::DInputHook::ChromeFocus();

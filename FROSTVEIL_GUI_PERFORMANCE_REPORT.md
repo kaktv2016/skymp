@@ -100,3 +100,15 @@ Candidate DLL 52b7572f75f5b09fe8db8bf6f04931522c11d6573181bf88ac5039042e09338d:
 No after-optimization in-game numbers exist yet. Signed client distribution and owner comparison must finish before calling the performance problem fixed.
 
 Optimization candidate delivered through verified signed Launcher 0.1.25 / recipe 1.0.19: https://github.com/kaktv2016/frostveil-launcher/releases/tag/v0.1.25 . Launcher regressions 486/486 PASS, native surface regressions/native Release build PASS, RP regressions 313/313 PASS; public payload hashes and signed update envelope verified. Native source commit 1dd5a6ff, candidate hash 52b7572f75f5b09fe8db8bf6f04931522c11d6573181bf88ac5039042e09338d. No server restart or direct installed-player-file write. Await owner Play installation and measured after-fix result; retain prior native baseline/archive for rollback.
+
+## Native cursor follow-up — 2026-10-23
+
+Owner confirms v0.1.25 removed perceived input delay, but fast cursor movement still stutters / appears separated.
+
+Evidence: installed DLL SHA-256 matched 52b7572f75f5b09fe8db8bf6f04931522c11d6573181bf88ac5039042e09338d. Windows reports the active 3440x1440 display at 200 Hz; CEF is explicitly configured to 60 Hz. Live dialogue sample: 1498 rAF frames, mean 16.680 ms, P95/P99 16.666 ms; 1074 mouse intervals, mean 23.262 ms, P95 34 ms, P99 67.1 ms. One DOM cursor was present. These measure browser events, not GPU presentation or physical input latency; they do not establish the cause of every perceived ghost image.
+
+A reversible live CSS transform comparison was rejected: baseline 502 layouts / 10 s, layout CPU 28.597 ms, task CPU 953.536 ms; transform added only one layout but task CPU increased to 1340.458 ms / 10 s. Original styles/listener were restored automatically. Raw captures remain in ignored `.local/gui-performance/`.
+
+Implemented a scoped native gold cursor using the existing DirectX SpriteBatch and existing cursor coordinates. It draws on each game render independently of CEF paints, uses the SVG's 28x36 size and 1px hotspot, and does not interpolate or change click coordinates. Existing Skyrim-style CEF cursor remains the default outside dialogue. Optional boolean APIs select the gold sprite; old clients retain the tested DOM fallback. Dialogue restores both prior style and visibility on close, disconnect, loading, character change and disposal. No new input hooks or gameplay native calls.
+
+Native Release build passed; gamemode validation and signed delivery results follow below. In-game smoothness and duplicate-cursor acceptance remain PENDING OWNER TEST. Actual game render/input cadence and display response still limit achievable smoothness; 200 FPS is not promised.

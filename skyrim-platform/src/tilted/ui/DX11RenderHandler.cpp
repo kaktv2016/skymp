@@ -105,7 +105,13 @@ void DX11RenderHandler::Render(
   bool& focusFlag = CEFUtils::DInputHook::ChromeFocus();
 
   if (Visible() && focusFlag && CursorVisible().load()) {
-    if (m_pCursorTexture && m_cursorX >= 0 && m_cursorY >= 0) {
+    if (FrostveilCursorEnabled().load() && m_pGoldCursorTexture && m_cursorX >= 0 && m_cursorY >= 0) {
+      // Same 1px hotspot and CSS-pixel size as the dialogue SVG, drawn every
+      // game frame independently of CEF paint. Never interpolate click position.
+      m_pSpriteBatch->Draw(m_pGoldCursorTexture.Get(),
+        DirectX::SimpleMath::Vector2(m_cursorX - 1.f, m_cursorY - 1.f), nullptr,
+        DirectX::Colors::White, 0.f);
+    } else if (m_pCursorTexture && m_cursorX >= 0 && m_cursorY >= 0) {
       m_pSpriteBatch->Draw(
         m_pCursorTexture.Get(),
         DirectX::SimpleMath::Vector2(m_cursorX - 24, m_cursorY - 25), nullptr,
@@ -173,6 +179,12 @@ void DX11RenderHandler::Create()
   DirectX::CreateWICTextureFromMemory(
     m_pDevice.Get(), reinterpret_cast<const uint8_t*>(file.begin()),
     file.size(), nullptr, m_pCursorTexture.ReleaseAndGetAddressOf());
+
+  const auto gold = cmrc::skyrim_plugin_resources::get_filesystem().open(
+    "assets/frostveil-cursor.png");
+  DirectX::CreateWICTextureFromMemory(m_pDevice.Get(),
+    reinterpret_cast<const uint8_t*>(gold.begin()), gold.size(), nullptr,
+    m_pGoldCursorTexture.ReleaseAndGetAddressOf());
 
   std::unique_lock<std::mutex> _(m_textureLock);
 
