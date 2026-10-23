@@ -1,5 +1,6 @@
 #include "DInputHook.hpp"
 #include "TextToDraw.h"
+#include "GuiPerformance.h"
 #include <DX11RenderHandler.h>
 #include <DirectXColors.h>
 #include <DirectXTK/DDSTextureLoader.h>
@@ -32,6 +33,8 @@ DX11RenderHandler::~DX11RenderHandler() = default;
 void DX11RenderHandler::Render(
   const ObtainTextsToDrawFunction& obtainTextsToDraw)
 {
+  GuiPerformance::Frame();
+  GuiPerformance::Timer renderTimer(GuiPerformance::RenderCpu);
   // We need contexts first
   if (!m_pImmediateContext || !m_pContext) {
     Create();
@@ -43,7 +46,9 @@ void DX11RenderHandler::Render(
   // First of all we flush our deferred context in case we have updated the
   // texture
   {
-    std::unique_lock<std::mutex> _(m_textureLock);
+    std::unique_lock<std::mutex> _(m_textureLock, std::defer_lock);
+    { GuiPerformance::Timer wait(GuiPerformance::TextureWait); _.lock(); }
+    GuiPerformance::Timer commands(GuiPerformance::CommandCpu);
 
     Microsoft::WRL::ComPtr<ID3D11CommandList> pCommandList;
     const auto result = m_pContext->FinishCommandList(FALSE, &pCommandList);
@@ -58,7 +63,8 @@ void DX11RenderHandler::Render(
                         m_pStates->NonPremultiplied());
 
   if (Visible()) {
-    std::unique_lock<std::mutex> _(m_textureLock);
+    std::unique_lock<std::mutex> _(m_textureLock, std::defer_lock);
+    { GuiPerformance::Timer wait(GuiPerformance::TextureWait); _.lock(); }
 
     if (m_pTextureView) {
       m_pSpriteBatch->Draw(m_pTextureView.Get(),
@@ -207,8 +213,10 @@ void DX11RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser,
                                 const RectList& dirtyRects, const void* buffer,
                                 int width, int height)
 {
+  GuiPerformance::Timer paintTimer(GuiPerformance::PaintCpu);
   if (type == PET_VIEW && m_width == width && m_height == height) {
-    std::unique_lock<std::mutex> _(m_textureLock);
+    std::unique_lock<std::mutex> _(m_textureLock, std::defer_lock);
+    { GuiPerformance::Timer wait(GuiPerformance::TextureWait); _.lock(); }
 
     if (!m_pTexture) {
       CreateRenderTexture();
@@ -219,6 +227,7 @@ void DX11RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser,
       return;
     }
 
+    GuiPerformance::Timer uploadTimer(GuiPerformance::UploadCpu);
     D3D11_MAPPED_SUBRESOURCE mappedResource;
     const auto result = m_pContext->Map(
       m_pTexture.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
