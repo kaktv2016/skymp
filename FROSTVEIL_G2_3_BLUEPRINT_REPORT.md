@@ -26,3 +26,11 @@ All editor, authoring persistence, authenticated API, runtime publication integr
 - Added a two-player snapshot regression proving new sessions see a new version while old sessions retain their original choices. Graph mutation outside the runtime cannot mutate either conversation snapshot.
 - Shared graph validation now rejects fields incompatible with node type, missing NPC text and coerced IDs; automatic-cycle detection uses indexed visiting/done sets to avoid exponential traversal of branching DAGs. Legitimate explicit-choice menu loops remain supported.
 - Build/typechecks and full RP suite: 321/321 passed, no skips. Evidence: .local/g23-validation-tests.log. No G2.3 deployment yet.
+
+### Authoring persistence and preview (in progress)
+- Added BlueprintStore with a separate checksummed journal root, optimistic draft revisions and published versions, immutable-addressed graph content followed by catalog commit, version history, rollback-as-new-version and NPC assignments. No runtime integration yet. Store limits currently cap graph payload at 48 KB, graphs at 64 and history at 100 versions per graph; capacity failures are explicit. Further catalog recovery validation and discoverability of unpublished drafts are still required before API exposure.
+- Added previewDialogue using DialogueRuntime with inert private adapters and a descriptive service stub. No live native/player/economy handles can be supplied. Tested service-path previews, courierIdle, exit, forged choices and traversal bounds.
+- Prototype property names are rejected for stored IDs and invalid version numbers are rejected. API authorization and eligible NPC checks are still required at the service boundary.
+
+### Storage recovery follow-up
+Unpublished drafts now have a durable catalog index and remain discoverable after restart. Catalog recovery checks schema, history ordering, referenced graph identity/version, rollback references and assignment targets; startup rejects semantic corruption even when journal checksums are valid. Constructor errors release the private writer lease. Focused storage tests cover restart, optimistic conflicts, rollback, assignment, invalid drafts, prototype names, malformed versions, draft discovery/layout and corrupt catalog references. This is not yet exposed over HTTP or deployed.
