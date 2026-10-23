@@ -81,3 +81,5 @@ Need actual browser and native timings before selecting a renderer/DOM optimizat
 Current work is a recoverable diagnostic foundation, not completion of the requested performance fix.
 
 Diagnostic source commit: `30b5cba`, branch `wip/gui-performance-profiling`. Native candidate SHA256: `8549f8be88fefec1341399a64293b3798c8ea5f20c34a60204d0088759d4025b`. Final server revision includes the corrected mouse proxy; reconnect is needed to load its owner-only scripts.
+
+Native diagnostic delivery published as Launcher 0.1.24 / recipe 1.0.18: https://github.com/kaktv2016/frostveil-launcher/releases/tag/v0.1.24 . Full serial Launcher regressions 483/483 and isolated NSIS/repair/smoke pass. Signed public update envelope and all R2/GitHub asset hashes verified. Native profiling and optimization remain pending in-game measurements after Launcher Play installs the candidate; no manual player-file writes.
