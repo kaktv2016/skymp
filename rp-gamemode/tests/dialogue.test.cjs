@@ -11,3 +11,14 @@ test('dialogue definitions survive restart and require monotonic validated updat
 test('prune cancels absent/disabled NPCs and isolate second player',()=>{const f=fixture();f.open();f.open(2);f.positions[1].cell='other';f.runtime.prune();a.equal(f.output[1].closed,true);a.ok(f.output[2].token);});
 test('connection events invalidate only matching user even if GUID is reused',()=>{const f=fixture();f.open();f.open(2);f.runtime.connectionEvent(1);a.equal(f.output[1].closed,true);a.ok(f.output[2].token);a.equal(f.calls.length,0);});
 test('allowed condition nodes traverse but service errors are shown without rewards',()=>{const g=clerkGraph(['route'],[]);g.nodes[0].next='check';g.nodes.push({id:'check',type:'condition',condition:'courierIdle',next:'welcome',otherwise:'end'});a.doesNotThrow(()=>validateGraph(g,['route'],[]));});
+test('new conversations select current NPC graph while existing sessions retain isolated snapshots',()=>{
+ let current=clerkGraph(['route'],['regional']);const npc={id:'clerk',name:'Clerk',formId:5,enabled:true,deleted:false,location:{cell:'x',pos:[0,0,0]}};const output={};
+ const adapter={sessionForActor:id=>({guid:String(id),userId:id,profileId:id}),fullLocation:()=>({cell:'x',pos:[0,0,0]}),readCourier:()=>({lifecycle:'idle'})};
+ const r=new DialogueRuntime(adapter,clerkGraph(['route'],['regional']),()=>npc,()=>({ok:true,data:{systemMessage:'ok'}}),(id,p)=>output[id]=p,()=>1000,()=>current);
+ a.equal(r.receive(1,{op:'open',npc:5}),true);const old=output[1];
+ current=structuredClone(current);current.version=2;current.nodes.find(n=>n.id==='welcome').text='New greeting';
+ a.equal(r.receive(2,{op:'open',npc:5}),true);a.equal(output[2].version,2);a.equal(output[2].text,'New greeting');
+ current.nodes.find(n=>n.id==='menu').choices=[];
+ a.equal(r.receive(1,{op:'choose',token:old.token,node:old.node,choice:'contracts'}),true);a.equal(output[1].version,1);a.ok(output[1].choices.length);
+ const second=output[2];a.equal(r.receive(2,{op:'choose',token:second.token,node:second.node,choice:'rank'}),true);a.ok(output[2].choices.length);
+});
