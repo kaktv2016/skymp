@@ -43,30 +43,30 @@ void DX11RenderHandler::Render(
       return;
   }
 
-  // First of all we flush our deferred context in case we have updated the
-  // texture
-  {
-    std::unique_lock<std::mutex> _(m_textureLock, std::defer_lock);
-    { GuiPerformance::Timer wait(GuiPerformance::TextureWait); _.lock(); }
-    GuiPerformance::Timer commands(GuiPerformance::CommandCpu);
-
-    Microsoft::WRL::ComPtr<ID3D11CommandList> pCommandList;
-    const auto result = m_pContext->FinishCommandList(FALSE, &pCommandList);
-
-    if (result == S_OK && pCommandList) {
-      m_pImmediateContext->ExecuteCommandList(pCommandList.Get(), TRUE);
-    }
-  }
   GetRenderTargetSize();
+  const bool newTexture = !m_pTexture;
+  if (newTexture) CreateRenderTexture();
+  GuiSurface::Rect dirty{};
+  bool upload = false;
+  {
+    std::unique_lock<std::mutex> lock(m_textureLock, std::defer_lock);
+    { GuiPerformance::Timer wait(GuiPerformance::TextureWait); lock.lock(); }
+    upload = m_surface.Take(m_width, m_height, newTexture, dirty, m_uploadPixels);
+  }
+  if (upload && m_pTexture) {
+    GuiPerformance::Timer timer(GuiPerformance::UploadCpu);
+    const D3D11_BOX box{UINT(dirty.x), UINT(dirty.y), 0,
+      UINT(dirty.x + dirty.width), UINT(dirty.y + dirty.height), 1};
+    m_pImmediateContext->UpdateSubresource(m_pTexture.Get(), 0, &box,
+      m_uploadPixels.data(), UINT(dirty.width * 4), 0);
+    m_textureReady = true;
+  }
 
   m_pSpriteBatch->Begin(DirectX::SpriteSortMode_Deferred,
                         m_pStates->NonPremultiplied());
 
   if (Visible()) {
-    std::unique_lock<std::mutex> _(m_textureLock, std::defer_lock);
-    { GuiPerformance::Timer wait(GuiPerformance::TextureWait); _.lock(); }
-
-    if (m_pTextureView) {
+    if (m_pTextureView && m_textureReady) {
       m_pSpriteBatch->Draw(m_pTextureView.Get(),
                            DirectX::SimpleMath::Vector2(0.f, 0.f), nullptr,
                            DirectX::Colors::White, 0.f);
@@ -214,36 +214,13 @@ void DX11RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser,
                                 int width, int height)
 {
   GuiPerformance::Timer paintTimer(GuiPerformance::PaintCpu);
-  if (type == PET_VIEW && m_width == width && m_height == height) {
-    std::unique_lock<std::mutex> _(m_textureLock, std::defer_lock);
-    { GuiPerformance::Timer wait(GuiPerformance::TextureWait); _.lock(); }
-
-    if (!m_pTexture) {
-      CreateRenderTexture();
-    }
-
-    // Under MO2 for some reason, OnPaint called before context initialization
-    if (!m_pContext) {
-      return;
-    }
-
-    GuiPerformance::Timer uploadTimer(GuiPerformance::UploadCpu);
-    D3D11_MAPPED_SUBRESOURCE mappedResource;
-    const auto result = m_pContext->Map(
-      m_pTexture.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
-
-    if (SUCCEEDED(result)) {
-      const auto pDest = static_cast<uint8_t*>(mappedResource.pData);
-      std::memcpy(pDest, buffer, width * height * 4);
-      m_pContext->Unmap(m_pTexture.Get(), 0);
-    } else {
-      // We got no mapping, let's drop the context and reset the texture so
-      // that we attempt to create a new one during the next frame
-      m_pContext.Reset();
-      m_pTexture.Reset();
-      m_width = m_height = 0;
-    }
-  }
+  if (type != PET_VIEW) return;
+  std::vector<GuiSurface::Rect> rects;
+  rects.reserve(dirtyRects.size());
+  for (const auto& rect : dirtyRects) rects.push_back({rect.x, rect.y, rect.width, rect.height});
+  std::unique_lock<std::mutex> lock(m_textureLock, std::defer_lock);
+  { GuiPerformance::Timer wait(GuiPerformance::TextureWait); lock.lock(); }
+  m_surface.Push(buffer, width, height, rects);
 }
 
 void DX11RenderHandler::GetRenderTargetSize()
@@ -289,6 +266,7 @@ void DX11RenderHandler::GetRenderTargetSize()
 
 void DX11RenderHandler::CreateRenderTexture()
 {
+  m_textureReady = false;
   D3D11_TEXTURE2D_DESC textDesc;
   textDesc.Width = m_width;
   textDesc.Height = m_height;
@@ -296,9 +274,9 @@ void DX11RenderHandler::CreateRenderTexture()
   textDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
   textDesc.SampleDesc.Count = 1;
   textDesc.SampleDesc.Quality = 0;
-  textDesc.Usage = D3D11_USAGE_DYNAMIC;
+  textDesc.Usage = D3D11_USAGE_DEFAULT;
   textDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-  textDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+  textDesc.CPUAccessFlags = 0;
   textDesc.MiscFlags = 0;
 
   if (FAILED(m_pDevice->CreateTexture2D(&textDesc, nullptr,

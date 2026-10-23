@@ -83,3 +83,18 @@ Current work is a recoverable diagnostic foundation, not completion of the reque
 Diagnostic source commit: `30b5cba`, branch `wip/gui-performance-profiling`. Native candidate SHA256: `8549f8be88fefec1341399a64293b3798c8ea5f20c34a60204d0088759d4025b`. Final server revision includes the corrected mouse proxy; reconnect is needed to load its owner-only scripts.
 
 Native diagnostic delivery published as Launcher 0.1.24 / recipe 1.0.18: https://github.com/kaktv2016/frostveil-launcher/releases/tag/v0.1.24 . Full serial Launcher regressions 483/483 and isolated NSIS/repair/smoke pass. Signed public update envelope and all R2/GitHub asset hashes verified. Native profiling and optimization remain pending in-game measurements after Launcher Play installs the candidate; no manual player-file writes.
+
+## Native baseline and verified optimization candidate
+
+Owner ran signed 0.1.24 with profiling enabled. Installed hash matched 8549f8be. Native 5-second windows showed paint/upload CPU means about 20–22 ms, upload P99 about 28–30 ms, paint frequency about 38–42 Hz; render CPU 4–6 ms with texture-wait P99 up to 13 ms. Command submission averaged about 0.1 ms. These measurements identify the existing Map/copy/Unmap phase under the shared texture mutex as a bottleneck; they do not isolate GPU Map stalls from write-combined memory copy cost.
+
+Controlled DOM cursor A/B: hidden from 08:54:51.758Z to 08:55:16.762Z and automatically restored, no persistent game-file modification. Owner confirms menu remained equally sluggish. Paint/upload remained costly while hidden (roughly 19–21 ms); do not attribute all latency to the gold cursor. Data preserved locally: cursor-ab.json and native-baseline-full.log.
+
+Candidate DLL 52b7572f75f5b09fe8db8bf6f04931522c11d6573181bf88ac5039042e09338d:
+- OnPaint performs CPU-only dirty-rectangle copies into a bounded backing store. Untouched pixels survive and multiple pending paints accumulate safely; stale dimensions cannot upload into a differently sized texture.
+- Render snapshots the dirty bounding region under the mutex, releases it, then uploads into a DEFAULT texture via UpdateSubresource with explicit compact source row pitch. No Map/WRITE_DISCARD, deferred FinishCommandList or ExecuteCommandList remains on the paint/render path. GPU operations occur on the existing render thread; no shared-texture extensions or new hooks.
+- Fresh/resize/reset textures require a full backing-store upload before drawing. No uninitialized texture is displayed. GPU resource ownership stays with the renderer; only CPU pixels cross the CEF callback boundary.
+- Standalone native GuiSurface regressions pass: first-paint initialization, dirty accumulation/preservation, clipped/out-of-bounds rectangles, no-change suppression, dimension mismatch, forced full recovery, resize and invalid sizes. Source/CMake test project: skyrim-platform/tests/gui-surface.
+- Native Release build passes; existing RP build/typechecks/regressions 313/313 pass. Renderer resource failure and visual/frametime acceptance remain real-game checks.
+
+No after-optimization in-game numbers exist yet. Signed client distribution and owner comparison must finish before calling the performance problem fixed.

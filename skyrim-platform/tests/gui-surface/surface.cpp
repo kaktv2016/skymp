@@ -1,0 +1,4 @@
+#include "../../src/tilted/ui/GuiSurface.h"
+#include <stdexcept>
+void check(bool value){if(!value)throw std::runtime_error("surface regression");}
+int main(){GuiSurface s;GuiSurface::Rect r{};std::vector<uint8_t> out;std::vector<uint8_t> a(4*4*4,1);s.Push(a.data(),4,4,{{1,1,1,1}});check(s.Take(4,4,false,r,out)&&out.size()==64);check(!s.Take(4,4,false,r,out));a[20]=2;s.Push(a.data(),4,4,{{1,1,1,1}});a[40]=3;s.Push(a.data(),4,4,{{2,2,1,1}});check(s.Take(4,4,false,r,out)&&r.x==1&&r.y==1&&r.width==2&&out[0]==2&&out[12]==3&&out[4]==1);check(s.Take(4,4,true,r,out)&&out.size()==64&&out[20]==2&&out[40]==3);s.Push(a.data(),4,4,{{-2,-2,3,3}});check(s.Take(4,4,false,r,out)&&r.width==1);s.Push(a.data(),4,4,{{99,99,2,2}});check(!s.Take(4,4,false,r,out));check(!s.Take(5,4,true,r,out));s.Push(a.data(),0,0,{});check(s.width==4);std::vector<uint8_t>b(2*2*4,9);s.Push(b.data(),2,2,{});check(s.Take(2,2,false,r,out)&&out.size()==16&&out[15]==9);return 0;}

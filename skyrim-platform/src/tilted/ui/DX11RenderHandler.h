@@ -2,6 +2,7 @@
 
 #include "MyRenderHandler.h"
 #include "TextToDraw.h"
+#include "GuiSurface.h"
 #include <DirectXTK/CommonStates.h>
 #include <DirectXTK/SpriteBatch.h>
 #include <DirectXTK/SpriteFont.h>
@@ -71,6 +72,9 @@ private:
   Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_pCursorTexture;
   Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_pTextureView;
   std::mutex m_textureLock;
+  GuiSurface m_surface;
+  bool m_textureReady = false; // render thread only
+  std::vector<uint8_t> m_uploadPixels; // render thread only
   std::mutex m_createLock;
   bool isCreateLock = false;
   Renderer* m_pRenderer;
