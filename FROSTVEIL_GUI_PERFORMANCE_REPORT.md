@@ -17,6 +17,21 @@ These are actual browser callback intervals, **not displayed game/UI FPS**. A se
 
 ## Evidence and boundaries
 
+### Owner profiling pass 2
+
+Captured the owner's completed test from `fvGuiProfile-logs.txt`; preserved an immutable copy of the captured rows in `.local/gui-performance/owner-pass-2.json` (local diagnostics only). This log is a new process/session capture, not an extension of the first table above.
+
+| Scenario | Callback samples | Mean rAF interval | Largest window P95 | Largest window P99 |
+|---|---:|---:|---:|---:|
+| Baseline (48 aggregate windows) | 13081 | 16.670 ms | 16.666 ms | 16.666 ms |
+| Dialogue (15 aggregate windows) | 3963 | 16.737 ms | 33.332 ms | 33.332 ms |
+
+Dialogue mouse-event-to-rAF proxy: 204 events, weighted mean 2.432 ms, largest window P95 13.900 ms and P99 20.200 ms. These are corrected, non-negative measurements; they exclude native input delivery and presentation. No longtask entries were captured. One click-to-next-dialogue-response sample took 313.4 ms: insufficient samples and instrumentation boundaries to attribute that delay to networking, server work, CEF dispatch, or presentation.
+
+Source tracing confirms `ctx.sendEvent` emits a reliable CustomEvent directly, and DialogueRuntime validates and publishes the owner property synchronously. No deliberate 300 ms dialogue delay was found in these functions. Do not remove server validation or acknowledge service success before the server response to mask the delay.
+
+Conclusion from this pass: browser callback scheduling is usually near 60 Hz; the owner's observed stutter is still unresolved. These metrics do not measure actual native paint/display rate. Native profiler delivery, native paint/input measurements, and a static-surface comparison remain necessary before a renderer optimization can be verified. No additional manual repetition of this same browser-only pass is requested.
+
 - Owner reports about 30 game FPS with Dialogue open, with much worse perceived cursor responsiveness. These are owner observations, not instrumented FPS or latency results.
 - Installed SkyrimPlatformImpl.dll SHA256 is `18b530ef76a5b84d6da090b5e9c87f7e93b436e02104b48aa1602a8b26d6e30a`, matching the last signed cursor release.
 - Current corresponding DX11RenderHandler copies `width * height * 4` bytes on every paint using WRITE_DISCARD under m_textureLock. It ignores dirtyRects and RowPitch. Render acquires that mutex and finishes/executes command lists even without a paint-generation check. These are source observations; their contribution to the reported delay is not yet measured.
