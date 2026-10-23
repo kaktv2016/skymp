@@ -7,6 +7,7 @@
 #include <DirectXTK/SpriteFont.h>
 #include <Signal.hpp>
 #include <functional>
+#include <atomic>
 #include <map>
 #include <mutex>
 #include <wrl.h>
@@ -24,6 +25,13 @@ struct DX11RenderHandler : MyRenderHandler
   {
     static bool g_visible = false;
     return g_visible;
+  }
+
+  // Accessed from JavaScript/update and the DirectX render thread.
+  static std::atomic_bool& CursorVisible()
+  {
+    static std::atomic_bool visible{true};
+    return visible;
   }
 
   struct Renderer

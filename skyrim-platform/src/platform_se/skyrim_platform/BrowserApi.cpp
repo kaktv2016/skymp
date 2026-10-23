@@ -115,6 +115,10 @@ void Register(Napi::Env env, Napi::Object& exports)
         "loadUrl",
         Napi::Function::New(
           env, NapiHelper::WrapCppExceptions(BrowserApiTilted::LoadUrl)));
+      browser.Set("setCursorVisible", Napi::Function::New(env,
+        NapiHelper::WrapCppExceptions(BrowserApiTilted::SetCursorVisible)));
+      browser.Set("isCursorVisible", Napi::Function::New(env,
+        NapiHelper::WrapCppExceptions(BrowserApiTilted::IsCursorVisible)));
       browser.Set("executeJavaScript",
                   Napi::Function::New(env,
                                       NapiHelper::WrapCppExceptions(

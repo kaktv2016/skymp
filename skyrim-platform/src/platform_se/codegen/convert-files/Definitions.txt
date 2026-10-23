@@ -70,6 +70,9 @@ export interface Browser {
   isVisible(): boolean
   setFocused(focused: boolean): void
   isFocused(): boolean
+  /** Tilted renderer only; feature-detect on older clients/other backends. */
+  setCursorVisible?(visible: boolean): void
+  isCursorVisible?(): boolean
   loadUrl(url: string): void
   executeJavaScript(src: string): void
 }

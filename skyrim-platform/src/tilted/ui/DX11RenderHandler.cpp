@@ -98,7 +98,7 @@ void DX11RenderHandler::Render(
 
   bool& focusFlag = CEFUtils::DInputHook::ChromeFocus();
 
-  if (Visible() && focusFlag) {
+  if (Visible() && focusFlag && CursorVisible().load()) {
     if (m_pCursorTexture && m_cursorX >= 0 && m_cursorY >= 0) {
       m_pSpriteBatch->Draw(
         m_pCursorTexture.Get(),

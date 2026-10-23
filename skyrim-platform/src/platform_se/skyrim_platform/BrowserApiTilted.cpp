@@ -41,6 +41,19 @@ bool BrowserApiTilted::IsVisible()
   return CEFUtils::DX11RenderHandler::Visible();
 }
 
+Napi::Value BrowserApiTilted::SetCursorVisible(const Napi::CallbackInfo& info)
+{
+  CEFUtils::DX11RenderHandler::CursorVisible().store(
+    NapiHelper::ExtractBoolean(info[0], "visible"));
+  return info.Env().Undefined();
+}
+
+Napi::Value BrowserApiTilted::IsCursorVisible(const Napi::CallbackInfo& info)
+{
+  return Napi::Boolean::New(info.Env(),
+    CEFUtils::DX11RenderHandler::CursorVisible().load());
+}
+
 Napi::Value BrowserApiTilted::SetFocused(const Napi::CallbackInfo& info)
 {
   bool& v = CEFUtils::DInputHook::ChromeFocus();
