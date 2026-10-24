@@ -2,6 +2,8 @@
 
 **Status:** deployed to the verified local test server; in-game owner acceptance remains pending.
 
+The first browser check exposed a real delivery bug: the server registered bundled UI files as `/assets/assets/<file>`, while `index.html` requested `/assets/<file>`. The browser therefore showed a blank page. The asset loader now maps the exact Vite URLs; a regression test parses the production HTML and verifies every JS/CSS path is served. The visible PowerShell start script also continues through Node's non-fatal deprecation warning instead of treating stderr as a fatal error.
+
 ## Delivered
 
 - Added a React/TypeScript `@xyflow/react` authoring UI with graph/node editing, searchable palette, inspector, Thai/Unicode text, action and condition selectors, duplicate/delete, undo/redo, layout, dirty-state warnings, validation, read-only preview, publish/history/rollback and NPC assignment.
@@ -13,12 +15,13 @@
 
 ## Verification
 
-- RP gamemode build and regression suite: **338/338 passed**, no skips.
+- RP gamemode build and regression suite: **339/339 passed**, no skips.
 - Blueprint editor TypeScript production build and UI tests: **6/6 passed**, covering Thai editing, draft saving, choices add/remove, preview, publish and NPC assignment. Graph mapping tests cover valid connection, invalid handles/targets and round-trip preservation.
 - Deployment tests: **8/8 passed**; deployment script syntax checked; `git diff --check` passed.
 - Browser health check: `http://127.0.0.1:3210/` returned **200** and title `Frostveil · Blueprint Studio`; unauthenticated `/api/catalog` returned **403**.
-- Server is listening on loopback UDP **7777** and editor HTTP **3210**. Its configured gamemode is `f648f3808952749ba49b906b5d04a897ee2c0ba94628f137d25d6c8924a5c9d8.cjs`; bundle SHA-256 is `f648f3808952749ba49b906b5d04a897ee2c0ba94628f137d25d6c8924a5c9d8`. UI assets SHA-256: `6bb93cc141ad51743502464e62e76e7cece71caa5ceaea48fa778e40289de5a7`.
-- Protected world, economy, NPC and dialogue data manifest SHA-256 was identical before and after deployment: `33ca308b8a54eac3ba6a2026de43e0690746859e2b6e38c50f5e7d7b0a56fc51`. No player installation or Launcher file changed.
+- Playwright against the live browser first reproduced 404 JS/CSS requests and an empty DOM; after the fix the actual page rendered its complete login UI with zero console errors. The single remaining console message is a browser password-field advisory. Evidence is retained under `build/rp-audit/g23/deploy-1792818156044/browser-evidence/`.
+- Server is listening in visible PowerShell on loopback UDP **7777**, resource HTTP **3000** and editor HTTP **3210**. Its configured gamemode is `d8a4f626b45d3a7ebb4b27233b594443272fbfc7cbda4f60ada93adfb01dea99.cjs`; bundle SHA-256 is `d8a4f626b45d3a7ebb4b27233b594443272fbfc7cbda4f60ada93adfb01dea99`. UI assets SHA-256: `6bb93cc141ad51743502464e62e76e7cece71caa5ceaea48fa778e40289de5a7`.
+- Protected world, economy, NPC and dialogue data manifest SHA-256 was identical before and after the corrected deployment: `54e4511359544ac80b9f514dd1189ece1959fb01c286b46c686ac58b116311c9`. No player installation or Launcher file changed.
 
 ## Manual Skyrim acceptance
 
@@ -30,10 +33,10 @@
 
 ## Deployment and rollback
 
-- Deployment record: `build/rp-audit/g23/deploy-1792817046763/deployment.json`.
-- Visible PowerShell start script: `build/rp-audit/g23/deploy-1792817046763/start-visible.ps1`.
-- To roll back this specific deployment, stop the verified server and run `node rp-gamemode/scripts/rollback-blueprint.cjs --record build/rp-audit/g23/deploy-1792817046763/deployment.json`. It verifies the selected G2.3 bundle/assets and prior config before restoring only the gamemode path; it never restores world/player data. Keep the content-addressed new bundle/assets for diagnosis.
-- Implementation commit `892f6d7d2b27644fc5f4e497bfceae443cd041ad` is pushed to `frostveil/wip/gui-performance-profiling`. This report revision, added choice-edit UI coverage and the explicit G2.3 rollback command are included in the follow-up commit on the same branch.
+- Corrected deployment record: `build/rp-audit/g23/deploy-1792818156044/deployment.json`.
+- Visible PowerShell start script: `build/rp-audit/g23/deploy-1792818156044/start-visible.ps1`.
+- To roll back this specific deployment, stop the verified server and run `node rp-gamemode/scripts/rollback-blueprint.cjs --record build/rp-audit/g23/deploy-1792818156044/deployment.json`. It verifies the selected G2.3 bundle/assets and prior config before restoring only the gamemode path; it never restores world/player data. Keep the content-addressed new bundle/assets for diagnosis.
+- Implementation and follow-up acceptance/rollback work are pushed to `frostveil/wip/gui-performance-profiling`. The asset-path correction is committed as `b1da4dc` and will be pushed with this final report revision.
 
 ## Limitations
 
