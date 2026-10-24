@@ -1,17 +1,22 @@
 import {Position,type Node as FlowNode,type Edge,type Connection,type NodeHandle} from '@xyflow/react';
 import type {Graph,Node} from '../../rp-gamemode/src/modules/dialogue/graph-model';
-export type BlueprintNode=FlowNode<{runtime:Node;targetLabel?:string;related?:boolean},'blueprint'>;
+export type BlueprintNode=FlowNode<{runtime:Node;targetLabel?:string;related?:boolean;spotlight?:boolean;onPortFocus?:(source:string,handle:string|null,mode?:'hover'|'focus')=>void},'blueprint'>;
 export interface Canvas {nodes:BlueprintNode[];edges:Edge[];}
 export type Layout=Record<string,{x:number;y:number}>;
-export const NODE_WIDTH=272;
+export const NODE_WIDTH=304;
+export function outputRows(node:Node){
+ const rows=node.type==='choices'?(node.choices??[]).map(c=>({id:'choice:'+c.id,label:c.text||'Untitled choice'})):node.type==='end'?[]:node.type==='condition'?[{id:'next',label:'เมื่อเงื่อนไขเป็นจริง'},{id:'otherwise',label:'เมื่อเงื่อนไขเป็นเท็จ'}]:[{id:'next',label:node.type==='action'?'หลังใช้บริการ':'ดำเนินเรื่องต่อ'}];
+ return rows.map(row=>{let units=0;for(const c of row.label.normalize('NFC'))units+=/\p{Mark}/u.test(c)?0:/[MW@%]/.test(c)?1.7:(c.codePointAt(0)??0)>=0x1f000?2.4:(c.codePointAt(0)??0)>=0x2e80?2:/[A-Z]/.test(c)?1.3:/[\u0e00-\u0e7f]/.test(c)?1.2:1;return {...row,height:Math.max(44,Math.ceil(units/24)*20+18)};});
+}
 export function nodeHeight(node:Node):number {
- return node.type==='choices'?132+Math.max(1,node.choices?.length??0)*38:node.type==='npc'?230:node.type==='condition'?208:node.type==='end'?132:170;
+ return node.type==='choices'?132+Math.max(44,outputRows(node).reduce((s,r)=>s+r.height,0)):node.type==='npc'?280:node.type==='condition'?248:node.type==='end'?148:190;
 }
 /** Fixed card geometry lets React Flow navigate/route unmounted viewport nodes. */
 export function nodeHandles(node:Node):NodeHandle[]{
- const height=nodeHeight(node),outputs=node.type==='choices'?(node.choices??[]).map(c=>'choice:'+c.id):node.type==='end'?[]:node.type==='condition'?['next','otherwise']:['next'];
+ const height=nodeHeight(node),outputs=outputRows(node);
  const handles:NodeHandle[]=node.type==='entry'?[]:[{id:null,type:'target',position:Position.Left,x:-6,y:height/2-6,width:12,height:12}];
- outputs.forEach((id,i)=>handles.push({id,type:'source',position:Position.Right,x:NODE_WIDTH-3,y:height-60-(outputs.length-1-i)*38,width:12,height:12}));
+ let y=height-36-outputs.reduce((s,r)=>s+r.height,0);
+ outputs.forEach(row=>{handles.push({id:row.id,type:'source',position:Position.Right,x:NODE_WIDTH-6,y:y+row.height/2-6,width:12,height:12});y+=row.height;});
  return handles;
 }
 /** Layer by first reachable depth, keeping return links out of the ranking.
