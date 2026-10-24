@@ -2,16 +2,19 @@ import React, {useEffect, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {
   ReactFlow, Background, Controls, MiniMap, Handle, Position,
-  applyNodeChanges, applyEdgeChanges, useUpdateNodeInternals,
+  applyNodeChanges, applyEdgeChanges, useUpdateNodeInternals, useNodesInitialized, useReactFlow,
   type NodeProps
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './style.css';
-import {toCanvas, fromCanvas, connect, positions, type Canvas, type BlueprintNode} from './mapping';
+import {toCanvas, fromCanvas, connect, positions, arrange, nodeHeight, type Canvas, type BlueprintNode} from './mapping';
 import {validateGraph, type Graph, type Node} from '../../rp-gamemode/src/modules/dialogue/graph-model';
 
-type FlowHandle = {screenToFlowPosition(point: {x: number; y: number}): {x: number; y: number}};
+type FlowHandle = {screenToFlowPosition(point: {x: number; y: number}): {x: number; y: number};fitView(options?:any):Promise<boolean>};
 const nodeTypesList: Node['type'][] = ['entry','npc','choices','condition','action','end'];
+const nodeInfo={entry:{label:'เริ่มบทสนทนา',icon:'↗',hint:'จุดเริ่มต้นของเรื่องราว'},npc:{label:'บทพูด NPC',icon:'“',hint:'ข้อความที่ผู้เล่นจะเห็น'},choices:{label:'ตัวเลือกผู้เล่น',icon:'☷',hint:'แตกแขนงเส้นทางบทสนทนา'},condition:{label:'ตรวจเงื่อนไข',icon:'◇',hint:'เลือกเส้นทางตามสถานะ'},action:{label:'บริการกิลด์',icon:'⚒',hint:'ใช้บริการ Courier ที่มีอยู่'},end:{label:'จบบทสนทนา',icon:'✓',hint:'กลับสู่โลกของ Frostveil'}};
+const actionLabels:Record<string,string>={contracts:'ดูสัญญาส่งของ',rank:'ตรวจแรงก์ Courier',permits:'ดูใบอนุญาตกิลด์',accept:'รับสัญญาส่งของ',buyPermit:'ซื้อใบอนุญาต'};
+const nodeColors:Record<string,string>={entry:'#d9b773',npc:'#72c8b9',choices:'#7eaeef',action:'#b5a0db',condition:'#e7a879',end:'#8daba2'};
 
 function Card({id, data, selected}: NodeProps<BlueprintNode>) {
   const update = useUpdateNodeInternals();
@@ -20,19 +23,26 @@ function Card({id, data, selected}: NodeProps<BlueprintNode>) {
     ? (runtime.choices ?? []).map(choice => ({id:'choice:'+choice.id,label:choice.text || 'Choice'}))
     : runtime.type === 'end' ? []
     : runtime.type === 'condition' ? [{id:'next',label:'True'},{id:'otherwise',label:'False'}]
-    : [{id:'next',label:'Next'}];
+    : [{id:'next',label:runtime.type==='action'?'หลังใช้บริการ':'ดำเนินเรื่องต่อ'}];
   useEffect(() => update(id), [id, outputs.length, update]);
-  return <article className={'node '+(selected?'selected':'')}>
-    <Handle type="target" position={Position.Left}/>
-    <small>{runtime.type}</small><strong>{runtime.id}</strong>
-    <p>{runtime.type==='npc'?runtime.text||'Add dialogue text':runtime.action||runtime.condition||'Connect a path'}</p>
+  const info=nodeInfo[runtime.type];
+  return <article style={{height:nodeHeight(runtime),'--node-accent':nodeColors[runtime.type]} as React.CSSProperties} className={'node node-'+runtime.type+' '+(selected?'selected':'')}>
+    {runtime.type!=='entry'&&<Handle type="target" position={Position.Left}/>}
+    <div className="node-heading"><span className="node-icon">{info.icon}</span><div><small>{runtime.type==='action'?'SERVICE':runtime.type.toUpperCase()}</small><strong>{runtime.type==='action'?actionLabels[runtime.action??'']??info.label:info.label}</strong></div>{runtime.type==='choices'&&<span className="node-count">{outputs.length}</span>}</div>
+    <div className="node-detail">{runtime.type==='npc'?<p>{runtime.text||'เพิ่มข้อความบทสนทนา…'}</p>:runtime.type==='action'?<span>{data.targetLabel??runtime.argument??'บริการ Courier Guild'}</span>:runtime.type==='condition'?<span>{runtime.condition==='courierIdle'?'ผู้เล่นไม่มีงาน Courier อยู่':'ผ่านเงื่อนไขเสมอ'}</span>:runtime.type==='choices'?<span>เลือกคำตอบเพื่อไปยังขั้นตอนถัดไป</span>:<span>{info.hint}</span>}</div>
+    <div className="node-outputs">
     {outputs.map((output,index)=><div className="output" key={output.id}>
-      <span>{output.label}</span>
-      <Handle id={output.id} type="source" position={Position.Right} style={{top:74+index*28}}/>
-    </div>)}
+      {runtime.type==='choices'&&<span className="choice-number">{String(index+1).padStart(2,'0')}</span>}<span title={output.label}>{output.label}</span><span className="output-arrow">→</span>
+      <Handle id={output.id} type="source" position={Position.Right} style={{top:'50%',right:-22}}/>
+    </div>)}</div><div className="node-id">{runtime.id}</div>
   </article>;
 }
 const nodeTypes = {blueprint:Card};
+function ReadingView({graphId}:{graphId:string}){
+  const initialized=useNodesInitialized(),{fitView,getNodes}=useReactFlow<BlueprintNode>();
+  useEffect(()=>{if(initialized){const spine=getNodes().filter(n=>['entry','npc','choices'].includes(n.data.runtime.type)).slice(0,3);void fitView({nodes:spine.length?spine:undefined,padding:.15,maxZoom:.9});}},[initialized,graphId,fitView,getNodes]);
+  return null;
+}
 
 export function App() {
   const [csrf,setCsrf]=useState(''), [grant,setGrant]=useState(''), [catalog,setCatalog]=useState<any>(null);
@@ -41,6 +51,7 @@ export function App() {
   const [dirty,setDirty]=useState(false), [revision,setRevision]=useState(0), [published,setPublished]=useState(0);
   const [history,setHistory]=useState<any[]>([]), [preview,setPreview]=useState<any>(null), [previewPath,setPreviewPath]=useState<string[]>([]);
   const [activeCourier,setActiveCourier]=useState(false), [npc,setNpc]=useState('');
+  const [libraryOpen,setLibraryOpen]=useState(()=>window.innerWidth>=1450),[inspectorOpen,setInspectorOpen]=useState(true),[miniMapOpen,setMiniMapOpen]=useState(false);
   const undo=useRef<Canvas[]>([]), redo=useRef<Canvas[]>([]), dragStart=useRef<Canvas|null>(null), flow=useRef<FlowHandle|null>(null);
   const current=()=>graph?fromCanvas(graph,canvas):null;
 
@@ -60,7 +71,7 @@ export function App() {
     const result=await api('graph',{id},token), value=result.draft?.graph??result.published;
     if(!value)throw Error('Graph data is unavailable');
     setGraph(value);setCanvas(toCanvas(value,result.draft?.layout));setRevision(result.draft?.revision??0);
-    setPublished(result.published?.version??0);setHistory(result.history);setDirty(false);setSelected('');
+    setPublished(result.published?.version??0);setHistory(result.history);setDirty(false);setSelected(value.nodes.find((n:Node)=>n.type==='npc')?.id??value.entry);
     undo.current=[];redo.current=[];setPreview(null);setMessage('Loaded '+id);
   }
   async function save(){
@@ -131,9 +142,10 @@ export function App() {
       <select aria-label="NPC" value={npc} onChange={event=>setNpc(event.target.value)}><option value="">Choose NPC</option>{catalog?.npcs.map((item:any)=><option value={item.id} key={item.id}>{item.name}</option>)}</select>
       <button disabled={!npc||!published} onClick={()=>run(async()=>{const value=await api('assign',{npc,id:graph!.id,revision:catalog.revision});await refresh();setMessage('Graph assignment saved (catalog '+value.revision+')');})}>Assign graph</button>
     </nav>
-    <div className="workspace">
+    <div className={'workspace '+(!libraryOpen?'library-hidden ':'')+(!inspectorOpen?'inspector-hidden':'')}>
       <aside className="library"><small>NODE LIBRARY</small><input aria-label="Search nodes" placeholder="Search nodes…" value={query} onChange={event=>setQuery(event.target.value)}/>
-        {nodeTypesList.filter(type=>type.includes(query.toLowerCase())).map(type=><button draggable key={type} disabled={type==='entry'&&canvas.nodes.some(item=>item.data.runtime.type==='entry')} onClick={()=>add(type)} onDragStart={event=>{event.dataTransfer.effectAllowed='copy';event.dataTransfer.setData('application/frostveil-node',type);}}>＋ {type}</button>)}
+        <p className="muted">ลากการ์ดลงพื้นที่ หรือคลิกเพื่อเพิ่ม</p>
+        {nodeTypesList.filter(type=>(type+' '+nodeInfo[type].label).includes(query.toLowerCase())).map(type=><button className="palette-item" style={{'--node-accent':nodeColors[type]} as React.CSSProperties} draggable key={type} disabled={type==='entry'&&canvas.nodes.some(item=>item.data.runtime.type==='entry')} onClick={()=>add(type)} onDragStart={event=>{event.dataTransfer.effectAllowed='copy';event.dataTransfer.setData('application/frostveil-node',type);}}><span className="palette-icon">{nodeInfo[type].icon}</span><span>{nodeInfo[type].label}<em>{type}</em></span><span className="palette-add">+</span></button>)}
         <hr/><small>VERSION HISTORY</small>{history.map(item=><button key={item.version} onClick={()=>run(async()=>{
           if(dirty&&!confirm('Discard current changes and roll back to v'+item.version+'?'))return;
           if(!confirm('Publish version '+item.version+' as a new version?'))return;
@@ -146,16 +158,18 @@ export function App() {
         event.preventDefault();const type=event.dataTransfer.getData('application/frostveil-node') as Node['type'];
         if(nodeTypesList.includes(type)&&flow.current)add(type,flow.current.screenToFlowPosition({x:event.clientX,y:event.clientY}));
       }}>
-        <ReactFlow nodes={canvas.nodes} edges={canvas.edges} nodeTypes={nodeTypes} onInit={instance=>{flow.current=instance;}}
-          onNodeClick={(_,item)=>setSelected(item.id)} onNodeDragStart={()=>{dragStart.current=structuredClone(canvas);}}
+        <div className="canvas-toolbar"><div><span className="canvas-eyebrow">CONVERSATION FLOW</span><b>{canvas.nodes.length} ขั้นตอน <span>· อ่านจากซ้ายไปขวา</span></b></div><div className="canvas-tools"><button aria-label="Toggle node library" title="แสดง/ซ่อนคลังโหนด" onClick={()=>setLibraryOpen(v=>!v)}>☷</button><button onClick={()=>{change(arrange(canvas,graph?.entry??''));setTimeout(()=>void flow.current?.fitView({padding:.15,duration:350}),50);}}>จัดกราฟใหม่</button><button onClick={()=>void flow.current?.fitView({padding:.15,duration:350})}>ภาพรวม</button><button disabled={!selected} onClick={()=>void flow.current?.fitView({nodes:[{id:selected}],maxZoom:1,duration:350,padding:.6})}>โฟกัส</button><button aria-pressed={miniMapOpen} onClick={()=>setMiniMapOpen(v=>!v)}>แผนผังย่อ</button><button aria-label="Toggle properties" title="แสดง/ซ่อนรายละเอียด" onClick={()=>setInspectorOpen(v=>!v)}>⚙</button></div></div>
+        <ReactFlow<BlueprintNode> nodes={canvas.nodes.map(n=>({...n,selected:n.id===selected,data:{...n.data,targetLabel:[...(catalog?.routes??[]),...(catalog?.permits??[])].find((item:any)=>item.id===n.data.runtime.argument)?.label}}))} edges={canvas.edges.map(e=>{const active=e.source===selected||e.target===selected;const source=canvas.nodes.find(n=>n.id===e.source);const target=canvas.nodes.find(n=>n.id===e.target);const back=source&&target&&target.position.x<=source.position.x;const color=active?'#f3ce83':nodeColors[source?.data.runtime.type??'entry'];return {...e,type:'smoothstep',style:{stroke:color,strokeWidth:active?2.8:1.7,strokeDasharray:back?'6 5':undefined},className:back&&e.source!==selected?'edge-return':selected&&!active?'edge-muted':active?'edge-focused':'',markerEnd:{type:'arrowclosed' as const,color,width:16,height:16}};})} nodeTypes={nodeTypes} onInit={instance=>{flow.current=instance;}}
+          onPaneClick={()=>setSelected('')} onNodeClick={(_,item)=>{setSelected(item.id);setInspectorOpen(true);}} onNodeDragStart={()=>{dragStart.current=structuredClone(canvas);}}
           onNodeDragStop={()=>{if(dragStart.current){record(dragStart.current);dragStart.current=null;setDirty(true);}}}
           onNodesChange={changes=>{const next={...canvas,nodes:applyNodeChanges(changes,canvas.nodes)};
             if(changes.some(change=>change.type==='remove'))changeCanvas(next);else setCanvas(next);
           }} onEdgesChange={changes=>{const next={...canvas,edges:applyEdgeChanges(changes,canvas.edges)};if(changes.some(item=>item.type==='remove'||item.type==='add'||item.type==='replace'))change(next);else setCanvas(next);}}
           onConnect={connection=>{try{change(connect(connection,canvas));}catch(error){setMessage(error instanceof Error?error.message:String(error));}}}
-          fitView colorMode="dark" deleteKeyCode={null}><Background gap={24}/><Controls/><MiniMap pannable zoomable/></ReactFlow>
+          minZoom={.15} maxZoom={1.6} colorMode="dark" deleteKeyCode={null}><ReadingView graphId={graph?.id??''}/><Background gap={24} color="#344348" size={1}/><Controls/>{miniMapOpen&&<MiniMap nodeColor={n=>nodeColors[(n.data.runtime as Node).type]} maskColor="#0c141cbb" pannable zoomable/>}</ReactFlow>
+        <div className="canvas-hint">ลากพื้นเพื่อเลื่อน · เลื่อนล้อเพื่อซูม · คลิกโหนดเพื่อเน้นเส้นทาง <span>เส้นประ = เส้นทางย้อนกลับ</span></div>
       </section>
-      <aside className="inspector"><small>PROPERTIES</small>{node?<><h2>{node.type}</h2><p className="muted">{node.id}</p>
+      <aside className="inspector"><small>PROPERTIES</small>{node?<><h2>{nodeInfo[node.type].label}</h2><p className="muted">{node.id}</p>
         {node.type==='npc'&&<label>Dialogue<textarea value={node.text??''} maxLength={4096} onChange={event=>patch({text:event.target.value})}/></label>}
         {node.type==='entry'&&<label>Continue to<select value={node.next??''} onChange={event=>patch({next:event.target.value})}><option value="">Connect on canvas…</option>{canvas.nodes.filter(item=>item.id!==node.id&&item.data.runtime.type!=='entry').map(item=><option key={item.id}>{item.id}</option>)}</select></label>}
         {node.type==='condition'&&<label>Condition<select value={node.condition} onChange={event=>patch({condition:event.target.value as Node['condition']})}>{catalog.conditions.map((item:string)=><option key={item}>{item}</option>)}</select></label>}
@@ -166,7 +180,7 @@ export function App() {
           <button disabled={(node.choices?.length??0)>=16} onClick={()=>patch({choices:[...(node.choices??[]),{id:'choice-'+crypto.randomUUID().slice(0,8),text:'New choice',next:''}]})}>Add choice</button></>}
         <hr/><button disabled={node.type==='entry'} onClick={()=>{if(canvas.nodes.length>=128){setMessage('Maximum 128 nodes');return;}const id=node.type+'-'+crypto.randomUUID().slice(0,8);change({...canvas,nodes:[...canvas.nodes,{id,type:'blueprint',position:{x:selectedNode.position.x+48,y:selectedNode.position.y+48},data:{runtime:{...structuredClone(node),id}}}]});setSelected(id);}}>Duplicate node</button>
         <button className="danger" disabled={node.id===graph?.entry} onClick={()=>{if(confirm('Delete this node and its links?')){changeCanvas({nodes:canvas.nodes.filter(item=>item.id!==node.id),edges:canvas.edges.filter(edge=>edge.source!==node.id&&edge.target!==node.id)});setSelected('');}}}>Delete node</button>
-      </>:<p className="muted">Select a node to edit its properties.</p>}</aside>
+      </>:<div className="inspector-empty"><span>◇</span><h2>เลือกหนึ่งขั้นตอน</h2><p className="muted">คลิกการ์ดบนพื้นที่ทำงาน<br/>เพื่อแก้บทพูด ตัวเลือก หรือบริการ</p><p className="muted">เริ่มจากการ์ด “บทพูด NPC”<br/>แล้วลอง Preview ก่อนเผยแพร่</p></div>}</aside>
     </div>
     <footer role="status" aria-live="polite">{message}</footer>
     {preview&&<div className="modal" role="dialog" aria-modal="true" aria-label="Read-only dialogue preview"><section><small>READ-ONLY PREVIEW</small><h2>{preview.current.title??'Conversation ended'}</h2>

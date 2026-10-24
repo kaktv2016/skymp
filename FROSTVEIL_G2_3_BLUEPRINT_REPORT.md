@@ -1,6 +1,16 @@
 # Frostveil G2.3 Blueprint Editor Report
 
-**Status:** deployed to the verified local test server; in-game owner acceptance remains pending.
+**Status:** core publish-to-Skyrim workflow confirmed by the owner on 2026-10-24 (Asia/Bangkok): “เห็นข้อความใหม่แล้ว”. A subsequent readability/visual revision is deployed; its visual acceptance remains open.
+
+## Readability revision — 2026-10-24
+
+- Owner feedback exposed overlapping tall choice cards, low-contrast tangled links and oversized handle offsets. The old 4-column grid used fixed 200-unit rows, and each output's relative container received another absolute vertical offset.
+- Layout now follows graph depth from left to right with card-height-aware spacing. Existing non-overlapping manual layouts remain intact; overlapping legacy layouts are repaired in memory and written only by an explicit Save. Re-layout is undoable and preserves executable graph content.
+- Source ports sit at the center of their own choice row. Cards have semantic Thai labels, type colors, numbered choices and catalog target labels. Selected paths stand out; return links are dashed and subdued. Initial view focuses on the opening conversation at readable zoom. Overview, focus, auto-arrange and collapsible sidebars/minimap provide navigation without covering choice rows by default.
+- UI build/typecheck and **9/9 UI/mapping tests** passed, including dense 16-choice layouts, return paths, preserved manual layouts and arrange/undo/save without runtime changes. RP regression suite **339/339** passed, including deployment tests. Actual browser geometry at 1300px found all **14 cards** without content overflow or misplaced output ports. Screenshots at 1600px and 1300px are in `build/rp-audit/g23/ui-polish/`; browser checks use isolated fixture API responses and do not publish test content to the live world.
+- The server build now fingerprints its companion editor assets in a comment so a UI-only release gets its own immutable deployment directory. Verified that the executable bundle bytes after that comment match the preceding deployed runtime exactly.
+- Current deployment: `build/rp-audit/g23/deploy-1792820463712/deployment.json`; visible startup: `build/rp-audit/g23/deploy-1792820463712/start-visible.ps1`. Bundle SHA-256 `00b99b83add02e898fc03bb74d64a1ab2229d74f609a05f0b829f969c4ac17a8`; editor assets SHA-256 `840bfbdbb539d6eecc515b629455a6b72676d7f1dc564f88b6405c4f2a1a7af6`. Editor and new JS/CSS URLs return HTTP 200; UDP 7777 is bound. Protected data manifests before/after deployment match: `9622eb9d5d35e9933d9a083b8b0b733e0818243af2be2a98159965e92df34ddd`.
+- Rollback for this revision: stop the verified local server, then use `node rp-gamemode/scripts/rollback-blueprint.cjs --record build/rp-audit/g23/deploy-1792820463712/deployment.json`. Previous assets and code remain available. No Launcher/player files were changed.
 
 The first browser check exposed a real delivery bug: the server registered bundled UI files as `/assets/assets/<file>`, while `index.html` requested `/assets/<file>`. The browser therefore showed a blank page. The asset loader now maps the exact Vite URLs; a regression test parses the production HTML and verifies every JS/CSS path is served. The visible PowerShell start script also continues through Node's non-fatal deprecation warning instead of treating stderr as a fatal error.
 
@@ -13,7 +23,7 @@ The first browser check exposed a real delivery bug: the server registered bundl
 - Added the loopback-only editor service with one-time admin grant (`/editor`, valid 60 seconds), expiring session, per-request authority checks, CSRF/origin/host checks, bounded payloads, request limits and safe static asset delivery.
 - Added immutable server bundle deployment with a content-addressed UI asset directory and hash verification. Server-only deployment does not require a matching client pin because it changes no client or Launcher files.
 
-## Verification
+## Initial release verification
 
 - RP gamemode build and regression suite: **339/339 passed**, no skips.
 - Blueprint editor TypeScript production build and UI tests: **6/6 passed**, covering Thai editing, draft saving, choices add/remove, preview, publish and NPC assignment. Graph mapping tests cover valid connection, invalid handles/targets and round-trip preservation.
@@ -33,7 +43,7 @@ The first browser check exposed a real delivery bug: the server registered bundl
 6. Open a new Clerk conversation and verify the published text/actions. Confirm an already-open conversation retains its original snapshot, then reconnect and verify the published graph remains assigned.
 7. Confirm non-admin access fails and that invalid/replayed actions do not alter Courier rewards or economy.
 
-## Deployment and rollback
+## Initial deployment and rollback
 
 - Corrected deployment record: `build/rp-audit/g23/deploy-1792818156044/deployment.json`.
 - Visible PowerShell start script: `build/rp-audit/g23/deploy-1792818156044/start-visible.ps1`.
@@ -42,4 +52,4 @@ The first browser check exposed a real delivery bug: the server registered bundl
 
 ## Limitations
 
-Automated tests do not prove gameplay, two-client isolation in the actual engine, CEF input behavior, or a successful in-game publication. Do not treat G2.3 as owner-accepted until the manual Skyrim steps above pass.
+The owner confirmed the edited dialogue appears in Skyrim after publication. This does not prove real two-client isolation, every manual checklist item, or acceptance of the subsequent visual revision. Session snapshot isolation, recovery, rollback and security have automated coverage; their additional manual checks remain available above. CEF/input changes are outside this task.

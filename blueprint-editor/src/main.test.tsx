@@ -47,6 +47,14 @@ beforeEach(()=>{
 async function enter(){const user=userEvent.setup();render(<App/>);await user.type(screen.getByLabelText('One-time editor grant'),'one-use-secret');await user.click(screen.getByRole('button',{name:'Enter studio →'}));const flow=await screen.findByLabelText('Graph canvas');await user.click(within(flow).getAllByText('welcome')[0]);await screen.findByLabelText('Dialogue');return user;}
 
 describe('Blueprint Studio UI',()=>{
+ it('arranging the graph preserves executable dialogue and can be undone before saving',async()=>{
+  const user=await enter();
+  await user.click(screen.getByRole('button',{name:'จัดกราฟใหม่'}));
+  await user.click(screen.getByRole('button',{name:'Undo'}));
+  await user.click(screen.getByRole('button',{name:'Save draft'}));
+  await waitFor(()=>expect(calls.some(call=>call.op==='draft')).toBe(true));
+  expect(calls.find(call=>call.op==='draft')?.payload.graph).toEqual(fixture);
+ });
  it('authenticates, edits Unicode dialogue, saves a draft and reloads graph state',async()=>{
   const user=await enter();const dialogue=screen.getByLabelText('Dialogue');await user.clear(dialogue);await user.type(dialogue,'สวัสดีชาว Frostveil');
   await user.click(screen.getByRole('button',{name:'Save draft'}));
