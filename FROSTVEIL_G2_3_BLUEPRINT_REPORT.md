@@ -1,6 +1,6 @@
 # Frostveil G2.3 Blueprint Editor Report
 
-**Status:** core publish-to-Skyrim workflow confirmed by the owner on 2026-10-24 (Asia/Bangkok): “เห็นข้อความใหม่แล้ว”. A subsequent readability/visual revision is deployed; its visual acceptance remains open.
+**Status:** owner accepted the end-to-end Clerk authoring workflow in Skyrim on 2026-10-24 (Asia/Bangkok): Clerk graph → Save Draft → Validate → Preview → Publish/Assign passed, and the owner confirmed the new dialogue appeared in game.
 
 ## Readability revision — 2026-10-24
 
@@ -43,6 +43,8 @@ The first browser check exposed a real delivery bug: the server registered bundl
 6. Open a new Clerk conversation and verify the published text/actions. Confirm an already-open conversation retains its original snapshot, then reconnect and verify the published graph remains assigned.
 7. Confirm non-admin access fails and that invalid/replayed actions do not alter Courier rewards or economy.
 
+**Owner acceptance recorded 2026-10-24:** the Clerk → Save Draft → Validate → Preview → Publish/Assign flow passed. The owner had also confirmed that a new published dialogue appeared during gameplay. The visual revision was deployed before this test.
+
 ## Initial deployment and rollback
 
 - Corrected deployment record: `build/rp-audit/g23/deploy-1792818156044/deployment.json`.
@@ -52,4 +54,4 @@ The first browser check exposed a real delivery bug: the server registered bundl
 
 ## Limitations
 
-The owner confirmed the edited dialogue appears in Skyrim after publication. This does not prove real two-client isolation, every manual checklist item, or acceptance of the subsequent visual revision. Session snapshot isolation, recovery, rollback and security have automated coverage; their additional manual checks remain available above. CEF/input changes are outside this task.
+The owner confirmed the edited dialogue appears in Skyrim after publication and accepted the revised authoring workflow. This does not prove real two-client isolation or every separate manual security/recovery checklist item. Session snapshot isolation, recovery, rollback and security have automated coverage; their additional manual checks remain available above. CEF/input changes are outside this task.
