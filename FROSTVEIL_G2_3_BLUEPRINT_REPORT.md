@@ -36,7 +36,7 @@ The first browser check exposed a real delivery bug: the server registered bundl
 - Corrected deployment record: `build/rp-audit/g23/deploy-1792818156044/deployment.json`.
 - Visible PowerShell start script: `build/rp-audit/g23/deploy-1792818156044/start-visible.ps1`.
 - To roll back this specific deployment, stop the verified server and run `node rp-gamemode/scripts/rollback-blueprint.cjs --record build/rp-audit/g23/deploy-1792818156044/deployment.json`. It verifies the selected G2.3 bundle/assets and prior config before restoring only the gamemode path; it never restores world/player data. Keep the content-addressed new bundle/assets for diagnosis.
-- Implementation and follow-up acceptance/rollback work are pushed to `frostveil/wip/gui-performance-profiling`. The asset-path correction is committed as `b1da4dc` and will be pushed with this final report revision.
+- Implementation, asset-path correction (`b1da4dc`) and this report revision (`e6001c5`) are pushed to `frostveil/wip/gui-performance-profiling`.
 
 ## Limitations
 
