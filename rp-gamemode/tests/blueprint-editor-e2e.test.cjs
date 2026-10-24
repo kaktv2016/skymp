@@ -25,5 +25,3 @@ test('authenticated editor workflow persists drafts, validates, previews, publis
  const bad=structuredClone(graph);bad.nodes.find(n=>n.type==='action').action='console';a.equal((await post(one,'validate',{graph:bad})).status,400);
  await server.close();store.close();store=new BlueprintStore(dir,['route'],['regional'],clerkGraph(['route'],['regional']));a.equal(store.history('courier-clerk').length,3);a.equal(store.forNpc('npc-stable-1').version,3);a.equal(store.published('courier-clerk').version,3);
 });
-
-\n

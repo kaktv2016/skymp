@@ -64,12 +64,15 @@ describe('Blueprint Studio UI',()=>{
   await waitFor(()=>expect(calls.some(call=>call.op==='assign')).toBe(true));
   expect(calls.find(call=>call.op==='preview')?.payload.choices).toEqual([]);
  });
+ it('adds and removes choices in the selected choices node',async()=>{
+  const user=await enter();
+  const flow=screen.getByLabelText('Graph canvas');
+  await user.click(within(flow).getByText('menu'));
+  expect(screen.getAllByLabelText('Choice label')).toHaveLength(2);
+  await user.click(screen.getByRole('button',{name:'Add choice'}));
+  expect(screen.getAllByLabelText('Choice label')).toHaveLength(3);
+  await user.click(screen.getAllByRole('button',{name:'Remove'})[0]!);
+  expect(screen.getAllByLabelText('Choice label')).toHaveLength(2);
+  expect(screen.getAllByLabelText('Choice label').map(input=>(input as HTMLInputElement).value)).toContain('New choice');
+ });
 });
-
-
-
-
-
-
-
-\n
