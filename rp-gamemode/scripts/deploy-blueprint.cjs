@@ -34,7 +34,7 @@ async function main(){
   fs.writeFileSync(path.join(audit,'protected-data-after.json'),JSON.stringify({createdAt:new Date().toISOString(),...after},null,2),{flag:'wx'});
   const script=path.join(audit,'start-visible.ps1'),log=path.join(audit,'server-console.log');
   const escaped=(value)=>value.replaceAll("'","''");
-  const powershell=`$ErrorActionPreference='Stop'\n$Host.UI.RawUI.WindowTitle='Frostveil G2.3 Blueprint Studio'\nSet-Location -LiteralPath '${escaped(server)}'\n$env:FROSTVEIL_BEACON_PREVIEW='1'\n$env:FROSTVEIL_ADMIN_LOCAL='1'\n$env:FROSTVEIL_BLUEPRINT_EDITOR='1'\n& 'C:\\Program Files\\nodejs\\node.exe' 'dist_back/skymp5-server.js' 2>&1 | Tee-Object -FilePath '${escaped(log)}'\nWrite-Host 'Server stopped.'\n`;
+  const powershell=`$ErrorActionPreference='Continue'\n$Host.UI.RawUI.WindowTitle='Frostveil G2.3 Blueprint Studio'\nSet-Location -LiteralPath '${escaped(server)}'\n$env:FROSTVEIL_BEACON_PREVIEW='1'\n$env:FROSTVEIL_ADMIN_LOCAL='1'\n$env:FROSTVEIL_BLUEPRINT_EDITOR='1'\n& 'C:\\Program Files\\nodejs\\node.exe' 'dist_back/skymp5-server.js' 2>&1 | Tee-Object -FilePath '${escaped(log)}'\nWrite-Host 'Server stopped.'\n`;
   fs.writeFileSync(script,powershell,{flag:'wx'});
   const record={deployedAt:new Date().toISOString(),clientFilesChanged:false,bundleSHA256:result.bundleSHA256,deployedPath:result.deployedPath,editorAssetsPath:result.editorAssetsPath,editorAssetsSHA256:result.editorAssetsSHA256,rollbackRecord:path.join(audit,'deployment.json'),startScript:script,serverLog:log,protectedManifestBefore:path.join(audit,'protected-data-before.json'),protectedManifestAfter:path.join(audit,'protected-data-after.json')};
   fs.writeFileSync(path.join(audit,'active-deployment.json'),JSON.stringify(record,null,2),{flag:'wx'});

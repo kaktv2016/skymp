@@ -9,7 +9,7 @@ export interface EditorAsset {body:Buffer;type:string;}
 export function loadEditorAssets(directory:string):ReadonlyMap<string,EditorAsset>{
  const root=path.resolve(directory),stat=fs.lstatSync(root);if(!stat.isDirectory()||stat.isSymbolicLink())throw Error('Invalid Blueprint editor assets directory');
  const entries=fs.readdirSync(root,{withFileTypes:true}),result=new Map<string,EditorAsset>();
- const read=(name:string,type:string,limit:number)=>{const file=path.join(root,name),s=fs.lstatSync(file);if(!s.isFile()||s.isSymbolicLink()||s.size>limit)throw Error('Invalid Blueprint editor asset');result.set(name==='index.html'?'/':'/assets/'+name,{body:fs.readFileSync(file),type});};
+ const read=(name:string,type:string,limit:number,url=name==='index.html'?'/':'/assets/'+path.basename(name))=>{const file=path.join(root,name),s=fs.lstatSync(file);if(!s.isFile()||s.isSymbolicLink()||s.size>limit)throw Error('Invalid Blueprint editor asset');result.set(url,{body:fs.readFileSync(file),type});};
  if(!entries.some(e=>e.isFile()&&e.name==='index.html'))throw Error('Blueprint editor build is missing index.html');
  read('index.html','text/html; charset=utf-8',16384);
  const assets=path.join(root,'assets'),assetStat=fs.lstatSync(assets);if(!assetStat.isDirectory()||assetStat.isSymbolicLink())throw Error('Invalid Blueprint asset folder');
