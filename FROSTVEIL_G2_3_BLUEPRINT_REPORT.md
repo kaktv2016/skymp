@@ -25,18 +25,20 @@ The first browser check exposed a real delivery bug: the server registered bundl
 
 ## Manual Skyrim acceptance
 
-1. Join the local server as the authorized administrator and run `/editor`.
-2. Open the returned `http://127.0.0.1:3210/` URL and use the one-time grant from the private chat message within 60 seconds.
-3. Edit the existing Courier Guild Clerk graph, enter Thai text, save a draft, validate and preview it, then publish and assign it to the registered Clerk.
-4. Open a new Clerk conversation and verify the published text/actions. Confirm an already-open conversation retains its original snapshot, then reconnect and verify the published graph remains assigned.
-5. Confirm non-admin access fails and that invalid/replayed actions do not alter Courier rewards or economy.
+1. Join the local server.
+2. After a server restart, local admin approvals are cleared. On the server machine, use PowerShell from the project root to inspect the live session: `node .\rp-gamemode\scripts\admin-local.cjs .\build\dist\server\rp-admin list`. Match your active character's actor ID, then substitute that hexadecimal value for `ACTOR_HEX` in `node .\rp-gamemode\scripts\admin-local.cjs .\build\dist\server\rp-admin grant ACTOR_HEX owner`.
+3. In game, run `/editor` and copy the one-time login grant returned in your chat within 60 seconds.
+4. Open `http://127.0.0.1:3210/` in a browser and redeem the one-time grant.
+5. Edit the existing Courier Guild Clerk graph, enter Thai text, save a draft, validate and preview it, then publish and assign it to the registered Clerk.
+6. Open a new Clerk conversation and verify the published text/actions. Confirm an already-open conversation retains its original snapshot, then reconnect and verify the published graph remains assigned.
+7. Confirm non-admin access fails and that invalid/replayed actions do not alter Courier rewards or economy.
 
 ## Deployment and rollback
 
 - Corrected deployment record: `build/rp-audit/g23/deploy-1792818156044/deployment.json`.
 - Visible PowerShell start script: `build/rp-audit/g23/deploy-1792818156044/start-visible.ps1`.
 - To roll back this specific deployment, stop the verified server and run `node rp-gamemode/scripts/rollback-blueprint.cjs --record build/rp-audit/g23/deploy-1792818156044/deployment.json`. It verifies the selected G2.3 bundle/assets and prior config before restoring only the gamemode path; it never restores world/player data. Keep the content-addressed new bundle/assets for diagnosis.
-- Implementation, asset-path correction (`b1da4dc`) and this report revision (`e6001c5`) are pushed to `frostveil/wip/gui-performance-profiling`.
+- Implementation, the asset-path correction (`b1da4dc`) and report updates are pushed to `frostveil/wip/gui-performance-profiling`.
 
 ## Limitations
 
