@@ -15,9 +15,10 @@ test('dense choice menus and return paths lay out without overlaps or runtime ch
  const menu=canvas.nodes.find(n=>n.id==='choose')!;
  for(const node of canvas.nodes.filter(n=>n.data.runtime.type==='action'))expect(node.position.x).toBeGreaterThan(menu.position.x);
 });
-test('legacy overlapping saved grids are repaired while non-overlapping manual layouts survive',()=>{
+test('saved manual positions remain unchanged even when overlapping; arrange is explicit',()=>{
  const layout=Object.fromEntries(graph.nodes.map(n=>[n.id,{x:0,y:0}]));
- expect(overlaps(toCanvas(graph,layout))).toBe(false);
+ expect(toCanvas(graph,layout).nodes.map(n=>n.position)).toEqual(Object.values(layout));
+ expect(overlaps(arrange(toCanvas(graph,layout),graph.entry))).toBe(false);
  const spaced=Object.fromEntries(graph.nodes.map((n,i)=>[n.id,{x:i*500,y:350}]));
  expect(toCanvas(graph,spaced).nodes.map(n=>n.position)).toEqual(Object.values(spaced));
 });

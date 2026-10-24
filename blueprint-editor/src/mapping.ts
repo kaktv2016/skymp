@@ -1,11 +1,18 @@
-import type {Node as FlowNode,Edge,Connection} from '@xyflow/react';
+import {Position,type Node as FlowNode,type Edge,type Connection,type NodeHandle} from '@xyflow/react';
 import type {Graph,Node} from '../../rp-gamemode/src/modules/dialogue/graph-model';
-export type BlueprintNode=FlowNode<{runtime:Node;targetLabel?:string},'blueprint'>;
+export type BlueprintNode=FlowNode<{runtime:Node;targetLabel?:string;related?:boolean},'blueprint'>;
 export interface Canvas {nodes:BlueprintNode[];edges:Edge[];}
 export type Layout=Record<string,{x:number;y:number}>;
 export const NODE_WIDTH=272;
 export function nodeHeight(node:Node):number {
- return node.type==='choices'?132+Math.max(1,node.choices?.length??0)*38:node.type==='npc'?230:node.type==='condition'?208:node.type==='end'?126:170;
+ return node.type==='choices'?132+Math.max(1,node.choices?.length??0)*38:node.type==='npc'?230:node.type==='condition'?208:node.type==='end'?132:170;
+}
+/** Fixed card geometry lets React Flow navigate/route unmounted viewport nodes. */
+export function nodeHandles(node:Node):NodeHandle[]{
+ const height=nodeHeight(node),outputs=node.type==='choices'?(node.choices??[]).map(c=>'choice:'+c.id):node.type==='end'?[]:node.type==='condition'?['next','otherwise']:['next'];
+ const handles:NodeHandle[]=node.type==='entry'?[]:[{id:null,type:'target',position:Position.Left,x:-6,y:height/2-6,width:12,height:12}];
+ outputs.forEach((id,i)=>handles.push({id,type:'source',position:Position.Right,x:NODE_WIDTH-3,y:height-60-(outputs.length-1-i)*38,width:12,height:12}));
+ return handles;
 }
 /** Layer by first reachable depth, keeping return links out of the ranking.
  * Drafts may have cycles, missing links and detached nodes; layout must still terminate. */
@@ -36,15 +43,12 @@ export function overlaps(canvas:Canvas):boolean {
 }
 export function toCanvas(graph:Graph,layout:Layout={}):Canvas {
  const nodes=graph.nodes.map((runtime,i)=>({id:runtime.id,type:'blueprint' as const,position:Object.hasOwn(layout,runtime.id)?layout[runtime.id]!:{x:(i%4)*300,y:Math.floor(i/4)*200},data:{runtime:structuredClone(runtime)}}));
- const edges:Edge[]=[];
- for(const n of graph.nodes){const add=(handle:string,target:string|undefined)=>{if(target)edges.push({id:n.id+':'+handle,source:n.id,sourceHandle:handle,target});};
-  if(n.type==='choices')n.choices?.forEach(c=>add('choice:'+c.id,c.next));
-  else if(n.type!=='end'){add('next',n.next);if(n.type==='condition')add('otherwise',n.otherwise);}
- }
+ const edges=edgesFromNodes(graph.nodes);
  const automatic=arrange({nodes,edges},graph.entry);
  const result={nodes:automatic.nodes.map(n=>Object.hasOwn(layout,n.id)?{...n,position:layout[n.id]!}:n),edges};
- // Migrate the old overlapping grid in memory; a subsequent explicit Save stores it.
- return overlaps(result)?automatic:result;
+ // Saved/manual positions are authoritative, even when overlapping. Only the
+ // explicit arrange operation may relocate them.
+ return result;
 }
 export function fromCanvas(header:Pick<Graph,'schemaVersion'|'id'|'version'|'entry'>,canvas:Canvas):Graph {
  const nodes=canvas.nodes.map(n=>structuredClone(n.data.runtime));
@@ -67,3 +71,12 @@ export function connect(connection:Connection,canvas:Canvas):Canvas {
  return {...canvas,edges:[...canvas.edges.filter(e=>!(e.source===edge.source&&e.sourceHandle===edge.sourceHandle)),edge]};
 }
 export function positions(canvas:Canvas):Layout{return Object.fromEntries(canvas.nodes.map(n=>[n.id,n.position]));}
+
+export function edgesFromNodes(nodes:readonly Node[]):Edge[]{
+ const edges:Edge[]=[];
+ for(const n of nodes){const add=(handle:string,target:string|undefined)=>{if(target)edges.push({id:n.id+':'+handle,source:n.id,sourceHandle:handle,target});};
+  if(n.type==='choices')n.choices?.forEach(c=>add('choice:'+c.id,c.next));
+  else if(n.type!=='end'){add('next',n.next);if(n.type==='condition')add('otherwise',n.otherwise);}
+ }
+ return edges;
+}
