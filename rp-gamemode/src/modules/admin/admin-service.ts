@@ -233,6 +233,11 @@ export class AdminService {
     return e ? { ...e.value } : null;
   }
 
+  /** Returns the server-verified current operator principal, never client input. */
+  principal(actor: ActorId): string | null {
+    return this.entry(actor)?.principal ?? null;
+  }
+
   isMockActive(actor: ActorId): boolean {
     return this.entry(actor) !== null && this.mockJobs.has(actor);
   }

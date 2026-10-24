@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto';
 import {EconomyJournal} from '../economy/journal';
-import {Graph,validateGraph} from './graph-model';
+import {Graph,validateGraph,validateDraftGraph} from './graph-model';
 export type Layout=Record<string,{x:number;y:number}>;
 interface Draft {revision:number;graph:Graph;layout:Layout;author:string;at:number;}
 interface Version {version:number;author:string;at:number;rollbackFrom:number|null;}
@@ -28,6 +28,7 @@ export class BlueprintStore {
    let previous=0;
    for(const v of item.versions){if(!v||Object.keys(v).sort().join(',')!=='at,author,rollbackFrom,version'||!Number.isSafeInteger(v.version)||v.version<=previous||!Number.isFinite(v.at)||v.rollbackFrom!==null&&(!Number.isSafeInteger(v.rollbackFrom)||v.rollbackFrom>=v.version||!item.versions.some(old=>old.version===v.rollbackFrom)))throw Error('Invalid graph history version');this.author(v.author);const graph=this.version(id,v.version);if(graph.id!==id||graph.version!==v.version)throw Error('Graph history identity mismatch');previous=v.version;}
   }
+  for(const id of c.drafts){const draft=this.readDraftRecord(id);if(draft.graph.id!==id)throw Error('Draft identity mismatch');}
   for(const [npc,id]of Object.entries(c.assignments))if(!npc||npc.length>64||['constructor','prototype','__proto__'].includes(npc)||!validId(id)||!Object.hasOwn(c.graphs,id))throw Error('Invalid stored NPC assignment');
  }
  private author(author:string){if(typeof author!=='string'||!author||author.length>200)throw Error('Invalid author');}
@@ -38,15 +39,18 @@ export class BlueprintStore {
  published(id:string):Graph {this.checkId(id);const v=this.catalog.graphs[id]?.versions.at(-1);if(!v)throw Error('Unknown graph');return this.version(id,v.version);}
  private version(id:string,version:number){const g=this.journal.peek(key('version:'+id+':'+version));if(!g)throw Error('Published graph unavailable');return validateGraph(g,this.routes,this.permits);}
  history(id:string){this.checkId(id);return clone(this.catalog.graphs[id]?.versions??[]);}
- draft(id:string):Draft|null {this.checkId(id);return clone(this.journal.peek(key('draft:'+id)) as Draft|null);}
+ private readDraftRecord(id:string):Draft {const value=this.journal.peek(key('draft:'+id)) as Draft|null;if(!value||Object.keys(value).sort().join(',')!=='at,author,graph,layout,revision'||!Number.isSafeInteger(value.revision)||value.revision<1||!Number.isFinite(value.at))throw Error('Invalid stored draft');this.author(value.author);const graph=validateDraftGraph(value.graph,this.routes,this.permits);if(!value.layout||typeof value.layout!=='object'||Array.isArray(value.layout)||Object.keys(value.layout).length>128)throw Error('Invalid stored draft layout');for(const [node,p]of Object.entries(value.layout))if(!validId(node)||!p||Object.keys(p).sort().join(',')!=='x,y'||![p.x,p.y].every(v=>Number.isFinite(v)&&Math.abs(v)<=100000))throw Error('Invalid stored draft layout');return {revision:value.revision,at:value.at,author:value.author,graph,layout:clone(value.layout)};}
+ draft(id:string):Draft|null {this.checkId(id);if(!this.catalog.drafts.includes(id))return null;return clone(this.readDraftRecord(id));}
  saveDraft(graph:Graph,layout:Layout,expectedRevision:number,author:string):Draft {
   this.author(author);this.checkId(graph?.id);if(!Number.isSafeInteger(expectedRevision)||expectedRevision<0)throw Error('Invalid revision');
   // Incomplete links are allowed while authoring. Executable validation is mandatory on publish.
-  if(!graph||graph.schemaVersion!==1||!Array.isArray(graph.nodes)||graph.nodes.length>128||Buffer.byteLength(JSON.stringify(graph))>48000||!layout||Array.isArray(layout)||Object.keys(layout).length>128)throw Error('Invalid draft size');
+  if(!graph||!layout||Array.isArray(layout)||Object.keys(layout).length>128)throw Error('Invalid draft size');
+  const checked=validateDraftGraph(graph,this.routes,this.permits);
+  if(Buffer.byteLength(JSON.stringify(checked))>48000)throw Error('Invalid draft size');
   for(const [id,p]of Object.entries(layout))if(!validId(id)||!p||Object.keys(p).sort().join(',')!=='x,y'||![p.x,p.y].every(v=>Number.isFinite(v)&&Math.abs(v)<=100000))throw Error('Invalid layout');
   if(!Number.isSafeInteger(graph.version)||graph.version<1)throw Error('Invalid draft graph version');
   const old=this.draft(graph.id);if((old?.revision??0)!==expectedRevision)throw Error('Draft revision conflict');
-  const draft={revision:expectedRevision+1,graph:clone(graph),layout:clone(layout),author,at:this.now()};if(Buffer.byteLength(JSON.stringify(draft))>60000)throw Error('Draft capacity reached');
+  const draft={revision:expectedRevision+1,graph:checked,layout:clone(layout),author,at:this.now()};if(Buffer.byteLength(JSON.stringify(draft))>60000)throw Error('Draft capacity reached');
   if(!this.catalog.drafts.includes(graph.id)&&this.catalog.drafts.length>=64)throw Error('Draft capacity reached');
   this.journal.append(key('draft:'+graph.id),draft);if(!this.catalog.drafts.includes(graph.id)){const next=clone(this.catalog);next.drafts.push(graph.id);next.revision++;this.commit(next);}return clone(draft);
  }

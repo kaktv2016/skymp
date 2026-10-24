@@ -63,6 +63,7 @@ export class NpcService {
   this.ready=true;this.log('[rp-npc] ready definitions='+this.definitions.length);
  }catch(e){this.ready=false;this.log('[rp-npc] unavailable; existing data preserved: '+String(e));}}
  lookup(id:number|string){if(!this.ready)return undefined;const d=this.definitions.find(v=>typeof id==='number'?v.formId===id:v.id===id);if(!d)return undefined;this.verify(d);return structuredClone(d);}
+ listRegistered(){if(!this.ready)return [];return this.definitions.filter(d=>d.enabled&&!d.deleted).map(d=>{this.verify(d);return {id:d.id,name:d.name,enabled:d.enabled,deleted:d.deleted};});}
  stop(){this.ready=false;this.selections.clear();this.journal.close();}
  prune(){for(const [actor,selection] of this.selections){try{if(!this.allowed(actor)||this.adapter.sessionForActor(actor).guid!==selection.guid)this.selections.delete(actor);}catch{this.selections.delete(actor);}}}
  private save(next:Definition[]){const checked=validate(next);this.journal.append(KEY,checked);this.definitions=checked;}

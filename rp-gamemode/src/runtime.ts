@@ -23,9 +23,15 @@ import {AdminService,AdminOptions,adminHints} from './modules/admin/admin-servic
 import {questDetails} from './modules/courier/quest-details';
 import {mapDiscoveryModule} from './modules/map-discovery/map-discovery-module';
 import {NpcService,npcHints} from './modules/npc/npc-service';
+import path from 'node:path';
+import {BlueprintStore} from './modules/dialogue/blueprint-store';
+import {BlueprintService} from './modules/dialogue/blueprint-service';
+import {EditorAuthority} from './modules/dialogue/editor-authority';
+import {EditorHttpServer,loadEditorAssets} from './modules/dialogue/editor-http';
 
-export interface RuntimeOptions { scheduler?: Scheduler; logger?: Logger; chat?: false | (Partial<ChatConfig> & { now?: () => number }); profile?:Partial<ProfileLimits>&{now?:()=>number}; dice?: Partial<DiceSettings> & { rng?: DiceRng }; courier?: CourierOptions; economy?:EconomyOptions;admin?:AdminOptions; npc?:{storageRoot:string}; }
+export interface RuntimeOptions { scheduler?: Scheduler; logger?: Logger; chat?: false | (Partial<ChatConfig> & { now?: () => number }); profile?:Partial<ProfileLimits>&{now?:()=>number}; dice?: Partial<DiceSettings> & { rng?: DiceRng }; courier?: CourierOptions; economy?:EconomyOptions;admin?:AdminOptions; npc?:{storageRoot:string}; blueprintEditor?:{storageRoot:string;assetsRoot:string;port?:number}; }
 export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
+  if(options.blueprintEditor&&(!options.npc||options.chat===false))throw Error('Blueprint editor requires NPC and chat modules');
   const adapter = new SkyMpAdapter(rawMp);
   const identity = new IdentityService(adapter,options.profile);
   const commands = new CommandRegistry();
@@ -82,20 +88,42 @@ export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
     modules.register(courierModule(courier,commands,economy));
     if(options.npc){
       const npc=new NpcService(rawMp as ConstructorParameters<typeof NpcService>[0],adapter,options.npc.storageRoot,actor=>admin.state(actor)!==null,logger.info);
-      modules.register({id:'rp-npc',dependencies:['rp-chat'],initialize(scope){
+      modules.register({id:'rp-npc',dependencies:['rp-chat'],initialize:async(scope)=>{
         scope.defer(()=>npc.stop());npc.start();
         scope.defer(commands.register('npc',(ctx,args)=>npc.execute(ctx.actorId,args),'rp-npc',npcHints));
         scope.defer(scheduler.every(1000,()=>npc.prune()));
         const native=rawMp as any,sources=dialogueSources();
-        const store=new DialogueStore(options.npc!.storageRoot+'-dialogues',courier.routes().map(r=>r.id),courierProgressionConfig.permits.map(p=>p.id));
+        const routes=courier.routes().map(r=>r.id),permits=courierProgressionConfig.permits.map(p=>p.id);
+        const store=new DialogueStore(options.npc!.storageRoot+'-dialogues',routes,permits);
         scope.defer(()=>store.close());const graph=store.load();
         native.makeProperty('frostveilDialogue',{isVisibleByOwner:true,isVisibleByNeighbors:false,updateOwner:sources.owner,updateNeighbor:''});
-        const dialogue=new DialogueRuntime(adapter,graph,id=>npc.lookup(id),(a,args)=>economy?economy.execute(a,args):courier.execute(a,args),(a,value)=>native.set(a,'frostveilDialogue',value));
+        const blueprints=options.blueprintEditor?new BlueprintStore(options.blueprintEditor.storageRoot,routes,permits,graph):undefined;
+        if(blueprints)scope.defer(()=>blueprints.close());
+        const dialogue=new DialogueRuntime(adapter,graph,id=>npc.lookup(id),(a,args)=>economy?economy.execute(a,args):courier.execute(a,args),(a,value)=>native.set(a,'frostveilDialogue',value),Date.now,id=>blueprints?.forNpc(id)??graph);
         scope.defer(()=>dialogue.clear());
         if(typeof native.on==='function'){let active=true;const connection=(user:unknown)=>{if(active)dialogue.connectionEvent(user);};native.on('connect',connection);native.on('disconnect',connection);scope.defer(()=>{active=false;});}
         scope.defer(events.register('_frostveilDialogue',(sender,packet,...extra)=>{if(extra.length)return;try{dialogue.receive(actorId(sender),packet);}catch{logger.error('[rp-dialogue] rejected invalid sender');}}));
         native.makeEventSource('_frostveilDialogue',sources.event);
         scope.defer(scheduler.every(250,()=>dialogue.prune()));
+        if(options.blueprintEditor){
+          if(!options.admin?.authorize)throw Error('Blueprint editor requires verified server admin authority');
+          const authority=new EditorAuthority(actor=>{
+            const principal=admin.principal(actor);if(!principal)return null;
+            const session=adapter.sessionForActor(actor);
+            return {principal,identity:JSON.stringify([session.userId,session.profileId,session.guid])};
+          });
+          const service=new BlueprintService(blueprints!,routes.map(id=>({id,label:courier.route(id)?.displayName??id})),
+            courierProgressionConfig.permits.map(p=>({id:p.id,label:p.name})),()=>npc.listRegistered());
+          const http=new EditorHttpServer(authority,service,loadEditorAssets(options.blueprintEditor.assetsRoot));
+          scope.defer(()=>http.close());
+          const url=await http.listen(options.blueprintEditor.port??3210);
+          scope.defer(commands.register('editor',(ctx,args)=>{
+            if(args.length)return {ok:false,code:'INVALID_ARGUMENTS',message:'Usage: /editor'};
+            try{return {ok:true,data:{systemMessage:`Blueprint Studio: ${url}\nOne-time login grant (valid 60 seconds): ${authority.issue(ctx.actorId)}`}};}
+            catch{return {ok:false,code:'ADMIN_REQUIRED',message:'Admin permission required'};}
+          },'rp-blueprint-editor'));
+          logger.info(`[rp-blueprint] loopback editor listening at ${url}`);
+        }
         logger.info('[rp-dialogue] clerk graph v'+graph.version+' ready; native Activate-key transport registered');
 
       }});

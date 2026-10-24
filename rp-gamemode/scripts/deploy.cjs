@@ -27,7 +27,7 @@ async function main() {
     fs.mkdirSync(backupDir, { recursive:true });
     fs.cpSync(world, backupWorld, { recursive:true, force:false, errorOnExist:true });
   }
-  const result = deployBundle({ root, server, configFile, bundleFile: path.join(project, 'dist/rp-gamemode.cjs'), deploymentDir: path.join(project, 'deployed'), backupDir });
+  const result = deployBundle({ root, server, configFile, bundleFile: path.join(project, 'dist/rp-gamemode.cjs'), deploymentDir: path.join(project, 'deployed'), backupDir, editorAssetsDir:path.join(root,'blueprint-editor/dist') });
   const launcherAfter = assertLauncherBaseline();
   if (launcherBefore.status !== launcherAfter.status || launcherBefore.sha256 !== launcherAfter.sha256) throw new Error('Launcher/client baseline changed during server deployment; preserve backups and investigate');
   console.log(JSON.stringify({ deployedPath: result.deployedPath, bundleSHA256: result.bundleSHA256, rollbackRecord: path.join(backupDir, 'deployment.json'), worldChangedByDeployment: false }, null, 2));

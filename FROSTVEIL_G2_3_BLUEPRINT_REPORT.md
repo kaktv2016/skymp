@@ -1,43 +1,39 @@
-# Frostveil G2.3 Blueprint Editor — implementation record
+# Frostveil G2.3 Blueprint Editor Report
 
-Status: IN PROGRESS. No G2.3 deployment or gameplay acceptance yet.
+**Status:** deployed to the verified local test server; in-game owner acceptance remains pending.
 
-## Inspected integration
-Existing runtime: rp-gamemode/src/modules/dialogue/dialogue-runtime.ts; NPC lifecycle/pose: modules/npc/npc-service.ts; authentication: modules/admin/local-authority.ts; persistence primitive: modules/economy/journal.ts. G2.1/G2.2 reports reside in docs/rp-development/. Current authorized development branch is wip/gui-performance-profiling; preserve native cursor implementation without further changes.
+## Delivered
 
-## Design and required delivery
-- Desktop React + TypeScript + @xyflow/react editor with palette, inspector, selectors, accessible Unicode editing, undo/redo and full graph workflows.
-- Share the actual schema/validator between browser and runtime. Existing choice-mediated return-to-menu paths are legitimate Clerk behavior; automatic cycles remain forbidden. Unsupported Quest/Event/Flag/shop/reputation extensions must be explicitly unavailable.
-- Separate authoring journal with bounded drafts, layout metadata, graph history, stable NPC assignment and optimistic revisions. Reuse fsync/checksummed storage without writing economy or NPC journals for editor state. Account for existing journal record limits rather than allowing oversized histories in a single record.
-- Loopback-only dedicated authenticated HTTP service, not public resource listener. Reuse verified local-operator authority via short-lived, single-use exchange grants, expiring server-side sessions, CSRF/origin checks, size/rate limits and revocation checks on each request. No client-provided identity/role authority.
-- Published graphs selected by stable registered NPC ID, defaulting to existing Clerk. Running conversations pin immutable graph snapshots; new sessions receive latest validated publication. Preview uses the same runtime traversal with read-only/mock adapters and service descriptions, never EconomyService.
-- Publish/rollback optimistic revisions and history durable before acknowledgement. Rollback creates a new higher version. UI must report errors and conflicts without losing drafts.
-- Required tests: mapping, graph validation, drafts/restart, read-only preview, authorization/replay/CSRF, concurrent publishing, history/rollback, NPC assignment/fallback, running conversation isolation, UI and E2E workflow, existing gameplay regressions.
-- Build/review/backup/deploy only verified local test environment; hash protected data, retain code rollback, verify endpoint/startup; commit/push authorized development branch. Final owner checklist must demonstrate actual Skyrim dialogue update before claiming gameplay success.
+- Added a React/TypeScript `@xyflow/react` authoring UI with graph/node editing, searchable palette, inspector, Thai/Unicode text, action and condition selectors, duplicate/delete, undo/redo, layout, dirty-state warnings, validation, read-only preview, publish/history/rollback and NPC assignment.
+- Reuses the dialogue runtime graph schema and strict validation. Drafts allow incomplete links/text while publishing requires valid graph structure and allowlisted actions. Preview describes service calls without invoking economy or changing player state.
+- Added isolated, checksummed BlueprintStore persistence, optimistic revisions and version history. Published graph assignment is keyed by stable registered NPC ID; existing sessions keep their graph snapshot and new sessions use the latest assigned graph.
+- Added the loopback-only editor service with one-time admin grant (`/editor`, valid 60 seconds), expiring session, per-request authority checks, CSRF/origin/host checks, bounded payloads, request limits and safe static asset delivery.
+- Added immutable server bundle deployment with a content-addressed UI asset directory and hash verification. Server-only deployment does not require a matching client pin because it changes no client or Launcher files.
 
-## Progress
-Shared pure graph types and validation extracted to graph-model.ts with compatibility re-exports from dialogue-runtime.ts. This enables browser/server validation reuse without importing filesystem persistence or implementing a second validator. No runtime semantics changed in this extraction.
+## Verification
 
-## Pending acceptance
-All editor, authoring persistence, authenticated API, runtime publication integration, UI/E2E verification and deployment requirements remain pending implementation. This document records the full scope, not a reduced completion target.
+- RP gamemode build and regression suite: **338/338 passed**, no skips.
+- Blueprint editor TypeScript production build and UI tests: **5/5 passed**.
+- Deployment tests: **8/8 passed**; deployment script syntax checked; `git diff --check` passed.
+- Browser health check: `http://127.0.0.1:3210/` returned **200** and title `Frostveil · Blueprint Studio`; unauthenticated `/api/catalog` returned **403**.
+- Server is listening on loopback UDP **7777** and editor HTTP **3210**. Its configured gamemode is `f648f3808952749ba49b906b5d04a897ee2c0ba94628f137d25d6c8924a5c9d8.cjs`; bundle SHA-256 is `f648f3808952749ba49b906b5d04a897ee2c0ba94628f137d25d6c8924a5c9d8`. UI assets SHA-256: `6bb93cc141ad51743502464e62e76e7cece71caa5ceaea48fa778e40289de5a7`.
+- Protected world, economy, NPC and dialogue data manifest SHA-256 was identical before and after deployment: `33ca308b8a54eac3ba6a2026de43e0690746859e2b6e38c50f5e7d7b0a56fc51`. No player installation or Launcher file changed.
 
-### Runtime and validation foundation (2026-10-24)
-- DialogueRuntime now accepts an optional server-owned graph resolver keyed by stable NPC ID. Each open copies its selected graph into the conversation; later publication or edits cannot alter active choices/version. Existing callers retain Clerk fallback.
-- Added a two-player snapshot regression proving new sessions see a new version while old sessions retain their original choices. Graph mutation outside the runtime cannot mutate either conversation snapshot.
-- Shared graph validation now rejects fields incompatible with node type, missing NPC text and coerced IDs; automatic-cycle detection uses indexed visiting/done sets to avoid exponential traversal of branching DAGs. Legitimate explicit-choice menu loops remain supported.
-- Build/typechecks and full RP suite: 321/321 passed, no skips. Evidence: .local/g23-validation-tests.log. No G2.3 deployment yet.
+## Manual Skyrim acceptance
 
-### Authoring persistence and preview (in progress)
-- Added BlueprintStore with a separate checksummed journal root, optimistic draft revisions and published versions, immutable-addressed graph content followed by catalog commit, version history, rollback-as-new-version and NPC assignments. No runtime integration yet. Store limits currently cap graph payload at 48 KB, graphs at 64 and history at 100 versions per graph; capacity failures are explicit. Further catalog recovery validation and discoverability of unpublished drafts are still required before API exposure.
-- Added previewDialogue using DialogueRuntime with inert private adapters and a descriptive service stub. No live native/player/economy handles can be supplied. Tested service-path previews, courierIdle, exit, forged choices and traversal bounds.
-- Prototype property names are rejected for stored IDs and invalid version numbers are rejected. API authorization and eligible NPC checks are still required at the service boundary.
+1. Join the local server as the authorized administrator and run `/editor`.
+2. Open the returned `http://127.0.0.1:3210/` URL and use the one-time grant from the private chat message within 60 seconds.
+3. Edit the existing Courier Guild Clerk graph, enter Thai text, save a draft, validate and preview it, then publish and assign it to the registered Clerk.
+4. Open a new Clerk conversation and verify the published text/actions. Confirm an already-open conversation retains its original snapshot, then reconnect and verify the published graph remains assigned.
+5. Confirm non-admin access fails and that invalid/replayed actions do not alter Courier rewards or economy.
 
-### Storage recovery follow-up
-Unpublished drafts now have a durable catalog index and remain discoverable after restart. Catalog recovery checks schema, history ordering, referenced graph identity/version, rollback references and assignment targets; startup rejects semantic corruption even when journal checksums are valid. Constructor errors release the private writer lease. Focused storage tests cover restart, optimistic conflicts, rollback, assignment, invalid drafts, prototype names, malformed versions, draft discovery/layout and corrupt catalog references. This is not yet exposed over HTTP or deployed.
+## Deployment and rollback
 
-### Local editor transport foundation
-Added in-memory EditorAuthority: 60-second one-use login grants, 15-minute sessions, hashed tokens, CSRF secrets, authority/identity revalidation, expiry, logout and request bounds. Added dedicated loopback EditorHttpServer with exact Host/Origin checks, HttpOnly SameSite=Strict cookie, CSRF on all API operations, payload limit, request/socket timeouts, bounded connections, CSP and safe static asset allowlist. Tests exercised a real disposable loopback listener, unauthorized requests, forged CSRF, wrong Origin/Host, oversized body and revoked authority. No listener has been enabled in the deployed server yet. Native game session resolver and login grant command still need runtime integration.
-BlueprintService routes only typed authoring operations and checks eligible NPC assignment. UI and HTTP workflow integration remain pending.
+- Deployment record: `build/rp-audit/g23/deploy-1792817046763/deployment.json`.
+- Visible PowerShell start script: `build/rp-audit/g23/deploy-1792817046763/start-visible.ps1`.
+- To roll back, stop the verified server and run `node rp-gamemode/scripts/rollback.cjs`; this restores the previous gamemode configuration only and does not restore world/player data. Keep the content-addressed new bundle/assets for diagnosis.
+- Commit/push status: pending in this report revision.
 
-### Editor workspace started
-Created blueprint-editor as an isolated React/TypeScript/@xyflow/react workspace in the SkyMP repository; no Launcher changes. Added typed graph-to-canvas and canvas-to-graph mapping preserving runtime node/choice metadata and Unicode, with connection-handle validation, output replacement and explicit dangling links after deletion. Three mapping tests and TypeScript check passed. Initial dev-tool audit found Vitest mocker advisories; upgraded the pinned test runner to the patched 4.1.12 before proceeding. UI construction and browser acceptance remain pending.
+## Limitations
+
+Automated tests do not prove gameplay, two-client isolation in the actual engine, CEF input behavior, or a successful in-game publication. Do not treat G2.3 as owner-accepted until the manual Skyrim steps above pass.

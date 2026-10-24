@@ -1,16 +1,34 @@
 import {createServer,IncomingMessage,ServerResponse} from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
 import type {AddressInfo} from 'node:net';
 import {EditorAuthority} from './editor-authority';
 import {BlueprintService} from './blueprint-service';
 export interface EditorAsset {body:Buffer;type:string;}
+/** Reads only Vite's flat production output; symlinks, source files and maps are refused. */
+export function loadEditorAssets(directory:string):ReadonlyMap<string,EditorAsset>{
+ const root=path.resolve(directory),stat=fs.lstatSync(root);if(!stat.isDirectory()||stat.isSymbolicLink())throw Error('Invalid Blueprint editor assets directory');
+ const entries=fs.readdirSync(root,{withFileTypes:true}),result=new Map<string,EditorAsset>();
+ const read=(name:string,type:string,limit:number)=>{const file=path.join(root,name),s=fs.lstatSync(file);if(!s.isFile()||s.isSymbolicLink()||s.size>limit)throw Error('Invalid Blueprint editor asset');result.set(name==='index.html'?'/':'/assets/'+name,{body:fs.readFileSync(file),type});};
+ if(!entries.some(e=>e.isFile()&&e.name==='index.html'))throw Error('Blueprint editor build is missing index.html');
+ read('index.html','text/html; charset=utf-8',16384);
+ const assets=path.join(root,'assets'),assetStat=fs.lstatSync(assets);if(!assetStat.isDirectory()||assetStat.isSymbolicLink())throw Error('Invalid Blueprint asset folder');
+ for(const entry of fs.readdirSync(assets,{withFileTypes:true})){
+  if(!entry.isFile()||!/^[A-Za-z0-9._-]+\.(?:js|css)$/.test(entry.name))throw Error('Unexpected Blueprint build asset');
+  read(path.join('assets',entry.name),entry.name.endsWith('.js')?'text/javascript; charset=utf-8':'text/css; charset=utf-8',entry.name.endsWith('.js')?2*1024*1024:256*1024);
+ }
+ if(result.size<2)throw Error('Blueprint editor build has no application assets');
+ return result;
+}
 /** Dedicated loopback listener. Static shell contains no server data or secrets. */
 export class EditorHttpServer {
  private server;private host='';private requests=0;private window=Date.now();
+ private listening=false;private closed=false;
  constructor(private authority:EditorAuthority,private service:BlueprintService,private assets:ReadonlyMap<string,EditorAsset>){
   this.server=createServer((req,res)=>{void this.handle(req,res);});this.server.requestTimeout=10000;this.server.headersTimeout=10000;this.server.maxConnections=32;
  }
- async listen(port=3210){if(!Number.isInteger(port)||port<0||port>65535)throw Error('Invalid editor port');await new Promise<void>((resolve,reject)=>{this.server.once('error',reject);this.server.listen(port,'127.0.0.1',()=>{this.server.removeListener('error',reject);resolve();});});this.host='127.0.0.1:'+(this.server.address() as AddressInfo).port;return 'http://'+this.host;}
- async close(){this.authority.close();await new Promise<void>((resolve,reject)=>{this.server.close(e=>e?reject(e):resolve());this.server.closeAllConnections();});}
+ async listen(port=3210){if(this.closed||this.listening)throw Error('Editor listener is not available');if(!Number.isInteger(port)||port<0||port>65535)throw Error('Invalid editor port');await new Promise<void>((resolve,reject)=>{this.server.once('error',reject);this.server.listen(port,'127.0.0.1',()=>{this.server.removeListener('error',reject);this.listening=true;resolve();});});this.host='127.0.0.1:'+(this.server.address() as AddressInfo).port;return 'http://'+this.host;}
+ async close(){if(this.closed)return;this.closed=true;this.authority.close();if(!this.listening){this.server.closeAllConnections();return;}await new Promise<void>((resolve,reject)=>{this.server.close(e=>e?reject(e):resolve());this.server.closeAllConnections();});this.listening=false;}
  private send(res:ServerResponse,status:number,body:unknown){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(body));}
  private async body(req:IncomingMessage){if(req.headers['content-type']?.split(';')[0]!=='application/json')throw Error('JSON required');if(Number(req.headers['content-length']??0)>65536)throw Error('Request too large');let size=0;const chunks:Buffer[]=[];for await(const part of req){const b=Buffer.from(part);size+=b.length;if(size>65536)throw Error('Request too large');chunks.push(b);}const value=JSON.parse(Buffer.concat(chunks).toString('utf8'));if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Invalid request');return value;}
  private async handle(req:IncomingMessage,res:ServerResponse){

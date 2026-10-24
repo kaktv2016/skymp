@@ -4,7 +4,7 @@ export type BlueprintNode=FlowNode<{runtime:Node},'blueprint'>;
 export interface Canvas {nodes:BlueprintNode[];edges:Edge[];}
 export type Layout=Record<string,{x:number;y:number}>;
 export function toCanvas(graph:Graph,layout:Layout={}):Canvas {
- const nodes=graph.nodes.map((runtime,i)=>({id:runtime.id,type:'blueprint' as const,position:layout[runtime.id]??{x:(i%4)*300,y:Math.floor(i/4)*200},data:{runtime:structuredClone(runtime)}}));
+ const nodes=graph.nodes.map((runtime,i)=>({id:runtime.id,type:'blueprint' as const,position:Object.hasOwn(layout,runtime.id)?layout[runtime.id]!:{x:(i%4)*300,y:Math.floor(i/4)*200},data:{runtime:structuredClone(runtime)}}));
  const edges:Edge[]=[];
  for(const n of graph.nodes){const add=(handle:string,target:string|undefined)=>{if(target)edges.push({id:n.id+':'+handle,source:n.id,sourceHandle:handle,target});};
   if(n.type==='choices')n.choices?.forEach(c=>add('choice:'+c.id,c.next));

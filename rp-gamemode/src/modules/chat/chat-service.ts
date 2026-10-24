@@ -43,7 +43,7 @@ export class ChatService {
   private refresh(actor:ActorId,session:Session):boolean {
     const before=JSON.stringify([session.envelope.commands,session.envelope.navigation,session.envelope.quest,session.envelope.admin]);
     try{session.envelope.admin=this.admin(actor)??null;}catch{session.envelope.admin=null;}
-    session.envelope.commands=this.commands.completions().filter(c=>session.envelope.admin!==null||!/^\/(?:admin|npc)(?: |$)/.test(c));
+    session.envelope.commands=this.commands.completions().filter(c=>session.envelope.admin!==null||!/^\/(?:admin|npc|editor)(?: |$)/.test(c));
     try{session.envelope.navigation=this.navigation(actor);}catch{session.envelope.navigation=null;}
     try{session.envelope.quest=this.quest(actor)??null;}catch{session.envelope.quest=null;}
     return before!==JSON.stringify([session.envelope.commands,session.envelope.navigation,session.envelope.quest,session.envelope.admin]);
@@ -132,7 +132,7 @@ export class ChatService {
         if (this.sessions.get(actor) !== session || this.adapter.sessionForActor(actor).guid !== session.guid) return;
         if (!result.ok) { error(result.message); return; }
         const command=text.slice(1).split(/\s+/)[0]!.toLowerCase();
-        if (command === 'job' || command === 'wallet' || command==='admin' || command==='beacon' || command==='npc') {
+        if (command === 'job' || command === 'wallet' || command==='admin' || command==='beacon' || command==='npc' || command==='editor') {
           const data = result.data as { systemMessage: string };
           this.push(actor, session, 'System', '', data.systemMessage);
           return;
