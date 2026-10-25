@@ -48,7 +48,7 @@ export class EditorHttpServer {
    const principal=this.authority.verify(cookie,req.headers['x-fv-csrf']);
    if(url.pathname==='/api/logout'){this.authority.logout(cookie);res.setHeader('Set-Cookie','fv-editor=; HttpOnly; SameSite=Strict; Path=/api; Max-Age=0');return this.send(res,200,{ok:true});}
    const op=url.pathname.slice('/api/'.length);if(!url.pathname.startsWith('/api/'))throw Error('Unknown operation');
-   const result=op==='catalog'||op==='graph'?this.service.read(op,input):this.service.execute(op,input,principal.principal);this.send(res,200,result);
+   const result=op==='catalog'||op==='graph'||op==='references'?this.service.read(op,input):this.service.execute(op,input,principal.principal);this.send(res,200,result);
   }catch(error){const message=error instanceof Error?error.message:'Request failed';const status=/credentials|authorization|CSRF|login/.test(message)?401:/conflict/.test(message)?409:/rate/.test(message)?429:400;this.send(res,status,{error:message.slice(0,240)});}
  }
 }

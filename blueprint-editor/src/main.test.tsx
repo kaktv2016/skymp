@@ -223,4 +223,125 @@ describe('Blueprint Studio UI',()=>{
   expect(screen.getAllByLabelText('Choice label')).toHaveLength(2);
   expect(screen.getAllByLabelText('Choice label').map(input=>(input as HTMLInputElement).value)).toContain('New choice');
  });
+ it('C1.1 & C1.2: creates nodes via quick palette, inserts node on edge with branch disambiguation, and undoes atomically',async()=>{
+  const user=await enter();
+  await user.click(screen.getByRole('button',{name:'Quick create node'}));
+  const dialog=await screen.findByRole('dialog',{name:'Quick node creation'});
+  await user.type(within(dialog).getByLabelText('Search node types'),'ตรวจแรงก์');
+  await user.keyboard('{Enter}');
+  expect(screen.queryByRole('dialog',{name:'Quick node creation'})).toBeNull();
+  expect(document.querySelectorAll('[data-node-id]')).toHaveLength(6);
+
+  // Undo quick creation
+  await user.click(screen.getByRole('button',{name:'Undo'}));
+  expect(document.querySelectorAll('[data-node-id]')).toHaveLength(5);
+
+  // Select edge and open Insert Node on Connection
+  await user.click(screen.getByRole('button',{name:'Edge menu:choice:contracts'}));
+  await user.click(screen.getByRole('button',{name:'Insert node on connection'}));
+  const insertBar=screen.getByRole('region',{name:'Edge insertion preview'});
+  await user.selectOptions(within(insertBar).getByLabelText('Insert node type'),'condition');
+  // Ambiguous until branch is chosen
+  expect(within(insertBar).getByRole('button',{name:'Confirm insert'})).toHaveProperty('disabled',true);
+  await user.selectOptions(within(insertBar).getByLabelText('Outgoing branch'),'next');
+  expect(within(insertBar).getByRole('button',{name:'Confirm insert'})).toHaveProperty('disabled',false);
+  await user.click(within(insertBar).getByRole('button',{name:'Confirm insert'}));
+  expect(document.querySelectorAll('[data-node-id]')).toHaveLength(6);
+
+  // Single Undo restores original edge and removes inserted node
+  await user.click(screen.getByRole('button',{name:'Undo'}));
+  expect(document.querySelectorAll('[data-node-id]')).toHaveLength(5);
+  expect(document.querySelector('[data-edge-id="menu:choice:contracts"]')).toBeTruthy();
+ });
+ it('C1.3, C1.4 & C1.5: supports copy/paste, visual groups without leaking into executable graph, and template insertion',async()=>{
+  const user=await enter();
+  // Copy & Paste welcome node
+  await user.click(screen.getByRole('button',{name:'Copy selection'}));
+  await user.click(screen.getByRole('button',{name:'Paste clipboard'}));
+  expect(document.querySelectorAll('[data-node-id]')).toHaveLength(6);
+
+  // Create visual group annotation
+  await user.click(screen.getByRole('button',{name:'Add visual group'}));
+  expect(screen.getByText('VISUAL GROUP & COMMENT')).toBeTruthy();
+  const titleInput=screen.getByLabelText('Group title');
+  await user.clear(titleInput);await user.type(titleInput,'กลุ่มต้อนรับ');
+
+  // Insert a template from library
+  if(!screen.queryByText('GRAPH TEMPLATES'))await user.keyboard('{Control>}b{/Control}');
+  await user.click(screen.getByText('ทักทายพื้นฐาน'));
+  const tplDialog=await screen.findByRole('dialog',{name:'Graph template preview'});
+  await user.click(within(tplDialog).getByRole('button',{name:'Insert template'}));
+  expect(document.querySelectorAll('[data-node-id]')).toHaveLength(8);
+
+  // Save draft and verify executable graph has only executable nodes while presentation is separate
+  await user.click(screen.getByRole('button',{name:'Save draft'}));
+  await waitFor(()=>expect(calls.some(c=>c.op==='draft')).toBe(true));
+  const payload=calls.find(c=>c.op==='draft')!.payload;
+  expect(payload.graph.nodes).toHaveLength(8);
+  expect(payload.graph.nodes.every((n:any)=>['entry','npc','choices','condition','action','end'].includes(n.type))).toBe(true);
+  expect(payload.presentation.groups[0].title).toBe('กลุ่มต้อนรับ');
+ });
+ it('C2.1–C2.5: runs step-by-step Visual Dialogue Debugger, compares scenarios with zero gameplay mutations, and navigates Validation Navigator',async()=>{
+  const user=await enter();
+  await user.click(screen.getByRole('button',{name:'Visual debugger'}));
+  const dbg=await screen.findByRole('region',{name:'Visual dialogue debugger'});
+  expect(within(dbg).getByText('SIMULATED — 0 GAMEPLAY MUTATIONS')).toBeTruthy();
+
+  // Step from entry -> welcome -> menu (awaiting-choice)
+  await user.click(within(dbg).getByRole('button',{name:'Step simulation'}));
+  await user.click(within(dbg).getByRole('button',{name:'Step simulation'}));
+  expect(within(dbg).getByLabelText('Debugger player choices')).toBeTruthy();
+  await user.click(within(dbg).getByRole('button',{name:/ดูสัญญา/}));
+  // Reaches contracts action node -> simulated read-only
+  expect(within(dbg).getByText(/\[SIMULATED — NO GAMEPLAY MUTATION\]/)).toBeTruthy();
+
+  // Compare scenarios
+  await user.click(within(dbg).getByRole('button',{name:'Compare scenarios'}));
+  expect(within(dbg).getByLabelText('Scenario path comparison')).toBeTruthy();
+  await user.click(within(dbg).getByRole('button',{name:'Close debugger'}));
+
+  // Open Validation Navigator
+  await user.click(screen.getByRole('button',{name:'Validation navigator'}));
+  const navDialog=await screen.findByRole('dialog',{name:'Validation Navigator'});
+  expect(within(navDialog).getByText('Graph passes all publish checks')).toBeTruthy();
+  await user.click(within(navDialog).getByRole('button',{name:'Close'}));
+  expect(calls.some(c=>['draft','publish','assign','rollback'].includes(c.op))).toBe(false);
+ });
+ it('C3.1–C3.5: diffs versions with historical removed node inspection, manages bookmarks, finds references, and opens shortcuts help',async()=>{
+  const user=await enter();
+  // Delete contracts node to create a removed-node diff against Published v1
+  await user.click(within(screen.getByLabelText('Graph canvas')).getByText('contracts'));
+  await user.click(screen.getByRole('button',{name:'Delete node'}));
+
+  // Open Visual Version Diff
+  await user.click(screen.getByRole('button',{name:'Compare versions'}));
+  const diffDialog=await screen.findByRole('dialog',{name:'Visual Version Diff'});
+  await user.selectOptions(within(diffDialog).getByLabelText('Diff base version'),'v1');
+  await user.click(within(diffDialog).getByRole('button',{name:'Inspect historical snapshot contracts'}));
+  expect(within(diffDialog).getByRole('region',{name:'Historical removed node snapshot'})).toBeTruthy();
+  await user.click(within(diffDialog).getByRole('button',{name:'Close diff'}));
+  // Working graph still has 4 nodes (removed node was NOT reintroduced)
+  expect(document.querySelectorAll('[data-node-id]')).toHaveLength(4);
+
+  // Bookmarks (C3.4)
+  await user.click(screen.getByRole('button',{name:'Bookmarks'}));
+  const bmDialog=await screen.findByRole('dialog',{name:'Graph Bookmarks'});
+  await user.type(within(bmDialog).getByLabelText('Bookmark name'),'จุดเริ่ม');
+  await user.click(within(bmDialog).getByRole('button',{name:'Add bookmark'}));
+  expect(within(bmDialog).getByText('จุดเริ่ม')).toBeTruthy();
+  await user.click(within(bmDialog).getByRole('button',{name:'Close'}));
+
+  // Find References (C3.3)
+  await user.click(within(screen.getByLabelText('Graph canvas')).getByText('welcome'));
+  await user.click(screen.getByRole('button',{name:'Find references'}));
+  const refDialog=await screen.findByRole('dialog',{name:'Find References'});
+  expect(within(refDialog).getByText(/Incoming from entry/)).toBeTruthy();
+  await user.click(within(refDialog).getByRole('button',{name:'Close'}));
+
+  // Shortcuts Help (C3.5)
+  await user.click(screen.getByRole('button',{name:'Keyboard shortcuts'}));
+  const helpDialog=await screen.findByRole('dialog',{name:'Keyboard Shortcuts and Help'});
+  expect(within(helpDialog).getByText('Quick Node Creation Palette')).toBeTruthy();
+  await user.click(within(helpDialog).getByRole('button',{name:'Close help'}));
+ });
 });

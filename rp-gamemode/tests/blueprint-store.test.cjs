@@ -8,3 +8,18 @@ test('prototype property names and invalid graph versions cannot enter authoring
 test('unpublished drafts are discoverable after restart with their layout',t=>{const f=fixture(t);let s=f.open();const g=clerkGraph([],[]);g.id='new-clerk';s.saveDraft(g,{entry:{x:20,y:40}},0,'owner');a.ok(s.list().some(v=>v.id===g.id&&v.version===0&&v.draftRevision===1));s.close();s=f.open();a.ok(s.list().some(v=>v.id===g.id));a.deepEqual(s.draft(g.id).layout.entry,{x:20,y:40});});
 test('recovery rejects invalid catalog even with a valid journal checksum',t=>{const f=fixture(t);const s=f.open();s.close();const {EconomyJournal}=require('../.test-build/modules/economy/journal.js'),{createHash}=require('node:crypto');const j=new EconomyJournal(f.dir),k=createHash('sha256').update('blueprint:catalog').digest('hex');const c=j.read(k);c.graphs['courier-clerk'].versions[0].version=99;j.append(k,c);j.close();a.throws(()=>f.open(),/unavailable|identity/i);});
 test('drafts keep incomplete links editable but reject malformed node shapes and unsupported actions',t=>{const f=fixture(t),s=f.open(),base=clerkGraph(['route'],['regional']);const incomplete=structuredClone(base);incomplete.nodes[1].next='';a.equal(s.saveDraft(incomplete,{},0,'owner').revision,1);const wrong=structuredClone(base);wrong.nodes[1].serverCommand='tcl';a.throws(()=>s.saveDraft(wrong,{},1,'owner'));const unsupported=structuredClone(base);unsupported.nodes.find(n=>n.type==='action').action='runScript';a.throws(()=>s.saveDraft(unsupported,{},1,'owner'));const malformedChoice=structuredClone(base);malformedChoice.nodes.find(n=>n.type==='choices').choices[0].extra=true;a.throws(()=>s.saveDraft(malformedChoice,{},1,'owner'));});
+test('presentation metadata (groups and bookmarks) persists separately from executable graph and survives version snapshots',t=>{
+ const f=fixture(t);let s=f.open();const g=s.published('courier-clerk');
+ const pres={schemaVersion:1,groups:[{id:'group-1',title:'กลุ่มต้อนรับ',description:'คำอธิบาย',color:'gold',x:10,y:20,width:320,height:200,collapsed:false,nodeIds:['welcome']}],bookmarks:[{id:'bm-1',name:'จุดเริ่ม',nodeId:'welcome',viewport:{x:0,y:0,zoom:1}}]};
+ const d=s.saveDraft(g,{welcome:{x:100,y:200}},0,'owner',pres);
+ a.deepEqual(d.presentation,pres);
+ a.equal(Object.hasOwn(d.graph,'presentation'),false);
+ const p=s.publish(g.id,1,1,'owner');
+ a.equal(Object.hasOwn(p,'presentation'),false);
+ const snap=s.versionSnapshot(g.id,2);
+ a.deepEqual(snap.presentation,pres);
+ a.deepEqual(snap.layout,{welcome:{x:100,y:200}});
+ a.throws(()=>s.saveDraft(g,{},1,'owner',{schemaVersion:1,groups:[{id:'__proto__',title:'x',description:'',color:'gold',x:0,y:0,width:200,height:200,collapsed:false,nodeIds:[]}],bookmarks:[]}));
+ s.close();s=f.open();
+ a.deepEqual(s.draft(g.id).presentation,pres);
+});

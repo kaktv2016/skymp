@@ -1,9 +1,11 @@
 import {createHash} from 'node:crypto';
 import {EconomyJournal} from '../economy/journal';
-import {Graph,validateGraph,validateDraftGraph} from './graph-model';
+import {Graph,EditorPresentation,validateGraph,validateDraftGraph,validatePresentation,emptyPresentation} from './graph-model';
 export type Layout=Record<string,{x:number;y:number}>;
-interface Draft {revision:number;graph:Graph;layout:Layout;author:string;at:number;}
+export type {EditorPresentation} from './graph-model';
+interface Draft {revision:number;graph:Graph;layout:Layout;presentation?:EditorPresentation;author:string;at:number;}
 interface Version {version:number;author:string;at:number;rollbackFrom:number|null;}
+interface VersionMeta {layout:Layout;presentation:EditorPresentation;}
 interface Catalog {schema:1;revision:number;drafts:string[];graphs:Record<string,{versions:Version[]}>;assignments:Record<string,string>;}
 const key=(s:string)=>createHash('sha256').update('blueprint:'+s).digest('hex');
 const validId=(s:unknown):s is string=>typeof s==='string'&&!['constructor','prototype','__proto__'].includes(s)&&/^[a-z][a-z0-9-]{0,63}$/.test(s);
@@ -21,6 +23,11 @@ export class BlueprintStore {
   else {const graph=validateGraph(seed,routes,permits);this.journal.append(key('version:'+graph.id+':'+graph.version),graph);this.catalog={schema:1,revision:0,drafts:[],graphs:{[graph.id]:{versions:[{version:graph.version,author:'bootstrap',at:this.now(),rollbackFrom:null}]}},assignments:{}};this.journal.append(key('catalog'),this.catalog);}
   }catch(error){this.journal.close();throw error;}
  }
+ private validateLayout(layout:unknown,errorMsg:string):Layout{
+  if(!layout||typeof layout!=='object'||Array.isArray(layout)||Object.keys(layout).length>128)throw Error(errorMsg);
+  for(const [node,p]of Object.entries(layout as Layout))if(!validId(node)||!p||Object.keys(p).sort().join(',')!=='x,y'||![p.x,p.y].every(v=>Number.isFinite(v)&&Math.abs(v)<=100000))throw Error(errorMsg);
+  return clone(layout as Layout);
+ }
  private validateCatalog(c:Catalog){
   if(!c||Object.keys(c).sort().join(',')!=='assignments,drafts,graphs,revision,schema'||c.schema!==1||!Number.isSafeInteger(c.revision)||c.revision<0||!Array.isArray(c.drafts)||c.drafts.length>64||new Set(c.drafts).size!==c.drafts.length||c.drafts.some(id=>!validId(id))||!c.graphs||Array.isArray(c.graphs)||!c.assignments||Array.isArray(c.assignments)||Object.keys(c.graphs).length>64||Object.keys(c.assignments).length>64)throw Error('Invalid blueprint catalog');
   for(const [id,item]of Object.entries(c.graphs)){
@@ -35,27 +42,56 @@ export class BlueprintStore {
  private commit(next:Catalog){if(Buffer.byteLength(JSON.stringify(next))>60000)throw Error('Blueprint catalog capacity reached');this.journal.append(key('catalog'),next);this.catalog=next;}
  private checkId(id:string){if(!validId(id))throw Error('Invalid graph ID');}
  list(){return [...new Set([...Object.keys(this.catalog.graphs),...this.catalog.drafts])].map(id=>({id,version:this.catalog.graphs[id]?.versions.at(-1)?.version??0,draftRevision:this.draft(id)?.revision??0}));}
+ assignedNpcs(id:string){return Object.entries(this.catalog.assignments).filter(([,g])=>g===id).map(([npc])=>npc);}
  revision(){return this.catalog.revision;}
  published(id:string):Graph {this.checkId(id);const v=this.catalog.graphs[id]?.versions.at(-1);if(!v)throw Error('Unknown graph');return this.version(id,v.version);}
  private version(id:string,version:number){const g=this.journal.peek(key('version:'+id+':'+version));if(!g)throw Error('Published graph unavailable');return validateGraph(g,this.routes,this.permits);}
+ versionSnapshot(id:string,version:number){
+  this.checkId(id);
+  const entry=this.catalog.graphs[id]?.versions.find(v=>v.version===version);
+  if(!entry)throw Error('Unknown history version');
+  const graph=this.version(id,version);
+  const rawMeta=this.journal.peek(key('version-meta:'+id+':'+version)) as VersionMeta|null;
+  let layout:Layout={},presentation=emptyPresentation();
+  if(rawMeta&&typeof rawMeta==='object'&&!Array.isArray(rawMeta)){
+   try{layout=this.validateLayout(rawMeta.layout,'Invalid version layout');presentation=validatePresentation(rawMeta.presentation);}catch{}
+  }
+  return {...clone(entry),graph,layout,presentation};
+ }
+ versions(id:string){
+  this.checkId(id);
+  return (this.catalog.graphs[id]?.versions??[]).map(v=>this.versionSnapshot(id,v.version));
+ }
  history(id:string){this.checkId(id);return clone(this.catalog.graphs[id]?.versions??[]);}
- private readDraftRecord(id:string):Draft {const value=this.journal.peek(key('draft:'+id)) as Draft|null;if(!value||Object.keys(value).sort().join(',')!=='at,author,graph,layout,revision'||!Number.isSafeInteger(value.revision)||value.revision<1||!Number.isFinite(value.at))throw Error('Invalid stored draft');this.author(value.author);const graph=validateDraftGraph(value.graph,this.routes,this.permits);if(!value.layout||typeof value.layout!=='object'||Array.isArray(value.layout)||Object.keys(value.layout).length>128)throw Error('Invalid stored draft layout');for(const [node,p]of Object.entries(value.layout))if(!validId(node)||!p||Object.keys(p).sort().join(',')!=='x,y'||![p.x,p.y].every(v=>Number.isFinite(v)&&Math.abs(v)<=100000))throw Error('Invalid stored draft layout');return {revision:value.revision,at:value.at,author:value.author,graph,layout:clone(value.layout)};}
+ private readDraftRecord(id:string):Draft {
+  const value=this.journal.peek(key('draft:'+id)) as Draft|null;
+  const keys=value&&typeof value==='object'&&!Array.isArray(value)?Object.keys(value).sort().join(','):'';
+  if(!value||keys!=='at,author,graph,layout,revision'&&keys!=='at,author,graph,layout,presentation,revision'||!Number.isSafeInteger(value.revision)||value.revision<1||!Number.isFinite(value.at))throw Error('Invalid stored draft');
+  this.author(value.author);
+  const graph=validateDraftGraph(value.graph,this.routes,this.permits);
+  const layout=this.validateLayout(value.layout,'Invalid stored draft layout');
+  const presentation=value.presentation!==undefined?validatePresentation(value.presentation):undefined;
+  return {revision:value.revision,at:value.at,author:value.author,graph,layout,...(presentation?{presentation}:{})};
+ }
  draft(id:string):Draft|null {this.checkId(id);if(!this.catalog.drafts.includes(id))return null;return clone(this.readDraftRecord(id));}
- saveDraft(graph:Graph,layout:Layout,expectedRevision:number,author:string):Draft {
+ saveDraft(graph:Graph,layout:Layout,expectedRevision:number,author:string,presentation?:unknown):Draft {
   this.author(author);this.checkId(graph?.id);if(!Number.isSafeInteger(expectedRevision)||expectedRevision<0)throw Error('Invalid revision');
   // Incomplete links are allowed while authoring. Executable validation is mandatory on publish.
   if(!graph||!layout||Array.isArray(layout)||Object.keys(layout).length>128)throw Error('Invalid draft size');
   const checked=validateDraftGraph(graph,this.routes,this.permits);
   if(Buffer.byteLength(JSON.stringify(checked))>48000)throw Error('Invalid draft size');
-  for(const [id,p]of Object.entries(layout))if(!validId(id)||!p||Object.keys(p).sort().join(',')!=='x,y'||![p.x,p.y].every(v=>Number.isFinite(v)&&Math.abs(v)<=100000))throw Error('Invalid layout');
+  const checkedLayout=this.validateLayout(layout,'Invalid layout');
+  const checkedPresentation=presentation!==undefined?validatePresentation(presentation):undefined;
   if(!Number.isSafeInteger(graph.version)||graph.version<1)throw Error('Invalid draft graph version');
   const old=this.draft(graph.id);if((old?.revision??0)!==expectedRevision)throw Error('Draft revision conflict');
-  const draft={revision:expectedRevision+1,graph:checked,layout:clone(layout),author,at:this.now()};if(Buffer.byteLength(JSON.stringify(draft))>60000)throw Error('Draft capacity reached');
+  const finalPresentation=checkedPresentation??old?.presentation;
+  const draft:Draft={revision:expectedRevision+1,graph:checked,layout:checkedLayout,...(finalPresentation?{presentation:finalPresentation}:{}),author,at:this.now()};
+  if(Buffer.byteLength(JSON.stringify(draft))>60000)throw Error('Draft capacity reached');
   if(!this.catalog.drafts.includes(graph.id)&&this.catalog.drafts.length>=64)throw Error('Draft capacity reached');
   this.journal.append(key('draft:'+graph.id),draft);if(!this.catalog.drafts.includes(graph.id)){const next=clone(this.catalog);next.drafts.push(graph.id);next.revision++;this.commit(next);}return clone(draft);
  }
- publish(id:string,draftRevision:number,expectedVersion:number,author:string){const d=this.draft(id);if(!d||d.revision!==draftRevision)throw Error('Draft revision conflict');return this.publishGraph(d.graph,expectedVersion,author,null);}
- private publishGraph(input:Graph,expectedVersion:number,author:string,rollbackFrom:number|null){
+ publish(id:string,draftRevision:number,expectedVersion:number,author:string){const d=this.draft(id);if(!d||d.revision!==draftRevision)throw Error('Draft revision conflict');return this.publishGraph(d.graph,expectedVersion,author,null,{layout:d.layout,presentation:d.presentation??emptyPresentation()});}
+ private publishGraph(input:Graph,expectedVersion:number,author:string,rollbackFrom:number|null,meta?:VersionMeta){
   this.author(author);this.checkId(input.id);const latest=this.catalog.graphs[input.id]?.versions.at(-1)?.version??0;
   if(expectedVersion!==latest||!Number.isSafeInteger(expectedVersion))throw Error('Published version conflict');
   if(!this.catalog.graphs[input.id]&&Object.keys(this.catalog.graphs).length>=64)throw Error('Graph capacity reached');
@@ -64,9 +100,11 @@ export class BlueprintStore {
   const graph=validateGraph({...clone(input),version:latest+1},this.routes,this.permits);
   if(Buffer.byteLength(JSON.stringify(graph))>48000)throw Error('Published graph capacity reached');
   const next=clone(this.catalog);next.revision++;const record=next.graphs[graph.id]??{versions:[]};record.versions.push({version:graph.version,author,at:this.now(),rollbackFrom});next.graphs[graph.id]=record;
-  this.journal.append(key('version:'+graph.id+':'+graph.version),graph);this.commit(next);return clone(graph);
+  this.journal.append(key('version:'+graph.id+':'+graph.version),graph);
+  if(meta)this.journal.append(key('version-meta:'+graph.id+':'+graph.version),meta);
+  this.commit(next);return clone(graph);
  }
- rollback(id:string,version:number,expectedVersion:number,author:string){if(!this.history(id).some(v=>v.version===version))throw Error('Unknown history version');return this.publishGraph(this.version(id,version),expectedVersion,author,version);}
+ rollback(id:string,version:number,expectedVersion:number,author:string){if(!this.history(id).some(v=>v.version===version))throw Error('Unknown history version');const snap=this.versionSnapshot(id,version);return this.publishGraph(snap.graph,expectedVersion,author,version,{layout:snap.layout,presentation:snap.presentation});}
  assign(npcId:string,graphId:string,expectedRevision:number,author:string){this.author(author);if(typeof npcId!=='string'||!npcId||['constructor','prototype','__proto__'].includes(npcId)||npcId.length>64||Object.keys(this.catalog.assignments).length>=64&&!this.catalog.assignments[npcId])throw Error('Invalid NPC assignment');this.published(graphId);if(expectedRevision!==this.catalog.revision)throw Error('Assignment revision conflict');const next=clone(this.catalog);next.revision++;next.assignments[npcId]=graphId;this.commit(next);return next.revision;}
  forNpc(npcId:string){const id=this.catalog.assignments[npcId];return id?this.published(id):undefined;}
  close(){this.journal.close();}

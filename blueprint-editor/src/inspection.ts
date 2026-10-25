@@ -1,7 +1,7 @@
 import type {Edge} from '@xyflow/react';
 import type {Node} from '../../rp-gamemode/src/modules/dialogue/graph-model';
 
-export type Selection={kind:'node'|'edge';id:string}|null;
+export type Selection={kind:'node'|'edge'|'group';id:string}|null;
 export type TraceMode='direct'|'upstream'|'downstream';
 export const nodeInfo={entry:{label:'เริ่มบทสนทนา',icon:'↗',hint:'จุดเริ่มต้นของเรื่องราว'},npc:{label:'บทพูด NPC',icon:'“',hint:'ข้อความที่ผู้เล่นจะเห็น'},choices:{label:'ตัวเลือกผู้เล่น',icon:'☷',hint:'แตกแขนงเส้นทางบทสนทนา'},condition:{label:'ตรวจเงื่อนไข',icon:'◇',hint:'เลือกเส้นทางตามสถานะ'},action:{label:'บริการกิลด์',icon:'⚒',hint:'ใช้บริการ Courier ที่มีอยู่'},end:{label:'จบบทสนทนา',icon:'✓',hint:'กลับสู่โลกของ Frostveil'}};
 export const actionLabels:Record<string,string>={contracts:'ดูสัญญาส่งของ',rank:'ตรวจแรงก์ Courier',permits:'ดูใบอนุญาตกิลด์',accept:'รับสัญญาส่งของ',buyPermit:'ซื้อใบอนุญาต'};
@@ -31,8 +31,9 @@ export function connection(index:GraphIndex,edge:Edge){
  const meaning=`${source?title(source):edge.source} [${edge.source}] → ${choiceNumber?'ตัวเลือก '+choiceNumber+': ':''}${output} → ${target?title(target):edge.target} [${edge.target}]`;
  return {source,target,output,choiceNumber,input,meaning,issues};
 }
-export function validSelection(index:GraphIndex,selection:Selection):Selection {
+export function validSelection(index:GraphIndex,selection:Selection,groupIds?:ReadonlySet<string>):Selection {
  if(!selection)return null;
+ if(selection.kind==='group')return groupIds?.has(selection.id)?selection:null;
  return (selection.kind==='node'?index.nodes.has(selection.id):index.edges.has(selection.id))?selection:null;
 }
 export function openingNodes(index:GraphIndex,entry:string):string[]{
@@ -47,7 +48,7 @@ export function openingNodes(index:GraphIndex,entry:string):string[]{
 }
 export function trace(index:GraphIndex,selection:Selection,mode:TraceMode){
  const nodes=new Set<string>(),edges=new Set<string>();
- if(!selection)return {nodes,edges};
+ if(!selection||selection.kind==='group')return {nodes,edges};
  if(selection.kind==='edge'){const edge=index.edges.get(selection.id);if(edge){nodes.add(edge.source);nodes.add(edge.target);edges.add(edge.id);}return {nodes,edges};}
  if(!index.nodes.has(selection.id))return {nodes,edges};
  nodes.add(selection.id);const queue=[selection.id];
