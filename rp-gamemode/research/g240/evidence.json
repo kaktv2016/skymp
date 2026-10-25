@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-26",
+  "baseline": "db212a92033b8a2068901ac6b4fe6f787e738c29",
+  "branch": "dev/npc-compatibility-g240",
+  "nativeAddon": {
+    "size": 5569536,
+    "sha256": "a9e77780133b3c064a8abc9aa6f6971b1c73ff3c1b2d1539af404b3cbe389157"
+  },
+  "installedFiles": [
+    {
+      "sha256": "c434208894f07f604b852f29b8edc3a58c4de63de783373733e72b2b73f33be9",
+      "size": 37157144,
+      "path": "SkyrimSE.exe",
+      "fileVersion": "1.6.1170.0"
+    },
+    {
+      "sha256": "730c2743f6871fbaeb8606c1d3b7a55feca045c3d74858a41b0c6d03cd989fbc",
+      "size": 225792,
+      "path": "skse64_loader.exe",
+      "fileVersion": "0, 2, 2, 6"
+    },
+    {
+      "sha256": "c9a2c8a80df6bf2372c5f49468bb2e5ab67786157265b6f29ece9f4eac075d54",
+      "size": 1173504,
+      "path": "skse64_1_6_1170.dll",
+      "fileVersion": "0, 2, 2, 6"
+    },
+    {
+      "sha256": "7247563330f38ead8cb2d3284bc2f721552b74a118a4045509c437227348b765",
+      "size": 149504,
+      "path": "Data\\SKSE\\Plugins\\SkyrimPlatform.dll",
+      "fileVersion": "2.9.0.0"
+    },
+    {
+      "sha256": "c91b5ed52adf1328877366c9497a668e2abaf1c5314b2b9ed422b762320f1a66",
+      "size": 15676928,
+      "path": "Data\\Platform\\Distribution\\RuntimeDependencies\\SkyrimPlatformImpl.dll",
+      "fileVersion": "2.9.0.0"
+    },
+    {
+      "sha256": "67cec3774049606e635af3f4b6c84abe87a24ddc53d7392db9badb60a9fb69e6",
+      "size": 1451296,
+      "path": "Data\\Platform\\Plugins\\skymp5-client.js",
+      "fileVersion": null
+    },
+    {
+      "sha256": "5225e4e3b185e6fc57c8d31b0cedbe5a030a951d9a744d33071b64c45a38c208",
+      "size": 2521088,
+      "path": "Data\\SKSE\\Plugins\\skee64.dll",
+      "fileVersion": "0.4.20.0"
+    },
+    {
+      "sha256": "199555b05809457430c9bc0510f79798e1156e2b2b7535f12c29e889b85ef780",
+      "size": 7402,
+      "path": "Data\\SKSE\\Plugins\\skee64.ini",
+      "fileVersion": null
+    },
+    {
+      "sha256": "c4093c569a3c83b26587f4b9ea4c55de9ae6e73b84a2af9fb3fbd30e2fe0d452",
+      "size": 795129,
+      "path": "Data\\SKSE\\Plugins\\versionlib-1-6-1170-0.bin",
+      "fileVersion": null
+    }
+  ],
+  "installedFilesFinalCheck": {
+    "installedFilesUnchanged": true,
+    "filesChecked": 9,
+    "baseSnippetIndex": 547551,
+    "generatedSnippetIndex": 547705
+  },
+  "tests": {
+    "rp": 347,
+    "editor": 80,
+    "client": 50,
+    "capabilityMocks": 8,
+    "nativeEsmCases": 84,
+    "nativeEsmAssertions": 475373,
+    "rpBuild": "PASS",
+    "editorBuild": "PASS",
+    "clientWebpack": "PASS; DEPLOY_PLUGIN=false",
+    "clientTscNoEmit": "PASS",
+    "nativeWriteReload": "PASS data-only",
+    "realClientRendering": "UNVERIFIED",
+    "realTwoClient": "UNVERIFIED"
+  },
+  "nativeProbe": {
+    "actorCount": 2,
+    "distinctRegisteredIdentities": true,
+    "distinctAppearanceData": true,
+    "distinctInventoryData": true,
+    "equipmentSetter": "BLOCKED: mp.set is not implemented for equipment",
+    "equipmentUnchanged": true,
+    "separateRestartProcess": true,
+    "liveDataUnchanged": true,
+    "protectedBeforeSHA256": "5edaa20a730ce79b34675b06224bd2a47ebfb4b116cef5af15296f10677d6616",
+    "protectedAfterSHA256": "5edaa20a730ce79b34675b06224bd2a47ebfb4b116cef5af15296f10677d6616"
+  },
+  "delivery": {
+    "promotionEligible": false,
+    "productionChanged": false,
+    "serverRestarted": false,
+    "clientPublished": false,
+    "r2Uploads": 0,
+    "reason": "Visual and intended outfit gates not met; research remains isolated"
+  },
+  "diagnostics": [
+    {
+      "file": "build/rp-audit/g240/rp-regressions.log",
+      "sha256": "fb056b6f5cee6a1c2895e769acaa4ff9fadf911f9da5844599901495f7d66fe6"
+    },
+    {
+      "file": "build/rp-audit/g240/editor-regressions.log",
+      "sha256": "7d3a4ce5768287eac07513d360379788318c01f15bdd6cb90cd8fe8bb4989a77"
+    },
+    {
+      "file": "build/rp-audit/g240/editor-build.log",
+      "sha256": "8327a42f11f9965c6db8b776a6cbc96ffd85994e2e2117b9c533065c99531e6e"
+    },
+    {
+      "file": "build/rp-audit/g240/client-regressions.log",
+      "sha256": "db7af2d1a065cfab06d14cc9a2dad1629362df00b003097398f029935d6c815d"
+    },
+    {
+      "file": "build/rp-audit/g240/client-state-tests.log",
+      "sha256": "2ba90152ab46ec82bf655825fcf7d377537631d714bd13a7528e0a51ede101c0"
+    },
+    {
+      "file": "build/rp-audit/g240/client-build.log",
+      "sha256": "5644c12785bd7c1b9b7e341331158d4378f4ae5dcbe88eb208c432ed52934609"
+    },
+    {
+      "file": "build/rp-audit/g240/client-typecheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "build/rp-audit/g240/espm-regressions.log",
+      "sha256": "d8e64f41df901552a4139fe9c34458917ccd73c67136562a761fd332512e333b"
+    },
+    {
+      "file": "build/rp-audit/g240/native-poc.log",
+      "sha256": "45ba5d6a14ccbd98786f5345d1973a94597db64e481dbac4b1dc472551885dcc"
+    }
+  ]
+}
