@@ -44,7 +44,3 @@ export function routeSmart(graph:RoutingGraph,previous?:{graph:RoutingGraph;resu
  if(!points){warnings.push(`Edge ${edge.id||'(unknown)'} could not be routed cleanly`);points=[edge.start,edge.end].filter(p=>p&&Number.isFinite(p.x+p.y));if(!points.length)points=[{x:0,y:0}];routes.set(edge.id,{id:edge.id,points,returning,status:'fallback',origin:'smart',reason:'invalid geometry or no obstacle-free corridor'});}else routes.set(edge.id,{id:edge.id,points,returning,status:'clean',origin:'smart'});
  }return{routes,warnings,elapsedMs:performance.now()-started,recomputed,reused};}
 function segmentBox(a:Point,b:Point,n:RoutingNode,pad:number){return a.x===b.x?a.x>n.x-pad&&a.x<n.x+n.width+pad&&Math.max(a.y,b.y)>n.y-pad&&Math.min(a.y,b.y)<n.y+n.height+pad:a.y>n.y-pad&&a.y<n.y+n.height+pad&&Math.max(a.x,b.x)>n.x-pad&&Math.min(a.x,b.x)<n.x+n.width+pad;}
-
-
-
-

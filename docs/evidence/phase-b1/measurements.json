@@ -1,0 +1,448 @@
+{
+  "measuredAt": "2026-10-25",
+  "fixtureSHA256": "7edba8b851f4a5774083bfb0170a787cb73b77a806be818e56fc02df27d5336d",
+  "routing": {
+    "method": "Proper segment crossings, >=24px axis overlaps, open-card interior segment hits; cubic/quadratic legacy curves sampled at 16 subdivisions. Detour = route length minus straight Euclidean distance, px.",
+    "clerk": {
+      "nodes": 14,
+      "edges": 23,
+      "legacy": {
+        "crossings": 70,
+        "nodeIntersections": 117,
+        "significantOverlaps": 2,
+        "totalLength": 18256.745510266017,
+        "detourP95": 255.15928231074554,
+        "detourMax": 293.4442206458083,
+        "examinedSegments": 373
+      },
+      "smart": {
+        "crossings": 63,
+        "nodeIntersections": 0,
+        "significantOverlaps": 28,
+        "totalLength": 24189,
+        "detourP95": 914.3484850011941,
+        "detourMax": 2305.49885245988,
+        "examinedSegments": 176,
+        "computeMs": 4.141499999999951,
+        "fallbacks": 0
+      },
+      "elk": {
+        "crossings": 13,
+        "nodeIntersections": 0,
+        "significantOverlaps": 117,
+        "totalLength": 35424,
+        "detourP95": 2272.409623685455,
+        "detourMax": 2393.3424346271618,
+        "examinedSegments": 351,
+        "computeMs": 173.0394,
+        "width": 1260,
+        "height": 2324
+      }
+    },
+    "stress": {
+      "nodes": 128,
+      "edges": 2017,
+      "legacy": {
+        "crossings": 304067,
+        "nodeIntersections": 42300,
+        "significantOverlaps": 24515,
+        "totalLength": 9462092.749922948,
+        "detourP95": 501.392273552578,
+        "detourMax": 2638.1483399323643,
+        "examinedSegments": 978984
+      },
+      "smart": {
+        "crossings": 202508,
+        "nodeIntersections": 5466,
+        "significantOverlaps": 8717,
+        "totalLength": 9424052.032500044,
+        "detourP95": 1426.805346240104,
+        "detourMax": 4360.816757464643,
+        "examinedSegments": 525447,
+        "computeMs": 922.3138,
+        "fallbacks": 765
+      },
+      "elk": {
+        "crossings": 190771,
+        "nodeIntersections": 3933,
+        "significantOverlaps": 22036,
+        "totalLength": 10287152.96020889,
+        "detourP95": 1526.9355822478883,
+        "detourMax": 5275.4718713591155,
+        "examinedSegments": 522548,
+        "computeMs": 971.1544000000001,
+        "width": 4276,
+        "height": 15360
+      }
+    }
+  },
+  "performance": {
+    "before-clerk": {
+      "base": "http://127.0.0.1:3213",
+      "stress": false,
+      "counts": {
+        "nodes": 6,
+        "edges": 23
+      },
+      "panZoom": {
+        "samples": 141,
+        "p50": 5,
+        "p95": 5.099999999999909,
+        "max": 9.899999999999864
+      },
+      "drag": {
+        "samples": 40,
+        "p50": 5,
+        "p95": 5.099999999999909,
+        "max": 5.099999999999909
+      },
+      "selection": {
+        "average": 18.272727272727273,
+        "p95": 26,
+        "max": 26
+      },
+      "hover": null,
+      "errors": []
+    },
+    "before-stress": {
+      "base": "http://127.0.0.1:3213",
+      "stress": true,
+      "counts": {
+        "nodes": 8,
+        "edges": 462
+      },
+      "panZoom": {
+        "samples": 174,
+        "p50": 5,
+        "p95": 10.099999999999909,
+        "max": 55
+      },
+      "drag": {
+        "samples": 89,
+        "p50": 9.900000000000546,
+        "p95": 40.099999999999454,
+        "max": 300.0999999999999
+      },
+      "selection": {
+        "average": 38.8125,
+        "p95": 57,
+        "max": 57
+      },
+      "hover": null,
+      "errors": []
+    },
+    "after-clerk": {
+      "base": "http://127.0.0.1:3212",
+      "stress": false,
+      "counts": {
+        "nodes": 6,
+        "edges": 23
+      },
+      "panZoom": {
+        "samples": 136,
+        "p50": 5,
+        "p95": 5.099999999999909,
+        "max": 9.899999999999864
+      },
+      "drag": {
+        "samples": 31,
+        "p50": 5,
+        "p95": 5.100000000000364,
+        "max": 9.5
+      },
+      "selection": {
+        "average": 26.90909090909091,
+        "p95": 54,
+        "max": 54
+      },
+      "hover": {
+        "samples": 11,
+        "p50": 9.900000000372529,
+        "p95": 12.099999999627471,
+        "max": 12.099999999627471
+      },
+      "errors": []
+    },
+    "after-stress": {
+      "base": "http://127.0.0.1:3212",
+      "stress": true,
+      "counts": {
+        "nodes": 8,
+        "edges": 462
+      },
+      "panZoom": {
+        "samples": 170,
+        "p50": 5,
+        "p95": 10,
+        "max": 162.9000000000001
+      },
+      "drag": {
+        "samples": 78,
+        "p50": 10,
+        "p95": 35.19999999999982,
+        "max": 210
+      },
+      "selection": {
+        "average": 39.125,
+        "p95": 54,
+        "max": 54
+      },
+      "hover": {
+        "samples": 16,
+        "p50": 37.69999999925494,
+        "p95": 76.70000000111759,
+        "max": 76.70000000111759
+      },
+      "errors": []
+    }
+  },
+  "browserQA": {
+    "summary": [
+      {
+        "port": 3213,
+        "kind": "clerk",
+        "width": 1366,
+        "file": "build/rp-audit/phase-b1/before-clerk-1366.png",
+        "nodes": 14,
+        "paths": 23,
+        "smart": 0,
+        "overflow": false
+      },
+      {
+        "port": 3213,
+        "kind": "clerk",
+        "width": 1920,
+        "file": "build/rp-audit/phase-b1/before-clerk-1920.png",
+        "nodes": 14,
+        "paths": 23,
+        "smart": 0,
+        "overflow": false
+      },
+      {
+        "port": 3213,
+        "kind": "clerk",
+        "width": 2560,
+        "file": "build/rp-audit/phase-b1/before-clerk-2560.png",
+        "nodes": 14,
+        "paths": 23,
+        "smart": 0,
+        "overflow": false
+      },
+      {
+        "port": 3213,
+        "kind": "stress",
+        "width": 1366,
+        "file": "build/rp-audit/phase-b1/before-stress-1366.png",
+        "nodes": 128,
+        "paths": 2017,
+        "smart": 0,
+        "overflow": false
+      },
+      {
+        "port": 3213,
+        "kind": "stress",
+        "width": 1920,
+        "file": "build/rp-audit/phase-b1/before-stress-1920.png",
+        "nodes": 128,
+        "paths": 2017,
+        "smart": 0,
+        "overflow": false
+      },
+      {
+        "port": 3213,
+        "kind": "stress",
+        "width": 2560,
+        "file": "build/rp-audit/phase-b1/before-stress-2560.png",
+        "nodes": 14,
+        "paths": 798,
+        "smart": 0,
+        "overflow": false
+      },
+      {
+        "port": 3212,
+        "kind": "clerk",
+        "width": 1366,
+        "file": "build/rp-audit/phase-b1/after-clerk-1366.png",
+        "nodes": 14,
+        "paths": 23,
+        "smart": 23,
+        "overflow": false,
+        "elk": 23,
+        "workflow": true,
+        "writes": [
+          "draft",
+          "publish",
+          "assign"
+        ]
+      },
+      {
+        "port": 3212,
+        "kind": "clerk",
+        "width": 1920,
+        "file": "build/rp-audit/phase-b1/after-clerk-1920.png",
+        "nodes": 14,
+        "paths": 23,
+        "smart": 23,
+        "overflow": false,
+        "elk": 23,
+        "workflow": true,
+        "writes": [
+          "draft",
+          "publish",
+          "assign"
+        ]
+      },
+      {
+        "port": 3212,
+        "kind": "clerk",
+        "width": 2560,
+        "file": "build/rp-audit/phase-b1/after-clerk-2560.png",
+        "nodes": 14,
+        "paths": 23,
+        "smart": 23,
+        "overflow": false,
+        "elk": 23,
+        "workflow": true,
+        "writes": [
+          "draft",
+          "publish",
+          "assign"
+        ]
+      },
+      {
+        "port": 3212,
+        "kind": "stress",
+        "width": 1366,
+        "file": "build/rp-audit/phase-b1/after-stress-1366.png",
+        "nodes": 128,
+        "paths": 2017,
+        "smart": 2017,
+        "overflow": false
+      },
+      {
+        "port": 3212,
+        "kind": "stress",
+        "width": 1920,
+        "file": "build/rp-audit/phase-b1/after-stress-1920.png",
+        "nodes": 128,
+        "paths": 2017,
+        "smart": 2017,
+        "overflow": false
+      },
+      {
+        "port": 3212,
+        "kind": "stress",
+        "width": 2560,
+        "file": "build/rp-audit/phase-b1/after-stress-2560.png",
+        "nodes": 128,
+        "paths": 2017,
+        "smart": 2017,
+        "overflow": false
+      }
+    ],
+    "errors": []
+  },
+  "deployedBrowserQA": {
+    "summary": [
+      {
+        "port": 3210,
+        "kind": "clerk",
+        "width": 1366,
+        "file": "build/rp-audit/phase-b1/deployed-after-clerk-1366.png",
+        "nodes": 14,
+        "paths": 23,
+        "smart": 23,
+        "overflow": false,
+        "elk": 23,
+        "workflow": true,
+        "writes": [
+          "draft",
+          "publish",
+          "assign"
+        ]
+      },
+      {
+        "port": 3210,
+        "kind": "clerk",
+        "width": 1920,
+        "file": "build/rp-audit/phase-b1/deployed-after-clerk-1920.png",
+        "nodes": 14,
+        "paths": 23,
+        "smart": 23,
+        "overflow": false,
+        "elk": 23,
+        "workflow": true,
+        "writes": [
+          "draft",
+          "publish",
+          "assign"
+        ]
+      },
+      {
+        "port": 3210,
+        "kind": "clerk",
+        "width": 2560,
+        "file": "build/rp-audit/phase-b1/deployed-after-clerk-2560.png",
+        "nodes": 14,
+        "paths": 23,
+        "smart": 23,
+        "overflow": false,
+        "elk": 23,
+        "workflow": true,
+        "writes": [
+          "draft",
+          "publish",
+          "assign"
+        ]
+      },
+      {
+        "port": 3210,
+        "kind": "stress",
+        "width": 1366,
+        "file": "build/rp-audit/phase-b1/deployed-after-stress-1366.png",
+        "nodes": 128,
+        "paths": 2017,
+        "smart": 2017,
+        "overflow": false
+      },
+      {
+        "port": 3210,
+        "kind": "stress",
+        "width": 1920,
+        "file": "build/rp-audit/phase-b1/deployed-after-stress-1920.png",
+        "nodes": 128,
+        "paths": 2017,
+        "smart": 2017,
+        "overflow": false
+      },
+      {
+        "port": 3210,
+        "kind": "stress",
+        "width": 2560,
+        "file": "build/rp-audit/phase-b1/deployed-after-stress-2560.png",
+        "nodes": 128,
+        "paths": 2017,
+        "smart": 2017,
+        "overflow": false
+      }
+    ],
+    "errors": []
+  },
+  "stressLayoutBrowser": {
+    "outcome": "Layout previewLayout preview — Apply enables Smart routes. Nothing has been saved. Dense graph: ELK spanning layout (127 sections), Smart routing for 1890 additional links · 2017 routes · 950msApply layoutCancel",
+    "elapsed": 1053,
+    "stillInteractive": true,
+    "errors": []
+  },
+  "endpointProof": {
+    "count": 2017,
+    "failures": []
+  },
+  "screenshots": {
+    "after-clerk-focused.png": "8ea9ca4ca5763f666bc8cfcac38fd2fe36e93b305ca392210abb08b1391c4194",
+    "before-clerk-focused.png": "26fe9c1c4365871a4dbad82c78b6d924cfe7ca31913649338ed80c209efcb722",
+    "before-stress-1920.png": "f6d4a3a8bdad996f68e3c4b2ba08e389ae0e226ccc4366f246c127cee6165e13",
+    "deployed-after-stress-1920.png": "0e92fa15dca7fd1d8653d264b40023913a0f11f71323983690d19fdb7b4912c5",
+    "elk-clerk-focused.png": "375ae46216d28bc4c3fc9089ece9eff441d2a577bf202976ceca5e3b94f131ee"
+  }
+}
