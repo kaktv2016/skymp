@@ -1,0 +1,3 @@
+import {test,expect} from 'vitest';
+import {attachedRoute,polylineData} from './route-svg';
+test('renders the actual computed ELK polyline and temporarily attaches stale paths during drag',()=>{const route={id:'x',origin:'elk' as const,status:'clean' as const,returning:false,points:[{x:10,y:20},{x:50,y:20},{x:50,y:100},{x:200,y:100}]};const actual=attachedRoute(route,route.points[0],route.points.at(-1)!);expect(actual.path).toBe('M10 20 L50 20 L50 100 L200 100');expect(actual.pending).toBe(false);const preview=attachedRoute(route,{x:11,y:20},route.points.at(-1)!);expect(preview.pending).toBe(true);expect(preview.path.startsWith('M11 20')).toBe(true);expect(preview.path.endsWith('L200 100')).toBe(true);expect(polylineData(route.points).x).toBeGreaterThanOrEqual(50);});

@@ -14,6 +14,13 @@ const fixture:Graph={schemaVersion:1,id:'courier-clerk',version:1,entry:'entry',
  {id:'end',type:'end'}
 ]};
 
+vi.mock('./routing-client',async()=>{
+ const actual=await vi.importActual<any>('./routing-client');
+ const {default:ELK}=await import('elkjs/lib/elk.bundled.js');
+ const {routeSmart}=await import('./orthogonal-router');const {layoutWithElk}=await import('./elk-layout');
+ return {...actual,createRouteClient:()=>({run:async({graph,previous}:any)=>routeSmart(graph,previous),cancel:()=>{},dispose:()=>{}}),createLayoutClient:()=>({run:(g:any)=>layoutWithElk(g,new ELK()),cancel:()=>{},dispose:()=>{}})};
+});
+
 vi.mock('@xyflow/react',async()=>{
  const React=await import('react');
  return {
@@ -169,11 +176,23 @@ describe('Blueprint Studio UI',()=>{
  });
  it('arranging the graph preserves executable dialogue and can be undone before saving',async()=>{
   const user=await enter();
-  await user.click(screen.getByRole('button',{name:'จัดกราฟใหม่'}));
+  await user.click(screen.getByRole('button',{name:'Auto Arrange'}));
+  await user.click(await screen.findByRole('button',{name:'Apply layout'}));
   await user.click(screen.getByRole('button',{name:'Undo'}));
   await user.click(screen.getByRole('button',{name:'Save draft'}));
   await waitFor(()=>expect(calls.some(call=>call.op==='draft')).toBe(true));
   expect(calls.find(call=>call.op==='draft')?.payload.graph).toEqual(fixture);
+ });
+ it('cancels layout without saving and preserves positions, semantics and explicit routing mode',async()=>{
+  const user=await enter();await user.click(screen.getByRole('button',{name:'Save draft'}));
+  await waitFor(()=>expect(calls.some(c=>c.op==='draft')).toBe(true));const before=calls.find(c=>c.op==='draft')!.payload;
+  await user.click(screen.getByRole('button',{name:'Auto Arrange'}));await screen.findByRole('button',{name:'Apply layout'});
+  expect(screen.getByRole('button',{name:'Save draft'})).toHaveProperty('disabled',true);
+  await user.click(screen.getByRole('button',{name:'Cancel auto arrange'}));
+  await user.selectOptions(screen.getByLabelText('Routing mode'),'legacy');await user.selectOptions(screen.getByLabelText('Routing mode'),'smart');
+  await user.click(screen.getByRole('button',{name:'Save draft'}));await waitFor(()=>expect(calls.filter(c=>c.op==='draft')).toHaveLength(2));
+  const after=calls.filter(c=>c.op==='draft')[1]!.payload;expect(after.graph).toEqual(before.graph);expect(after.layout).toEqual(before.layout);
+  expect(calls.some(c=>c.op==='publish'||c.op==='assign')).toBe(false);expect(viewport.setViewport).toHaveBeenCalledWith({x:0,y:0,zoom:1},{duration:0});
  });
  it('authenticates, edits Unicode dialogue, saves a draft and reloads graph state',async()=>{
   const user=await enter();const dialogue=screen.getByLabelText('Dialogue');await user.clear(dialogue);await user.type(dialogue,'สวัสดีชาว Frostveil');

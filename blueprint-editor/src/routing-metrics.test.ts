@@ -1,0 +1,6 @@
+import {describe,it,expect} from 'vitest';
+import {measureRoutes} from './routing-metrics';
+import type {RoutingGraph,RoutedPath} from './routing-types';
+const route=(id:string,points:{x:number;y:number}[]):RoutedPath=>({id,returning:false,status:'clean',origin:'smart',points});
+describe('measureRoutes',()=>{it('counts crossings, overlaps and total length',()=>{const graph:RoutingGraph={entry:'a',nodes:[],edges:[]};const m=measureRoutes(graph,[route('h',[{x:0,y:10},{x:40,y:10}]),route('v',[{x:20,y:0},{x:20,y:30}]),route('shared',[{x:0,y:10},{x:30,y:10}])]);expect(m.crossings).toBe(2);expect(m.significantOverlaps).toBe(1);expect(m.totalLength).toBe(100);});it('uses exact diagonal segment intersection, not bounding boxes',()=>{const graph:RoutingGraph={entry:'a',nodes:[],edges:[]};const m=measureRoutes(graph,[route('a',[{x:0,y:0},{x:10,y:10}]),route('b',[{x:0,y:10},{x:4,y:6}])]);expect(m.crossings).toBe(0);});it('counts line passes through endpoint node interiors',()=>{const graph:RoutingGraph={entry:'a',nodes:[{id:'a',type:'choices',x:0,y:0,width:20,height:20,ports:[]},{id:'b',type:'dialogue',x:40,y:0,width:20,height:20,ports:[]}],edges:[{id:'e',source:'a',target:'b',sourceHandle:'x',start:{x:-5,y:10},end:{x:65,y:10},order:0}]};const m=measureRoutes(graph,[route('e',[{x:-5,y:10},{x:65,y:10}])]);expect(m.nodeIntersections).toBe(2);});});
+

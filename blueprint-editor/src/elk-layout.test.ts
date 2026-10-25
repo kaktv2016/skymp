@@ -1,0 +1,29 @@
+import {test,expect} from 'vitest';
+import ELK from 'elkjs/lib/elk.bundled.js';
+import {toCanvas,fromCanvas,NODE_WIDTH,nodeHandles,nodeHeight} from './mapping';
+import {buildRoutingGeometry} from './routing-geometry';
+import {toElkGraph,layoutWithElk} from './elk-layout';
+import type {Graph} from '../../rp-gamemode/src/modules/dialogue/graph-model';
+const fixture:Graph={schemaVersion:1,id:'ports',version:1,entry:'entry',nodes:[{id:'entry',type:'entry',next:'menu'},{id:'menu',type:'choices',choices:Array.from({length:16},(_,i)=>({id:'stable-'+i,text:'ทางเลือกภาษาไทย '+i,next:'service-'+i}))},...Array.from({length:16},(_,i)=>({id:'service-'+i,type:'action' as const,action:'rank' as const,next:'menu'})),{id:'end',type:'end'}]};
+test('maps every handle to a globally stable port with exact native attachment and fixed position/order',()=>{
+ const canvas=toCanvas(fixture),snapshot=buildRoutingGeometry(canvas,fixture.entry),input=toElkGraph(snapshot.graph),menu=input.children!.find(n=>n.id==='menu')!,raw=canvas.nodes.find(n=>n.id==='menu')!;
+ expect(menu.width).toBe(NODE_WIDTH);expect(menu.height).toBe(nodeHeight(raw.data.runtime));expect(menu.layoutOptions?.['elk.portConstraints']).toBe('FIXED_POS');
+ const expected=nodeHandles(raw.data.runtime).filter(h=>h.type==='source');for(let i=0;i<16;i++){const p=menu.ports!.find(p=>p.id.endsWith('/source/'+encodeURIComponent('choice:stable-'+i)))!;expect(p).toMatchObject({x:expected[i]!.x+12,y:expected[i]!.y+6,width:0,height:0});}
+ expect(new Set(input.children!.flatMap(n=>n.ports!.map(p=>p.id))).size).toBe(input.children!.reduce((sum,n)=>sum+n.ports!.length,0));
+});
+test('installed ELK layered returns positions AND sections whose endpoints match exact handles; graph semantics stay identical',async()=>{
+ const canvas=toCanvas(fixture),snapshot=buildRoutingGeometry(canvas,fixture.entry),before=JSON.stringify(canvas),result=await layoutWithElk(snapshot.graph,new ELK());
+ expect(result.positions.menu.x).toBeLessThan(result.positions['service-0'].x);
+ expect(result.routes.size).toBe(snapshot.graph.edges.length);expect(Object.keys(result.positions)).toHaveLength(fixture.nodes.length);
+ for(const edge of snapshot.graph.edges){const route=result.routes.get(edge.id)!;expect(route.origin).toBe('elk');expect(route.points.length).toBeGreaterThanOrEqual(2);const source=snapshot.graph.nodes.find(n=>n.id===edge.source)!,target=snapshot.graph.nodes.find(n=>n.id===edge.target)!;expect(route.points[0]).toEqual({x:result.positions[edge.source]!.x+edge.start.x-source.x,y:result.positions[edge.source]!.y+edge.start.y-source.y});expect(route.points.at(-1)).toEqual({x:result.positions[edge.target]!.x+edge.end.x-target.x,y:result.positions[edge.target]!.y+edge.end.y-target.y});}
+ expect(JSON.stringify(canvas)).toBe(before);expect(fromCanvas(fixture,{...canvas,nodes:canvas.nodes.map(n=>({...n,position:result.positions[n.id]!}))})).toEqual(fixture);
+},10000);
+test('fixed/manual geometry is never moved by geometry preparation; malformed links remain reported and do not invent ports',async()=>{
+ const canvas=toCanvas(fixture,Object.fromEntries(fixture.nodes.map((n,i)=>[n.id,{x:10000+i*421,y:-523.25+i*193.5}])));canvas.edges.push({id:'bad',source:'menu',sourceHandle:'fake',target:'missing'});const before=JSON.stringify(canvas),snapshot=buildRoutingGeometry(canvas,fixture.entry);expect(snapshot.warnings.length).toBeGreaterThan(0);expect(snapshot.graph.edges.some(e=>e.id==='bad')).toBe(false);expect(snapshot.graph.nodes[0]).toMatchObject({x:10000,y:-523.25});expect(JSON.stringify(canvas)).toBe(before);
+ const result=await layoutWithElk(snapshot.graph,new ELK());expect(result.positions.entry).not.toEqual(canvas.nodes[0]!.position); // Layered is not a fixed-position router.
+},10000);
+test('the installed engine exposes the exact options used by the adapter',async()=>{const elk=new ELK(),algorithms=await elk.knownLayoutAlgorithms(),options=await elk.knownLayoutOptions();expect(algorithms.some(a=>a.id==='org.eclipse.elk.layered')).toBe(true);for(const id of ['org.eclipse.elk.portConstraints','org.eclipse.elk.port.borderOffset','org.eclipse.elk.layered.spacing.nodeNodeBetweenLayers'])expect(options.some(o=>o.id===id)).toBe(true);});
+
+test('handles crossing branches, disconnected components and cycles without losing links',async()=>{const g:Graph={schemaVersion:1,id:'mixed',version:1,entry:'e',nodes:[{id:'e',type:'entry',next:'m'},{id:'m',type:'choices',choices:[{id:'a',text:'A',next:'a'},{id:'b',text:'B',next:'b'}]},{id:'a',type:'condition',condition:'always',next:'b',otherwise:'z'},{id:'b',type:'npc',text:'Cycle',next:'m'},{id:'z',type:'end'},{id:'isolated',type:'npc',text:'Detached',next:'isolated-end'},{id:'isolated-end',type:'end'}]};const canvas=toCanvas(g),snapshot=buildRoutingGeometry(canvas,'e'),result=await layoutWithElk(snapshot.graph,new ELK());expect(result.routes.size).toBe(snapshot.graph.edges.length);expect(Object.keys(result.positions).sort()).toEqual(g.nodes.map(n=>n.id).sort());expect(fromCanvas(g,canvas)).toEqual(g);});
+
+test('dense spanning fallback retains all 2017 stable edges and renders genuine ELK sections',async()=>{const g:Graph={schemaVersion:1,id:'stress',version:1,entry:'entry',nodes:[{id:'entry',type:'entry',next:'n0'},...Array.from({length:126},(_,i)=>({id:'n'+i,type:'choices' as const,choices:Array.from({length:16},(_,j)=>({id:'c'+j,text:'Choice '+j,next:j===15?'end':'n'+((i+j+1)%126)}))})),{id:'end',type:'end'}]};const input=buildRoutingGeometry(toCanvas(g),'entry').graph,before=JSON.stringify(input),result=await layoutWithElk(input,new ELK());expect(result.routes.size).toBe(2017);expect(Object.keys(result.positions)).toHaveLength(128);expect([...result.routes.values()].filter(r=>r.origin==='elk').length).toBeGreaterThan(100);expect([...result.routes.keys()].sort()).toEqual(input.edges.map(e=>e.id).sort());expect(result.warnings[0]).toMatch(/ELK spanning/);expect(JSON.stringify(input)).toBe(before);},10000);
