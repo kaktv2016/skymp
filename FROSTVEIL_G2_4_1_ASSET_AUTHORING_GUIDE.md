@@ -1,7 +1,7 @@
 # G2.4.1 NPC Asset Authoring Guide (tool and delivery audit)
 
-Audit date: 2026-10-26  
-Repository: `C:\Users\basba\OneDrive\Desktop\skyrim-rp\skymp`  
+Audit date: 2026-10-26
+Repository: `C:\Users\basba\OneDrive\Desktop\skyrim-rp\skymp`
 Scope: read-only installed-tool, master, and Launcher audit. No game files, production data, signing material, or GUI were touched. No ESP, FaceGen, or staged asset package was created.
 
 ## Findings and current gate
