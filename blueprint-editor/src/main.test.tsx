@@ -18,7 +18,7 @@ vi.mock('./routing-client',async()=>{
  const actual=await vi.importActual<any>('./routing-client');
  const {default:ELK}=await import('elkjs/lib/elk.bundled.js');
  const {routeSmart}=await import('./orthogonal-router');const {layoutWithElk}=await import('./elk-layout');
- return {...actual,createRouteClient:()=>({run:async({graph,previous}:any)=>routeSmart(graph,previous),cancel:()=>{},dispose:()=>{}}),createLayoutClient:()=>({run:(g:any)=>layoutWithElk(g,new ELK()),cancel:()=>{},dispose:()=>{}})};
+ return {...actual,createRouteClient:()=>({run:async({graph}:any)=>({routes:new Map(graph.edges.map((e:any)=>[e.id,{id:e.id,origin:'smart',status:'clean',returning:e.end.x<=e.start.x,points:[e.start,e.end]}])),warnings:[],elapsedMs:0,recomputed:graph.edges.length,reused:0}),cancel:()=>{},dispose:()=>{}}),createLayoutClient:()=>({run:(g:any)=>layoutWithElk(g,new ELK()),cancel:()=>{},dispose:()=>{}})};
 });
 
 vi.mock('@xyflow/react',async()=>{
@@ -68,6 +68,7 @@ describe('Blueprint Studio UI',()=>{
   const edgeLevel=Number(document.querySelector('[data-edge-id="menu:choice:exit"]')?.getAttribute('data-stack'));
   expect(level('menu')).toBeGreaterThan(edgeLevel);expect(level('end')).toBeGreaterThan(edgeLevel);expect(level('welcome')).toBe(0);
  });
+ it('isolates a selected path as display-only state and restores normal view without graph writes',async()=>{const user=await enter();const toggle=screen.getByRole('button',{name:'Focus Path'});expect(toggle).toHaveProperty('disabled',true);await user.click(screen.getByRole('button',{name:'Edge menu:choice:contracts'}));await user.click(toggle);expect(toggle.getAttribute('aria-pressed')).toBe('true');expect(document.querySelector('.canvas.selected-path-focus')).toBeTruthy();await user.keyboard('{Escape}');expect(document.querySelector('.canvas.selected-path-focus')).toBeNull();expect(calls.some(c=>['draft','publish','assign'].includes(c.op))).toBe(false);});
  it('keeps focus inside Preview when the response replaces the focused choice',async()=>{
   const user=await enter();await user.click(screen.getByRole('button',{name:'Preview'}));
   await user.click(within(await screen.findByRole('dialog')).getByRole('button',{name:/ออก/}));

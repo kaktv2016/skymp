@@ -1,0 +1,780 @@
+{
+  "nodes": [
+    {
+      "id": "entry",
+      "type": "entry",
+      "x": -13.75,
+      "y": -116.25,
+      "width": 304,
+      "height": 190,
+      "ports": [
+        {
+          "id": "entry/source/next",
+          "handle": "next",
+          "side": "EAST",
+          "x": 310,
+          "y": 132,
+          "order": 0
+        }
+      ]
+    },
+    {
+      "id": "welcome",
+      "type": "npc",
+      "x": 400,
+      "y": -115,
+      "width": 304,
+      "height": 280,
+      "ports": [
+        {
+          "id": "welcome/target/input",
+          "handle": null,
+          "side": "WEST",
+          "x": -6,
+          "y": 140,
+          "order": 0
+        },
+        {
+          "id": "welcome/source/next",
+          "handle": "next",
+          "side": "EAST",
+          "x": 310,
+          "y": 222,
+          "order": 0
+        }
+      ]
+    },
+    {
+      "id": "menu",
+      "type": "choices",
+      "x": 800,
+      "y": -275,
+      "width": 304,
+      "height": 630,
+      "ports": [
+        {
+          "id": "menu/target/input",
+          "handle": null,
+          "side": "WEST",
+          "x": -6,
+          "y": 315,
+          "order": 0
+        },
+        {
+          "id": "menu/source/choice%3Acontracts",
+          "handle": "choice:contracts",
+          "side": "EAST",
+          "x": 310,
+          "y": 118,
+          "order": 0
+        },
+        {
+          "id": "menu/source/choice%3Arank",
+          "handle": "choice:rank",
+          "side": "EAST",
+          "x": 310,
+          "y": 162,
+          "order": 1
+        },
+        {
+          "id": "menu/source/choice%3Apermits",
+          "handle": "choice:permits",
+          "side": "EAST",
+          "x": 310,
+          "y": 206,
+          "order": 2
+        },
+        {
+          "id": "menu/source/choice%3Aaccept-courier-route-1",
+          "handle": "choice:accept-courier-route-1",
+          "side": "EAST",
+          "x": 310,
+          "y": 250,
+          "order": 3
+        },
+        {
+          "id": "menu/source/choice%3Aaccept-sarethi-farm",
+          "handle": "choice:accept-sarethi-farm",
+          "side": "EAST",
+          "x": 310,
+          "y": 294,
+          "order": 4
+        },
+        {
+          "id": "menu/source/choice%3Aaccept-heartwood-mill",
+          "handle": "choice:accept-heartwood-mill",
+          "side": "EAST",
+          "x": 310,
+          "y": 338,
+          "order": 5
+        },
+        {
+          "id": "menu/source/choice%3Aaccept-merryfair-farm",
+          "handle": "choice:accept-merryfair-farm",
+          "side": "EAST",
+          "x": 310,
+          "y": 382,
+          "order": 6
+        },
+        {
+          "id": "menu/source/choice%3Aaccept-shors-stone",
+          "handle": "choice:accept-shors-stone",
+          "side": "EAST",
+          "x": 310,
+          "y": 426,
+          "order": 7
+        },
+        {
+          "id": "menu/source/choice%3Abuy-regional",
+          "handle": "choice:buy-regional",
+          "side": "EAST",
+          "x": 310,
+          "y": 470,
+          "order": 8
+        },
+        {
+          "id": "menu/source/choice%3Abuy-long-distance",
+          "handle": "choice:buy-long-distance",
+          "side": "EAST",
+          "x": 310,
+          "y": 521,
+          "order": 9
+        },
+        {
+          "id": "menu/source/choice%3Aexit",
+          "handle": "choice:exit",
+          "side": "EAST",
+          "x": 310,
+          "y": 572,
+          "order": 10
+        }
+      ]
+    },
+    {
+      "id": "end",
+      "type": "end",
+      "x": 1600,
+      "y": -63,
+      "width": 304,
+      "height": 148,
+      "ports": [
+        {
+          "id": "end/target/input",
+          "handle": null,
+          "side": "WEST",
+          "x": -6,
+          "y": 74,
+          "order": 0
+        }
+      ]
+    },
+    {
+      "id": "contracts",
+      "type": "action",
+      "x": 1200,
+      "y": -994,
+      "width": 304,
+      "height": 190,
+      "ports": [
+        {
+          "id": "contracts/target/input",
+          "handle": null,
+          "side": "WEST",
+          "x": -6,
+          "y": 95,
+          "order": 0
+        },
+        {
+          "id": "contracts/source/next",
+          "handle": "next",
+          "side": "EAST",
+          "x": 310,
+          "y": 132,
+          "order": 0
+        }
+      ]
+    },
+    {
+      "id": "rank",
+      "type": "action",
+      "x": 1200,
+      "y": -792,
+      "width": 304,
+      "height": 190,
+      "ports": [
+        {
+          "id": "rank/target/input",
+          "handle": null,
+          "side": "WEST",
+          "x": -6,
+          "y": 95,
+          "order": 0
+        },
+        {
+          "id": "rank/source/next",
+          "handle": "next",
+          "side": "EAST",
+          "x": 310,
+          "y": 132,
+          "order": 0
+        }
+      ]
+    },
+    {
+      "id": "permits",
+      "type": "action",
+      "x": 1200,
+      "y": -590,
+      "width": 304,
+      "height": 190,
+      "ports": [
+        {
+          "id": "permits/target/input",
+          "handle": null,
+          "side": "WEST",
+          "x": -6,
+          "y": 95,
+          "order": 0
+        },
+        {
+          "id": "permits/source/next",
+          "handle": "next",
+          "side": "EAST",
+          "x": 310,
+          "y": 132,
+          "order": 0
+        }
+      ]
+    },
+    {
+      "id": "accept-courier-route-1",
+      "type": "action",
+      "x": 1200,
+      "y": -388,
+      "width": 304,
+      "height": 190,
+      "ports": [
+        {
+          "id": "accept-courier-route-1/target/input",
+          "handle": null,
+          "side": "WEST",
+          "x": -6,
+          "y": 95,
+          "order": 0
+        },
+        {
+          "id": "accept-courier-route-1/source/next",
+          "handle": "next",
+          "side": "EAST",
+          "x": 310,
+          "y": 132,
+          "order": 0
+        }
+      ]
+    },
+    {
+      "id": "accept-sarethi-farm",
+      "type": "action",
+      "x": 1200,
+      "y": -186,
+      "width": 304,
+      "height": 190,
+      "ports": [
+        {
+          "id": "accept-sarethi-farm/target/input",
+          "handle": null,
+          "side": "WEST",
+          "x": -6,
+          "y": 95,
+          "order": 0
+        },
+        {
+          "id": "accept-sarethi-farm/source/next",
+          "handle": "next",
+          "side": "EAST",
+          "x": 310,
+          "y": 132,
+          "order": 0
+        }
+      ]
+    },
+    {
+      "id": "accept-heartwood-mill",
+      "type": "action",
+      "x": 1200,
+      "y": 16,
+      "width": 304,
+      "height": 190,
+      "ports": [
+        {
+          "id": "accept-heartwood-mill/target/input",
+          "handle": null,
+          "side": "WEST",
+          "x": -6,
+          "y": 95,
+          "order": 0
+        },
+        {
+          "id": "accept-heartwood-mill/source/next",
+          "handle": "next",
+          "side": "EAST",
+          "x": 310,
+          "y": 132,
+          "order": 0
+        }
+      ]
+    },
+    {
+      "id": "accept-merryfair-farm",
+      "type": "action",
+      "x": 1200,
+      "y": 218,
+      "width": 304,
+      "height": 190,
+      "ports": [
+        {
+          "id": "accept-merryfair-farm/target/input",
+          "handle": null,
+          "side": "WEST",
+          "x": -6,
+          "y": 95,
+          "order": 0
+        },
+        {
+          "id": "accept-merryfair-farm/source/next",
+          "handle": "next",
+          "side": "EAST",
+          "x": 310,
+          "y": 132,
+          "order": 0
+        }
+      ]
+    },
+    {
+      "id": "accept-shors-stone",
+      "type": "action",
+      "x": 1200,
+      "y": 420,
+      "width": 304,
+      "height": 190,
+      "ports": [
+        {
+          "id": "accept-shors-stone/target/input",
+          "handle": null,
+          "side": "WEST",
+          "x": -6,
+          "y": 95,
+          "order": 0
+        },
+        {
+          "id": "accept-shors-stone/source/next",
+          "handle": "next",
+          "side": "EAST",
+          "x": 310,
+          "y": 132,
+          "order": 0
+        }
+      ]
+    },
+    {
+      "id": "buy-regional",
+      "type": "action",
+      "x": 1200,
+      "y": 622,
+      "width": 304,
+      "height": 190,
+      "ports": [
+        {
+          "id": "buy-regional/target/input",
+          "handle": null,
+          "side": "WEST",
+          "x": -6,
+          "y": 95,
+          "order": 0
+        },
+        {
+          "id": "buy-regional/source/next",
+          "handle": "next",
+          "side": "EAST",
+          "x": 310,
+          "y": 132,
+          "order": 0
+        }
+      ]
+    },
+    {
+      "id": "buy-long-distance",
+      "type": "action",
+      "x": 1200,
+      "y": 824,
+      "width": 304,
+      "height": 190,
+      "ports": [
+        {
+          "id": "buy-long-distance/target/input",
+          "handle": null,
+          "side": "WEST",
+          "x": -6,
+          "y": 95,
+          "order": 0
+        },
+        {
+          "id": "buy-long-distance/source/next",
+          "handle": "next",
+          "side": "EAST",
+          "x": 310,
+          "y": 132,
+          "order": 0
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "entry:next",
+      "source": "entry",
+      "target": "welcome",
+      "sourceHandle": "next",
+      "start": {
+        "x": 296.25,
+        "y": 15.75
+      },
+      "end": {
+        "x": 394,
+        "y": 25
+      },
+      "order": 0
+    },
+    {
+      "id": "welcome:next",
+      "source": "welcome",
+      "target": "menu",
+      "sourceHandle": "next",
+      "start": {
+        "x": 710,
+        "y": 107
+      },
+      "end": {
+        "x": 794,
+        "y": 40
+      },
+      "order": 0
+    },
+    {
+      "id": "menu:choice:contracts",
+      "source": "menu",
+      "target": "contracts",
+      "sourceHandle": "choice:contracts",
+      "start": {
+        "x": 1110,
+        "y": -157
+      },
+      "end": {
+        "x": 1194,
+        "y": -899
+      },
+      "order": 0
+    },
+    {
+      "id": "menu:choice:rank",
+      "source": "menu",
+      "target": "rank",
+      "sourceHandle": "choice:rank",
+      "start": {
+        "x": 1110,
+        "y": -113
+      },
+      "end": {
+        "x": 1194,
+        "y": -697
+      },
+      "order": 1
+    },
+    {
+      "id": "menu:choice:permits",
+      "source": "menu",
+      "target": "permits",
+      "sourceHandle": "choice:permits",
+      "start": {
+        "x": 1110,
+        "y": -69
+      },
+      "end": {
+        "x": 1194,
+        "y": -495
+      },
+      "order": 2
+    },
+    {
+      "id": "menu:choice:accept-courier-route-1",
+      "source": "menu",
+      "target": "accept-courier-route-1",
+      "sourceHandle": "choice:accept-courier-route-1",
+      "start": {
+        "x": 1110,
+        "y": -25
+      },
+      "end": {
+        "x": 1194,
+        "y": -293
+      },
+      "order": 3
+    },
+    {
+      "id": "menu:choice:accept-sarethi-farm",
+      "source": "menu",
+      "target": "accept-sarethi-farm",
+      "sourceHandle": "choice:accept-sarethi-farm",
+      "start": {
+        "x": 1110,
+        "y": 19
+      },
+      "end": {
+        "x": 1194,
+        "y": -91
+      },
+      "order": 4
+    },
+    {
+      "id": "menu:choice:accept-heartwood-mill",
+      "source": "menu",
+      "target": "accept-heartwood-mill",
+      "sourceHandle": "choice:accept-heartwood-mill",
+      "start": {
+        "x": 1110,
+        "y": 63
+      },
+      "end": {
+        "x": 1194,
+        "y": 111
+      },
+      "order": 5
+    },
+    {
+      "id": "menu:choice:accept-merryfair-farm",
+      "source": "menu",
+      "target": "accept-merryfair-farm",
+      "sourceHandle": "choice:accept-merryfair-farm",
+      "start": {
+        "x": 1110,
+        "y": 107
+      },
+      "end": {
+        "x": 1194,
+        "y": 313
+      },
+      "order": 6
+    },
+    {
+      "id": "menu:choice:accept-shors-stone",
+      "source": "menu",
+      "target": "accept-shors-stone",
+      "sourceHandle": "choice:accept-shors-stone",
+      "start": {
+        "x": 1110,
+        "y": 151
+      },
+      "end": {
+        "x": 1194,
+        "y": 515
+      },
+      "order": 7
+    },
+    {
+      "id": "menu:choice:buy-regional",
+      "source": "menu",
+      "target": "buy-regional",
+      "sourceHandle": "choice:buy-regional",
+      "start": {
+        "x": 1110,
+        "y": 195
+      },
+      "end": {
+        "x": 1194,
+        "y": 717
+      },
+      "order": 8
+    },
+    {
+      "id": "menu:choice:buy-long-distance",
+      "source": "menu",
+      "target": "buy-long-distance",
+      "sourceHandle": "choice:buy-long-distance",
+      "start": {
+        "x": 1110,
+        "y": 246
+      },
+      "end": {
+        "x": 1194,
+        "y": 919
+      },
+      "order": 9
+    },
+    {
+      "id": "menu:choice:exit",
+      "source": "menu",
+      "target": "end",
+      "sourceHandle": "choice:exit",
+      "start": {
+        "x": 1110,
+        "y": 297
+      },
+      "end": {
+        "x": 1594,
+        "y": 11
+      },
+      "order": 10
+    },
+    {
+      "id": "contracts:next",
+      "source": "contracts",
+      "target": "menu",
+      "sourceHandle": "next",
+      "start": {
+        "x": 1510,
+        "y": -862
+      },
+      "end": {
+        "x": 794,
+        "y": 40
+      },
+      "order": 0
+    },
+    {
+      "id": "rank:next",
+      "source": "rank",
+      "target": "menu",
+      "sourceHandle": "next",
+      "start": {
+        "x": 1510,
+        "y": -660
+      },
+      "end": {
+        "x": 794,
+        "y": 40
+      },
+      "order": 0
+    },
+    {
+      "id": "permits:next",
+      "source": "permits",
+      "target": "menu",
+      "sourceHandle": "next",
+      "start": {
+        "x": 1510,
+        "y": -458
+      },
+      "end": {
+        "x": 794,
+        "y": 40
+      },
+      "order": 0
+    },
+    {
+      "id": "accept-courier-route-1:next",
+      "source": "accept-courier-route-1",
+      "target": "menu",
+      "sourceHandle": "next",
+      "start": {
+        "x": 1510,
+        "y": -256
+      },
+      "end": {
+        "x": 794,
+        "y": 40
+      },
+      "order": 0
+    },
+    {
+      "id": "accept-sarethi-farm:next",
+      "source": "accept-sarethi-farm",
+      "target": "menu",
+      "sourceHandle": "next",
+      "start": {
+        "x": 1510,
+        "y": -54
+      },
+      "end": {
+        "x": 794,
+        "y": 40
+      },
+      "order": 0
+    },
+    {
+      "id": "accept-heartwood-mill:next",
+      "source": "accept-heartwood-mill",
+      "target": "menu",
+      "sourceHandle": "next",
+      "start": {
+        "x": 1510,
+        "y": 148
+      },
+      "end": {
+        "x": 794,
+        "y": 40
+      },
+      "order": 0
+    },
+    {
+      "id": "accept-merryfair-farm:next",
+      "source": "accept-merryfair-farm",
+      "target": "menu",
+      "sourceHandle": "next",
+      "start": {
+        "x": 1510,
+        "y": 350
+      },
+      "end": {
+        "x": 794,
+        "y": 40
+      },
+      "order": 0
+    },
+    {
+      "id": "accept-shors-stone:next",
+      "source": "accept-shors-stone",
+      "target": "menu",
+      "sourceHandle": "next",
+      "start": {
+        "x": 1510,
+        "y": 552
+      },
+      "end": {
+        "x": 794,
+        "y": 40
+      },
+      "order": 0
+    },
+    {
+      "id": "buy-regional:next",
+      "source": "buy-regional",
+      "target": "menu",
+      "sourceHandle": "next",
+      "start": {
+        "x": 1510,
+        "y": 754
+      },
+      "end": {
+        "x": 794,
+        "y": 40
+      },
+      "order": 0
+    },
+    {
+      "id": "buy-long-distance:next",
+      "source": "buy-long-distance",
+      "target": "menu",
+      "sourceHandle": "next",
+      "start": {
+        "x": 1510,
+        "y": 956
+      },
+      "end": {
+        "x": 794,
+        "y": 40
+      },
+      "order": 0
+    }
+  ],
+  "entry": "entry"
+}

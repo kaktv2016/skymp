@@ -3,7 +3,8 @@ import {BaseEdge,EdgeLabelRenderer,getSmoothStepPath,getBezierPath,type EdgeProp
 import {connection,title,nodeInfo,actionLabels,conditionLabels,type GraphIndex} from './inspection';
 import {Icon} from './studio-ui';
 import {attachedRoute} from './route-svg';
-import type {RoutedPath} from './routing-types';
+import {safeLabelPosition,clearLabelAt} from './route-label';
+import type {RoutedPath,RoutingNode} from './routing-types';
 
 export const ConnectionEdge=React.memo(function ConnectionEdge(props:EdgeProps){
  const lane=Number(props.data?.lane??0);
@@ -12,8 +13,10 @@ export const ConnectionEdge=React.memo(function ConnectionEdge(props:EdgeProps){
  const legacy=returning?getBezierPath({...props,curvature:.25+lane*.025}):getSmoothStepPath({...props,borderRadius:12,offset:28+lane*9,stepPosition:.25+(lane%6)*.09});
  const routed=smart?attachedRoute(route,{x:props.sourceX,y:props.sourceY},{x:props.targetX,y:props.targetY}):null;
  const [path,x,y]=routed?[routed.path,routed.x,routed.y]:legacy;
- return <g data-routing={smart?(routed?.pending?'pending':route?.origin??'pending'):'legacy'} data-route-status={route?.status} data-returning={returning?'true':'false'}><title>{String(props.data?.meaning??'Connection')}</title><BaseEdge path={path} markerEnd={props.markerEnd} style={{...props.style,strokeDasharray:returning?'6 5':undefined,opacity:returning&&!props.data?.active?0.55:1}} interactionWidth={26}/>
- {(props.selected||!!props.data?.spotlight)&&<EdgeLabelRenderer><div className={'edge-label nodrag nopan '+(props.data?.spotlight?'spotlight-label':'')} style={{transform:`translate(-50%,-100%) translate(${x}px,${y}px)`}}><span>{props.data?.spotlight?'ACTIVE PATH':'SELECTED CONNECTION'}</span>{String(props.data?.shortLabel??'Selected connection')}</div></EdgeLabelRenderer>}</g>;
+ const wantsLabel=props.selected||!!props.data?.spotlight,obstacles=(props.data?.labelObstacles??[]) as RoutingNode[];
+ const label=wantsLabel?(smart?(routed?.pending?undefined:safeLabelPosition(route?.points??[],obstacles)):(clearLabelAt({x,y},obstacles)?{x,y}:undefined)):undefined;
+ return <g data-routing={smart?(routed?.pending?'pending':route?.origin??'pending'):'legacy'} data-route-status={route?.status} data-returning={returning?'true':'false'}><title>{String(props.data?.meaning??'Connection')}</title><BaseEdge path={path} markerEnd={props.markerEnd} style={{...props.style,strokeDasharray:returning?'6 5':undefined,opacity:returning&&!props.data?.active?0.7:1}} interactionWidth={26}/>
+ {label&&<EdgeLabelRenderer><div className={'edge-label nodrag nopan '+(props.data?.spotlight?'spotlight-label':'')} style={{transform:`translate(-50%,-100%) translate(${label.x}px,${label.y}px)`}}><span>{props.data?.spotlight?'ACTIVE PATH':'SELECTED CONNECTION'}</span><b>{String(props.data?.shortLabel??'Selected connection')}</b></div></EdgeLabelRenderer>}</g>;
 });
 
 export function ConnectionInspector({index,id,focus,select,clear,remove,overlaps=[],route,legacy}:{index:GraphIndex;id:string;focus:(id:string)=>void;select:(id:string)=>void;clear:()=>void;remove:()=>void;overlaps?:string[];route?:RoutedPath;legacy?:boolean}){

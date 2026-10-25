@@ -11,7 +11,7 @@ import {graphIndex,connection,trace,search,title,validSelection,openingNodes,nod
 import {ConnectionEdge,ConnectionInspector} from './connection-ui';
 import {Icon,PanelResize,DialogFrame} from './studio-ui';
 import {useGraphRouting} from './use-graph-routing';
-import type {RoutedPath} from './routing-types';
+import type {RoutedPath,RoutingNode} from './routing-types';
 import {validateGraph, type Graph, type Node} from '../../rp-gamemode/src/modules/dialogue/graph-model';
 
 type FlowHandle = {screenToFlowPosition(point: {x: number; y: number}): {x: number; y: number};fitView(options?:any):Promise<boolean>;getViewport():{x:number;y:number;zoom:number};setViewport(view:{x:number;y:number;zoom:number},options?:{duration?:number}):Promise<boolean>};
@@ -72,7 +72,7 @@ export function App() {
   const selected=selection?.kind==='node'?selection.id:'';
   const setSelected=useCallback((id:string)=>{setHoveredPort(null);setKeyboardPort(null);setSelection(id?{kind:'node',id}:null);setOverlapIds([]);},[]);
   const selectEdge=useCallback((id:string)=>{setHoveredPort(null);setKeyboardPort(null);setSelection({kind:'edge',id});setInspectorOpen(true);},[]);
-  const [traceMode,setTraceMode]=useState<TraceMode>('direct');
+  const [traceMode,setTraceMode]=useState<TraceMode>('direct'),[focusPath,setFocusPath]=useState(false);
   const [searchText,setSearchText]=useState(''),[searchOpen,setSearchOpen]=useState(false),[searchActive,setSearchActive]=useState(0);
   const inspectorElement=useRef<HTMLDivElement>(null),searchInput=useRef<HTMLInputElement>(null),[inspectorWidth,setInspectorWidth]=useState(340);
   const views=useRef<{x:number;y:number;zoom:number}[]>([]),[viewCount,setViewCount]=useState(0);
@@ -104,18 +104,19 @@ export function App() {
     const lanes=new Map<string,number>();
     return canvas.edges.map(edge=>{const detail=connection(index,edge),group=detail.source?.type==='choices'?'source:'+edge.source:'target:'+edge.target,ordinal=lanes.get(group)??0,lane=ordinal%16;lanes.set(group,ordinal+1);const old=descriptorCache.current.get(edge.id);if(old?.edge===edge&&old.lane===lane&&old.detail.meaning===detail.meaning&&old.detail.source?.type===detail.source?.type)return old;const value={edge,detail,lane};descriptorCache.current.set(edge.id,value);return value;});
   },[canvas.edges,index]);
-  const edgeViews=useRef(new Map<string,{descriptor:typeof descriptors[number];active:boolean;chosen:boolean;spotlight:boolean;route:RoutedPath|undefined;smart:boolean;view:Edge}>());
+  const labelObstacles=useMemo(()=>routing.snapshot.graph.nodes.map(n=>({...n,...routing.candidate?.result.positions[n.id]})),[routing.snapshot,routing.candidate]);
+  const edgeViews=useRef(new Map<string,{obstacles:RoutingNode[];descriptor:typeof descriptors[number];active:boolean;chosen:boolean;spotlight:boolean;route:RoutedPath|undefined;smart:boolean;view:Edge}>());
   const viewEdges=useMemo(()=>descriptors.map(descriptor=>{
       const {edge:e,detail,lane}=descriptor,active=traced.edges.has(e.id),chosen=selection?.kind==='edge'&&selection.id===e.id,spotlight=e.id===activePathId;
       const route=routing.result?.routes.get(e.id),smart=!!routing.candidate||routing.mode==='smart'&&!routing.error;
-      const cached=edgeViews.current.get(e.id);if(cached?.descriptor===descriptor&&cached.active===active&&cached.chosen===chosen&&cached.spotlight===spotlight&&cached.route===route&&cached.smart===smart)return cached.view;
+      const cached=edgeViews.current.get(e.id);if(cached?.descriptor===descriptor&&cached.active===active&&cached.chosen===chosen&&cached.spotlight===spotlight&&cached.route===route&&cached.smart===smart&&cached.obstacles===labelObstacles)return cached.view;
       const color=spotlight?'#b8e6dd':chosen?'#e8ca8a':nodeColors[detail.source?.type??'entry'];
       const view={...e,type:'connection',selected:chosen,selectable:true,focusable:true,interactionWidth:26,ariaRole:'button' as const,ariaLabel:detail.meaning,
-        domAttributes:{onFocus:()=>selectEdge(e.id)},data:{lane,active,spotlight,route,smart,meaning:detail.meaning,shortLabel:detail.choiceNumber?'#'+detail.choiceNumber+' · '+detail.output:detail.output},
+        domAttributes:{onFocus:()=>selectEdge(e.id)},data:{lane,active,spotlight,route,smart,labelObstacles,meaning:detail.meaning,shortLabel:detail.choiceNumber?'#'+detail.choiceNumber+' · '+detail.output:detail.output},
         zIndex:spotlight?9:chosen?8:active?3:0,style:{stroke:color,strokeWidth:spotlight||chosen?2.8:active?1.8:1.4},
         className:(chosen?'edge-chosen ':active?'edge-focused ':'')+(spotlight?'edge-spotlight':''),markerEnd:{type:'arrowclosed' as const,color,width:14,height:14}};
-      edgeViews.current.set(e.id,{descriptor,active,chosen,spotlight,route,smart,view});return view;
-  }),[descriptors,selection,traced.edges,selectEdge,activePathId,routing.result,routing.mode,routing.error,routing.candidate]);
+      edgeViews.current.set(e.id,{obstacles:labelObstacles,descriptor,active,chosen,spotlight,route,smart,view});return view;
+  }),[descriptors,selection,traced.edges,selectEdge,activePathId,routing.result,routing.mode,routing.error,routing.candidate,labelObstacles]);
   useEffect(()=>{const nodes=new Set(canvas.nodes.map(n=>n.id)),edges=new Set(canvas.edges.map(e=>e.id));for(const id of nodeViews.current.keys())if(!nodes.has(id))nodeViews.current.delete(id);for(const id of edgeViews.current.keys())if(!edges.has(id)){edgeViews.current.delete(id);descriptorCache.current.delete(id);}},[canvas.nodes,canvas.edges]);
   useEffect(()=>{setSelection(current=>validSelection(index,current));setOverlapIds(ids=>ids.filter(id=>index.edges.has(id)));},[index]);
   useEffect(()=>{const ids=new Set(canvas.nodes.map(n=>n.id));for(const id of decorations.current.keys())if(!ids.has(id))decorations.current.delete(id);},[canvas.nodes]);
@@ -249,7 +250,7 @@ export function App() {
         </div><div className="panel-sizing"><label>Library width<input aria-label="Node library width" type="range" min="220" max="320" step="10" value={libraryWidth} onChange={e=>setLibraryWidth(Number(e.target.value))}/></label></div>
         <PanelResize label="Resize node library" value={libraryWidth} min={220} max={320} onChange={setLibraryWidth} side="left"/>
       </aside>
-      <section data-active-edge={activePathId} className={'canvas '+(selection?'trace-active ':'')+(activePath?'path-isolated':'')} onDragOver={event=>{event.preventDefault();event.dataTransfer.dropEffect='copy';}} onDrop={event=>{
+      <section data-active-edge={activePathId} className={'canvas '+(selection?'trace-active ':'')+(activePath?'path-isolated ':'')+(focusPath&&selection?.kind==='edge'?'selected-path-focus':'')} onDragOver={event=>{event.preventDefault();event.dataTransfer.dropEffect='copy';}} onDrop={event=>{
         event.preventDefault();if(routing.candidate)return;const type=event.dataTransfer.getData('application/frostveil-node') as Node['type'];
         if(nodeTypesList.includes(type)&&flow.current)add(type,flow.current.screenToFlowPosition({x:event.clientX,y:event.clientY}));
       }}>
@@ -264,7 +265,7 @@ export function App() {
             onKeyDown={e=>{if(e.key==='ArrowDown'){e.preventDefault();setSearchActive(i=>Math.min(found.length-1,i+1));}else if(e.key==='ArrowUp'){e.preventDefault();setSearchActive(i=>Math.max(0,i-1));}else if(e.key==='Enter'&&found[searchActive]){e.preventDefault();chooseResult(found[searchActive]!.id);}else if(e.key==='Escape'){e.stopPropagation();setSearchOpen(false);e.currentTarget.blur();}}}/>
             {searchOpen&&<div className="search-results" id="graph-results" role="listbox" aria-label="Matching nodes"><div className="search-summary">{found.length} results <button onClick={()=>{setSearchText('');setSearchOpen(false);}}>Clear search</button></div>{!found.length&&<p>ไม่พบโหนด ลองชื่อ ชนิดโหนด หรือข้อความไทย</p>}{found.map((n,i)=><button type="button" id={'result-'+n.id} role="option" aria-selected={i===searchActive} key={n.id} onClick={()=>chooseResult(n.id)}><span style={{color:nodeColors[n.type]}}><Icon name={n.type} size={20}/></span><span><b>{title(n)}</b><em>{n.id} · {(n.text??n.choices?.[0]?.text??n.argument??nodeInfo[n.type].hint).slice(0,85)}</em></span></button>)}</div>}
           </div>
-          <label className="trace-control">Trace<select aria-label="Trace mode" value={traceMode} onChange={e=>setTraceMode(e.target.value as TraceMode)} disabled={selection?.kind!=='node'}><option value="direct">Direct connections</option><option value="upstream">Upstream dependencies</option><option value="downstream">Downstream flow</option></select></label><button className="reset-trace" title="Clear selection and tracing · Escape" onClick={clearSelection}>Reset trace</button>
+          <label className="trace-control">Trace<select aria-label="Trace mode" value={traceMode} onChange={e=>setTraceMode(e.target.value as TraceMode)} disabled={selection?.kind!=='node'}><option value="direct">Direct connections</option><option value="upstream">Upstream dependencies</option><option value="downstream">Downstream flow</option></select></label><button className="focus-path" aria-label="Focus Path" aria-pressed={focusPath&&selection?.kind==='edge'} disabled={selection?.kind!=='edge'} title="Dim unrelated connections without changing graph data" onClick={()=>setFocusPath(v=>!v)}>Focus Path</button><button className="reset-trace" title="Clear selection and tracing · Escape" onClick={clearSelection}>Reset trace</button>
         </div>
         {(routing.layoutBusy||routing.candidate||routing.layoutMessage)&&<div className="layout-preview-bar" role="region" aria-label="Auto Arrange preview"><div><b>{routing.layoutBusy?'Calculating ELK layout…':routing.candidate?'Layout preview':'Auto Arrange'}</b><span>{routing.layoutMessage}{routing.candidate&&` · ${routing.candidate.result.routes.size} routes · ${Math.round(routing.candidate.result.elapsedMs)}ms`}</span></div>{routing.candidate&&<button className="primary" disabled={busy} onClick={applyLayout}>Apply layout</button>}<button aria-label="Cancel auto arrange" onClick={cancelLayoutView}>{routing.candidate||routing.layoutBusy?'Cancel':'Dismiss'}</button></div>}
         {(routing.error||routing.warnings.length>0)&&<div className="routing-notice" role="status">{routing.error?'Smart routing unavailable; showing Legacy paths. '+routing.error:`${routing.warnings.length} routing notes · ${routing.warnings.slice(0,2).join(' · ')}`}</div>}

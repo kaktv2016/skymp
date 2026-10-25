@@ -1,3 +1,5 @@
+import savedClerk from './fixtures/clerk-routing.json';
+import {measureRoutes} from './routing-metrics';
 import {toCanvas} from './mapping';
 import {buildRoutingGeometry} from './routing-geometry';
 import {describe,it,expect} from 'vitest';
@@ -14,3 +16,17 @@ describe('routeSmart',()=>{
  it('marks dangling, self, and overlapping card geometry as fallback',()=>{const g=mk();g.edges.push({...g.edges[0],id:'dangling',target:'absent'},{...g.edges[0],id:'self',target:'a',end:{x:20,y:20}});g.nodes.push({id:'overlap',type:'dialogue',x:30,y:20,width:90,height:90,ports:[]});expect(routeSmart(g).routes.get('dangling')?.status).toBe('fallback');expect(routeSmart(g).routes.get('self')?.status).toBe('fallback');});
  it('routes a bounded 128-node 2017-edge stress graph',()=>{const nodes=Array.from({length:128},(_,i)=>({id:`n${i}`,type:i%4?'dialogue':'choices',x:i%16*300,y:Math.floor(i/16)*250,width:120,height:100,ports:[]}));const edges=Array.from({length:2017},(_,i)=>{const s=i%128,t=(i*7+3)%128;return{id:`e${i}`,source:`n${s}`,target:`n${t}`,sourceHandle:`p${i%16}`,start:{x:nodes[s].x+126,y:nodes[s].y+20+i%60},end:{x:nodes[t].x-6,y:nodes[t].y+20+i%60},order:i%16};});const result=routeSmart({entry:'n0',nodes,edges});expect(result.routes.size).toBe(2017);expect(Number.isFinite(result.elapsedMs)).toBe(true);});
 });
+
+it('routes the saved Clerk exit around its action column without changing any positions or identities',()=>{const g=savedClerk as RoutingGraph,before=JSON.stringify(g),r=routeSmart(g);expect(g.edges).toHaveLength(23);expect(g.nodes.find(n=>n.id==='menu')!.ports.filter(p=>p.side==='EAST')).toHaveLength(11);expect(r.routes.get('menu:choice:exit')?.status).toBe('clean');expect(measureRoutes(g,r.routes.values()).nodeIntersections).toBe(0);expect(r.warnings).toEqual([]);expect(JSON.stringify(g)).toBe(before);});
+
+it('allocates distinguishable Choices lanes and avoids long shared return trunks on the saved Clerk',()=>{const g=savedClerk as RoutingGraph,r=routeSmart(g),columns=g.edges.filter(e=>e.source==='menu'&&e.target!=='end').map(e=>{const p=r.routes.get(e.id)!.points;return p.slice(1).map((b,i)=>({a:p[i],b})).find(s=>s.a.x===s.b.x&&Math.abs(s.b.y-s.a.y)>44)?.a.x;}).filter((x):x is number=>x!==undefined).sort((a,b)=>a-b);for(let i=1;i<columns.length;i++)expect(columns[i]-columns[i-1]).toBeGreaterThanOrEqual(5);const returns=[...r.routes.values()].filter(p=>p.returning);expect(measureRoutes(g,returns).significantOverlaps).toBeLessThanOrEqual(5);});
+
+it('invalidates affected group lanes when one link changes group without changing edge count',()=>{const g=savedClerk as RoutingGraph,first=routeSmart(g),target=g.nodes.find(n=>n.id==='welcome')!,port=target.ports.find(p=>p.side==='WEST')!,next={...g,edges:g.edges.map(e=>e.id==='menu:choice:exit'?{...e,target:'welcome',end:{x:target.x+port.x,y:target.y+port.y}}:e)};const after=routeSmart(next,{graph:g,result:first});expect(after.recomputed).toBeGreaterThan(1);expect(after.routes.size).toBe(23);});
+
+it('uses safe narrow row corridors rather than detouring through the entire unrelated action column',()=>{const g=savedClerk as RoutingGraph,r=routeSmart(g),m=measureRoutes(g,r.routes.values());expect(m.nodeIntersections).toBe(0);expect(m.totalLength).toBeLessThan(29700);});
+
+it('nests return corridors instead of crossing closer returns on the way to their shared input',()=>{const g=savedClerk as RoutingGraph,r=routeSmart(g);expect(measureRoutes(g,[...r.routes.values()].filter(p=>p.returning)).crossings).toBeLessThan(28);expect(measureRoutes(g,r.routes.values()).crossings).toBeLessThanOrEqual(41);});
+
+it('keeps long return corridors monotone within each side of the shared target',()=>{const g=savedClerk as RoutingGraph,r=routeSmart(g);for(const side of [-1,1]){const edges=g.edges.filter(e=>r.routes.get(e.id)?.returning&&Math.sign(e.start.y-e.end.y)===side).sort((a,b)=>Math.abs(a.start.y-a.end.y)-Math.abs(b.start.y-b.end.y));let previous:number|undefined;for(const e of edges){const ps=r.routes.get(e.id)!.points,run=ps.slice(1).map((b,i)=>({a:ps[i],b})).filter(s=>s.a.y===s.b.y).sort((a,b)=>Math.abs(b.b.x-b.a.x)-Math.abs(a.b.x-a.a.x))[0];expect(run).toBeDefined();if(previous!==undefined)expect((run.a.y-previous)*side).toBeGreaterThanOrEqual(12);previous=run.a.y;}}});
+
+it('preserves the bounded B1 dense corridor policy instead of spreading thousands of lanes',()=>{const g=mk(),edge=g.edges[0];g.edges=Array.from({length:257},(_,i)=>({...edge,id:'dense-'+i}));const r=routeSmart(g);expect(r.routes.size).toBe(257);expect(r.routes.get('dense-0')!.points).toEqual(r.routes.get('dense-256')!.points);});

@@ -27,3 +27,11 @@
 .layout-preview-bar button{white-space:nowrap}.routing-notice{padding:6px 14px;font-size:11px;color:#d8c18b;background:#302d23;max-height:46px;overflow:auto;flex-shrink:0}
 .route-quality{font-size:12px;padding:8px;border-left:2px solid #bda66b;background:#202d30}
 @media(max-width:1450px){.routing-mode{font-size:0}.routing-mode select{font-size:11px}.layout-preview-bar{padding:7px;gap:7px}}
+
+/* B1.1: subdued readable defaults, exact hover/selection stays dominant. */
+.react-flow__edge{opacity:.62}.canvas.selected-path-focus .react-flow__edge:not(.edge-chosen):not(.edge-spotlight){opacity:.10}
+.canvas.selected-path-focus .edge-chosen,.canvas.selected-path-focus .edge-spotlight{opacity:1}
+.focus-path{font-size:11px;white-space:nowrap;padding:5px 9px}.focus-path[aria-pressed=true]{color:var(--gold);border-color:#bda66b;background:#30312d}
+
+.edge-label{width:180px;max-width:180px;height:64px;box-sizing:border-box;overflow:hidden;pointer-events:none}
+.edge-label>b{font-weight:400;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
