@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-26",
+  "baseline": "6f3be1821f0a7fd1f4d9808ec699b368f5fbf0e0",
+  "branch": "dev/npc-template-catalog-g241",
+  "developmentBundleSHA256": "d3d2f311aade731e83316f6c20a162ea34321b98c908e366fc5c8357e6177c95",
+  "productionBundleSHA256": "b3942dd191d761d99205469d1d68367d0c6db9b1832427b1d281c5e7afa7825f",
+  "editorAssetsSHA256": "6b280784d5fc45254bc7312375690da5d6ed1323e8227be6d595f424af10248c",
+  "tests": {
+    "rp": 369,
+    "editor": 80,
+    "clientIncludingCapabilityMocks": 58,
+    "focusedG241AndLegacyNpc": 33,
+    "nativeEsmCases": 84,
+    "nativeEsmAssertions": 475410,
+    "rpBuild": "PASS",
+    "editorBuild": "PASS",
+    "clientTscNoEmit": "PASS"
+  },
+  "native": {
+    "write": {
+      "phase": "probe-write",
+      "nativeAddonSHA256": "a9e77780133b3c064a8abc9aa6f6971b1c73ff3c1b2d1539af404b3cbe389157",
+      "catalogLoadMs": 799.9939999999997,
+      "legacyNpcCreateMs": 25.981000000000222,
+      "registryRecoveryMs": 9.437099999999646,
+      "registeredActorCount": 1,
+      "residentActorCount": 0,
+      "missingAssetSpawns": 0,
+      "legacyBasePreserved": true,
+      "customTemplateNativeCreation": "BLOCKED_MISSING_ASSETS",
+      "singleClientVisual": "BLOCKED_MISSING_ASSETS",
+      "multiplayerVisual": "DEFERRED / UNVERIFIED",
+      "memory": {
+        "rss": 586264576,
+        "heapTotal": 41738240,
+        "heapUsed": 5538144,
+        "external": 7515207,
+        "arrayBuffers": 5594347
+      }
+    },
+    "reload": {
+      "phase": "probe-reload",
+      "nativeAddonSHA256": "a9e77780133b3c064a8abc9aa6f6971b1c73ff3c1b2d1539af404b3cbe389157",
+      "catalogLoadMs": 822.4246,
+      "legacyNpcCreateMs": null,
+      "registryRecoveryMs": 13.311100000000351,
+      "registeredActorCount": 1,
+      "residentActorCount": 1,
+      "missingAssetSpawns": 0,
+      "legacyBasePreserved": true,
+      "customTemplateNativeCreation": "BLOCKED_MISSING_ASSETS",
+      "singleClientVisual": "BLOCKED_MISSING_ASSETS",
+      "multiplayerVisual": "DEFERRED / UNVERIFIED",
+      "memory": {
+        "rss": 558284800,
+        "heapTotal": 8445952,
+        "heapUsed": 6098656,
+        "external": 8556262,
+        "arrayBuffers": 6635390
+      }
+    },
+    "protectedSHA256": "5edaa20a730ce79b34675b06224bd2a47ebfb4b116cef5af15296f10677d6616",
+    "protectedDataUnchanged": true,
+    "visualWorldStillEmpty": true
+  },
+  "installedArtifactsUnchanged": true,
+  "installedArtifactCount": 9,
+  "localEnvironment": "build/rp-audit/g241/dev-7FNiLN",
+  "status": {
+    "backend": "VERIFIED_CODE",
+    "legacyPersistenceAndSources": "VERIFIED_DATA",
+    "assets": "BLOCKED_MISSING_ASSETS",
+    "resourceClosure": "BLOCKED: verified external adapter unavailable; no default bypass",
+    "singleClientVisual": "BLOCKED_MISSING_ASSETS",
+    "multiplayerVisual": "DEFERRED / UNVERIFIED",
+    "customTemplateNativeCreation": "BLOCKED_MISSING_ASSETS",
+    "productionDeployment": false,
+    "clientPublication": false,
+    "isolatedCodeSnapshot": "STAGED_DISABLED",
+    "r2Uploads": 0
+  },
+  "diagnostics": [
+    {
+      "path": "build/rp-audit/g241/rp-regressions-final.log",
+      "sha256": "bcca02b8e60ca399b8d6256baf63ba74ff304e0221c63509dc75d59949b16c10"
+    },
+    {
+      "path": "build/rp-audit/g241/focused-final.log",
+      "sha256": "791b5643cf221c9be66e0edb4e7d87235e1f6bfe5ace5edaf87616a0a5fedc95"
+    },
+    {
+      "path": "build/rp-audit/g241/editor-tests.log",
+      "sha256": "42f009f09d74270bc6b57c4c83bbb8ae952192ad45878422061f0e5cdcce4098"
+    },
+    {
+      "path": "build/rp-audit/g241/editor-build.log",
+      "sha256": "4c339619c65812be3e0ed5f826fabed162578c6f65da3b68cc0b17d95933b18d"
+    },
+    {
+      "path": "build/rp-audit/g241/client-tests.log",
+      "sha256": "eb84076985ec97b8f3b0dd55aac3582fbf8840e8f986432db5d813e31b5afd3c"
+    },
+    {
+      "path": "build/rp-audit/g241/client-typecheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build/rp-audit/g241/espm-tests.log",
+      "sha256": "a47d78901db4852721f98d6f38c55b27b06c655626253aa759ade1e40d8c229a"
+    },
+    {
+      "path": "build/rp-audit/g241/native-verification-final.log",
+      "sha256": "c7d4ee3b7a9a9ef1212b7e937a9ead628cb8ed0fb89c1e103e79113c81e5b02f"
+    }
+  ]
+}

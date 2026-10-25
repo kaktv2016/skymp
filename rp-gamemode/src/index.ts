@@ -7,6 +7,8 @@ export { SkyMpAdapter, IDENTITY_PROPERTY } from './engine/adapter';
 export { IdentityService } from './modules/identity/identity-service';
 export { actorId, userId, profileId, formDesc } from './engine/ids';
 export { chatSources } from './client/chat-bridge';
+export {loadApprovedCatalog} from './modules/npc/catalog-loader';
+export {catalogHash} from './modules/npc/template-catalog';
 import { createRuntime } from './runtime';
 
 const globals = globalThis as unknown as Record<string, unknown>;

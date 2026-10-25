@@ -22,14 +22,14 @@ import {EconomyService,EconomyOptions} from './modules/economy/economy-service';
 import {AdminService,AdminOptions,adminHints} from './modules/admin/admin-service';
 import {questDetails} from './modules/courier/quest-details';
 import {mapDiscoveryModule} from './modules/map-discovery/map-discovery-module';
-import {NpcService,npcHints} from './modules/npc/npc-service';
+import {NpcService,type NpcOptions} from './modules/npc/npc-service';
 import path from 'node:path';
 import {BlueprintStore} from './modules/dialogue/blueprint-store';
 import {BlueprintService} from './modules/dialogue/blueprint-service';
 import {EditorAuthority} from './modules/dialogue/editor-authority';
 import {EditorHttpServer,loadEditorAssets} from './modules/dialogue/editor-http';
 
-export interface RuntimeOptions { scheduler?: Scheduler; logger?: Logger; chat?: false | (Partial<ChatConfig> & { now?: () => number }); profile?:Partial<ProfileLimits>&{now?:()=>number}; dice?: Partial<DiceSettings> & { rng?: DiceRng }; courier?: CourierOptions; economy?:EconomyOptions;admin?:AdminOptions; npc?:{storageRoot:string}; blueprintEditor?:{storageRoot:string;assetsRoot:string;port?:number}; }
+export interface RuntimeOptions { scheduler?: Scheduler; logger?: Logger; chat?: false | (Partial<ChatConfig> & { now?: () => number }); profile?:Partial<ProfileLimits>&{now?:()=>number}; dice?: Partial<DiceSettings> & { rng?: DiceRng }; courier?: CourierOptions; economy?:EconomyOptions;admin?:AdminOptions; npc?:{storageRoot:string;templateOptions?:NpcOptions}; blueprintEditor?:{storageRoot:string;assetsRoot:string;port?:number}; }
 export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
   if(options.blueprintEditor&&(!options.npc||options.chat===false))throw Error('Blueprint editor requires NPC and chat modules');
   const adapter = new SkyMpAdapter(rawMp);
@@ -87,10 +87,10 @@ export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
     });
     modules.register(courierModule(courier,commands,economy));
     if(options.npc){
-      const npc=new NpcService(rawMp as ConstructorParameters<typeof NpcService>[0],adapter,options.npc.storageRoot,actor=>admin.state(actor)!==null,logger.info);
+      const npc=new NpcService(rawMp as ConstructorParameters<typeof NpcService>[0],adapter,options.npc.storageRoot,actor=>admin.state(actor)!==null,logger.info,options.npc.templateOptions);
       modules.register({id:'rp-npc',dependencies:['rp-chat'],initialize:async(scope)=>{
         scope.defer(()=>npc.stop());npc.start();
-        scope.defer(commands.register('npc',(ctx,args)=>npc.execute(ctx.actorId,args),'rp-npc',npcHints));
+        scope.defer(commands.register('npc',(ctx,args)=>npc.execute(ctx.actorId,args),'rp-npc',npc.hints()));
         scope.defer(scheduler.every(1000,()=>npc.prune()));
         const native=rawMp as any,sources=dialogueSources();
         const routes=courier.routes().map(r=>r.id),permits=courierProgressionConfig.permits.map(p=>p.id);

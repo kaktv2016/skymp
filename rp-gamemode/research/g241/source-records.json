@@ -1,0 +1,113 @@
+{
+  "maxCandidates": 4096,
+  "inspectedHeaderIds": 4096,
+  "sourceFile": "Skyrim.esm",
+  "sources": [
+    {
+      "role": "warrior-source",
+      "sourceBase": "f3e76:Skyrim.esm",
+      "editorId": "dunCGImperialMageD01",
+      "sex": "male",
+      "race": {
+        "form": "13744:Skyrim.esm",
+        "editorId": "ImperialRace"
+      },
+      "headParts": [
+        {
+          "form": "f5009:Skyrim.esm",
+          "editorId": "HumanBeard00NoBeard"
+        },
+        {
+          "form": "51406:Skyrim.esm",
+          "editorId": "HairMaleNord09"
+        },
+        {
+          "form": "c7259:Skyrim.esm",
+          "editorId": "BrowsMaleHumanoid11"
+        },
+        {
+          "form": "24250:Skyrim.esm",
+          "editorId": "MaleEyesHumanHazel"
+        },
+        {
+          "form": "8555f:Skyrim.esm",
+          "editorId": "MarksMaleHumanoid00NoScar"
+        }
+      ],
+      "sourceOutfit": {
+        "form": "f3e7d:Skyrim.esm",
+        "editorId": "dunCGImperialMageOutfit",
+        "items": [
+          {
+            "form": "13ed9:Skyrim.esm",
+            "editorId": "ArmorImperialLightCuirass",
+            "type": "ARMO"
+          },
+          {
+            "form": "13ed7:Skyrim.esm",
+            "editorId": "ArmorImperialLightBoots",
+            "type": "ARMO"
+          },
+          {
+            "form": "ee5c0:Skyrim.esm",
+            "editorId": "ArmorTorturerHood",
+            "type": "ARMO"
+          }
+        ]
+      },
+      "sourceHasScripts": false,
+      "sourceHasPackages": true,
+      "sourceTemplateFlags": 0,
+      "instructions": "Duplicate to NEW owned NPC_ and fixed OTFT; clear template links/flags, scripts/packages/base inventory; export NEW FaceGen. Never alter this vanilla record."
+    },
+    {
+      "role": "guild-clerk-source",
+      "sourceBase": "af522:Skyrim.esm",
+      "editorId": "SailorEris",
+      "sex": "female",
+      "race": {
+        "form": "13746:Skyrim.esm",
+        "editorId": "NordRace"
+      },
+      "headParts": [
+        {
+          "form": "510f9:Skyrim.esm",
+          "editorId": "HairFemaleNord12"
+        },
+        {
+          "form": "e4da2:Skyrim.esm",
+          "editorId": "FemaleBrowsHuman08"
+        },
+        {
+          "form": "7291c:Skyrim.esm",
+          "editorId": "FemaleEyesHumanLightBlue"
+        },
+        {
+          "form": "ec1b2:Skyrim.esm",
+          "editorId": "MarksFemaleHumanoid00NoGash"
+        }
+      ],
+      "sourceOutfit": {
+        "form": "1093af:Skyrim.esm",
+        "editorId": "WarlockOutfitSimple",
+        "items": [
+          {
+            "form": "c5d12:Skyrim.esm",
+            "editorId": "ClothesWarlockBoots",
+            "type": "ARMO"
+          },
+          {
+            "form": "c5d11:Skyrim.esm",
+            "editorId": "ClothesWarlockRobes",
+            "type": "ARMO"
+          }
+        ]
+      },
+      "sourceHasScripts": false,
+      "sourceHasPackages": true,
+      "sourceTemplateFlags": 0,
+      "instructions": "Duplicate to NEW owned NPC_ and fixed OTFT; clear template links/flags, scripts/packages/base inventory; export NEW FaceGen. Never alter this vanilla record."
+    }
+  ],
+  "authoredPluginExists": false
+}
