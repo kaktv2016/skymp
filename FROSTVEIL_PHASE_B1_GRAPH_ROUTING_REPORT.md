@@ -1,5 +1,7 @@
 # Frostveil Phase B.1 — Smart Graph Routing
 
+Latest delivery: [Phase B.1.1 polish and fallback fix](#phase-b11--routing-polish-and-fallback-fix). The original B.1 measurements below are retained as historical evidence.
+
 Status: implemented and deployed to the verified local test server. Automated verification passed; owner browser acceptance remains pending. Scope is Editor view/layout only. Phase C was not started.
 
 ## Architecture and behavior
@@ -99,3 +101,81 @@ Owner acceptance remains pending:
 3. Auto Arrange → inspect → Cancel. Repeat → Apply → Undo → Redo. Save Draft only if you want to retain the layout.
 4. Move a node between connected endpoints and release it. Inspect rerouted paths and any fallback warning. Use an isolated draft for stress tests; do not publish test content.
 5. Confirm readability at your usual viewport. This report does not claim in-game or owner browser acceptance.
+
+## Phase B.1.1 — Routing polish and fallback fix
+
+Implemented and deployed on 2026-10-25. Owner final visual acceptance remains pending. Implementation commit: `66546ad` on `dev/routing-polish-phase-b11`; the following documentation commit records measurements and screenshots. No routing engine/UI rewrite, dependency upgrade, executable graph edit or saved layout change was made.
+
+### Proven warning and congestion causes
+
+The current saved Clerk draft was read directly through its checksummed journal without opening a writer or changing data. It has **14 nodes, 11 choices, 23 connections and 14 saved positions**. This is the owner's saved layout, not the original canonical fixture used in the historical B.1 table.
+
+The warning described as `menu:choices` reproduces as **`menu:choice:exit`**. Its exact anchors are `(1110,297)` and `(1594,11)`; both ports and identities are valid. B.1 built visibility-graph adjacency in only the increasing coordinate direction. Its 1,406-point search could not traverse an upward or leftward leg needed to get around the action column. This was not a missing handle or an exhausted grid budget. A regression first reproduced `fallback`, then passed after adding the reverse visibility links.
+
+Congestion had separate causes: Choices channels advanced only **3 graph units** per output; return candidates independently chose cheap rows and could alternate around the destination; and the shared-input fan-in order created avoidable crossings. A scoring-only prototype was rejected after measurements showed it could make crossings worse.
+
+The focused fix keeps the existing corridor/visibility algorithm:
+
+- Fit output columns into actual available space, maintaining choice identity/order and separating the saved Clerk columns by at least 5 units (normally 6).
+- Allocate return rows per shared target and side, ordered near-to-far and at least 12 units apart. Verify the complete horizontal corridor against obstacles. Reverse the fan-in docking magnitudes so long returns do not cut nearer returns; share only the final small input attachment.
+- Prefer existing 12-unit clearance. For normal graphs, try a verified **6-unit** corridor only when the first path fails or a shorter safe path materially reduces detour. The action rows in this saved layout have 12-unit gaps; insisting on 12 clearance on both sides closed those otherwise usable gaps. Every accepted segment still passes obstacle checks. The inspector identifies narrow corridors.
+- Include group lane/docking/row changes in incremental invalidation. Stable geometry still uses the existing revision cache and worker. Dragging continues to use cheap temporary attachments; it does not trigger a full router on each pointer event.
+- Keep deterministic, disclosed fallback behavior for overlapping/impossible or bounded-out geometry. **More than 256 edges retains the exact B.1 manual corridor policy**, rather than spreading thousands of lanes or adding all-pairs scoring. The 2,017-edge stress routes are byte-for-byte equal as serialized view geometry, not merely equal metric totals.
+
+### Visual polish and interaction safety
+
+Default paths remain subdued but are more readable; exact choice hover/focus and selected endpoints retain priority. **Focus Path** is a display-only toggle for a selected edge that dims unrelated routes. It does not save, publish, alter tracing data or change graph semantics.
+
+Floating labels are shown only where a conservative 200x86-unit box avoids nodes and ports with 24-unit padding. Labels are 180x64 with two-line text, remain pointer-transparent, and are suppressed when no safe place exists. The full meaning remains available in the inspector, accessible edge name and SVG title. Pending drag paths do not carry stale labels. Browser checks verified no label/port overlap or input interception.
+
+All edge IDs, exact anchors, 26-unit hit areas, overlapping-edge cycling, React Flow keyboard access, search, tracing and inspector navigation are preserved. Smart/Legacy and Auto Arrange Preview/Apply/Cancel/Undo/Redo remain available. UI tests isolate worker computation; real routing is covered separately by geometry fixtures and actual browser workers, avoiding synchronous per-keystroke CPU work in jsdom.
+
+### B.1 versus B.1.1 measurements
+
+Same saved geometry and fixture in both versions; no node was moved to improve these numbers. Metric definitions are unchanged from the historical section. [Raw comparison and hashes](docs/evidence/phase-b11/measurements.json).
+
+| Fixture / version | Crossings | Node hits | Overlaps >=24 | Total length | Detour p95 | Compute ms | Fallbacks |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Saved Clerk / B.1 | 41 | 2 | 28 | 29,737 | 2,112 | 21.8 | 1 |
+| Saved Clerk / B.1.1 | 25 | 0 | 0 | 24,881 | 1,167 | 22.6 | 0 |
+| 16 choices / B.1 | 77 | 11 | 66 | 64,087 | 3,304 | 24.5 | 2 |
+| 16 choices / B.1.1 | 57 | 0 | 7 | 52,588 | 1,708 | 2.6 | 0 |
+| Stress / B.1 | 202,508 | 5,466 | 8,717 | 9,424,052 | 1,427 | 639.0 | 765 |
+| Stress / B.1.1 | 202,508 | 5,466 | 8,717 | 9,424,052 | 1,427 | 642.6 | 765 |
+
+Clerk route bounds: **1297.75x2168 → 1297.75x2044**. Sixteen-choice bounds: **851x3460 → 866x3280**. Stress bounds remain **4436x13158**. Readability was not purchased by dramatically enlarging the diagram. Crossings and fallbacks remain possible on arbitrary layouts; the stress case is intentionally preserved, not claimed solved.
+
+Real-browser interaction measurements at the same 1920x1080 focused viewport:
+
+| Fixture / version | Pan p95 ms | Drag p95 ms | Selection p95 ms | Pan max ms | Drag max ms |
+|---|---:|---:|---:|---:|---:|
+| Clerk / B.1 | 5.1 | 5.1 | 31 | 5.1 | 5.1 |
+| Clerk / B.1.1 | 5.1 | 5.1 | 47 | 10.0 | 9.9 |
+| Stress / B.1 | 10.1 | 30.1 | 64 | 214.9 | 110.0 |
+| Stress / B.1.1 | 10.1 | 30.1 | 49 | 210.0 | 113.7 |
+
+Pan/drag p95 is preserved. Selection includes Playwright/inspector overhead and was worse for Clerk in this single run; no universal latency improvement is claimed. Long-frame spikes remain. No CEF/in-game performance claim is made.
+
+### Browser, tests and evidence
+
+- **63/63 Editor tests**, TypeScript and production build passed; **345/345 RP regressions** and both RP typechecks/build passed. New red/green regressions cover the saved exit warning, lane separation, return trunk overlap, group invalidation, safe narrow detours, nested corridor shape, unchanged dense policy, Focus Path and safe label placement. Existing Spawn Recovery, G2.2/G2.3, Courier, discovery, admin, economy, storage and auth tests remain passing.
+- **18 real-browser cases**: Clerk, sixteen-choice and stress fixtures, before/after, at 1366x768, 1920x1080 and 2560x1440. No page errors or horizontal overflow. The saved Clerk warning and the sixteen-choice warnings disappear; stress fallback disclosure remains unchanged.
+- **9 additional deployed-browser cases** passed on real served assets. All mutation APIs were intercepted by isolated fixtures, including Save Draft/Validate/Preview/Publish/Assign; owner content was not submitted. Graph payload and saved position equality were checked explicitly.
+- Preview/Apply/Cancel/Undo/Redo, Smart/Legacy, selected Focus Path, 26-unit hit stroke and inspector navigation passed. All **2,017 stress SVG anchors** match their exact handles. Labels were checked against real port rectangles and for pointer transparency.
+- An initial browser run timed out waiting for the first node. Diagnostic replay passed without page errors. Final automation explicitly waits for initial view fitting and the complete expected node count before screenshots, rather than recording an intermediate fit animation/culling state. The full final suite passed; no application retry or skipped acceptance case was introduced.
+- Two read-only reviews were used: one identified why unconstrained greedy return rows were insufficient; final review found no actionable correctness issue in the completed lane/cache/label changes.
+
+Screenshots: [Clerk before](docs/evidence/phase-b11/before-clerk-focused.png), [Clerk after](docs/evidence/phase-b11/after-clerk-focused.png), [selected return with Focus Path](docs/evidence/phase-b11/after-return-focus.png), [16 choices before](docs/evidence/phase-b11/before-sixteen-1920.png), [16 choices after](docs/evidence/phase-b11/after-sixteen-1920.png). All viewport images and full failure/success diagnostics remain under `build/rp-audit/phase-b11/`.
+
+### Deployment and owner acceptance
+
+Deployed only to the verified offline loopback server, using the existing stopped-server backup/rollback workflow and visible PowerShell startup. Server executable body is byte-identical to B.1 after removing the UI asset-hash banner. No Skyrim, Launcher, CEF, cursor or runtime service source was changed.
+
+- Bundle SHA-256: `e9906879331f4e7cabca00d82545dde34d353ca48526157d1bb5ffae1e0e2cbc`.
+- Asset aggregate: `a4e6ed0e2a7118be2a00189cadc1c07d01dbf81688a46554fac88c6cc3a7d98c`, **2,148,244 bytes**, within the unchanged deployment limit.
+- Rollback record: `build/rp-audit/g23/deploy-1792944541192/deployment.json`; it preserves B.1 bundle `3b5e75af99425b35e7d1704b49c38fdfcac0f110c3f322708e50f921b6941a3b.cjs` and its immutable assets.
+- Protected world/economy/NPC/dialogue/blueprint hashes were equal immediately before/after deployment. HTTP hashes matched all six files; unauthenticated catalog returned **403**. Normal startup changed writer/recovery leases and reapplied the existing NPC pose: equivalent 360/0 yaw plus less than 0.01 unit grounding change, verified against the unchanged registry. No data rollback/reset occurred.
+- Local records: `build/rp-audit/phase-b11/{gates,health,deployment-output}.json`. Start command remains **`.\server`**. Rollback restores only code/config through the existing script; never restore world/economy/player data.
+- Commits are pushed only to the authorized `frostveil` development branch; no force push/upstream changes. Final remote HEAD/clean-tree verification is recorded in the delivery response and local audit log.
+
+Owner test: refresh the Studio (Ctrl+F5), open the existing Clerk draft, compare Smart/Legacy, follow each choice and return, select an edge and toggle **Focus Path**. Then Auto Arrange → Cancel, repeat → Apply → Undo. Save only if you want to keep a new layout. Confirm overall visual readability; final owner acceptance is still pending.

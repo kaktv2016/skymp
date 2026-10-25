@@ -1,0 +1,557 @@
+{
+  "date": "2026-10-25",
+  "base": "81359d98",
+  "implementation": "66546ad",
+  "clerkGeometrySHA256": "2e4d0a020788fd538460307dab0fc39820ee6875306f8ad58395520225621162",
+  "routing": {
+    "clerk": {
+      "nodes": 14,
+      "edges": 23,
+      "before": {
+        "crossings": 41,
+        "nodeIntersections": 2,
+        "significantOverlaps": 28,
+        "totalLength": 29737.18502292395,
+        "detourP95": 2111.900559315228,
+        "detourMax": 2215.8559700447563,
+        "examinedSegments": 162,
+        "computeMs": 21.825399999999995,
+        "warmComputeMs": 5.491799999999998,
+        "fallbacks": 1,
+        "routeBounds": {
+          "width": 1297.75,
+          "height": 2168
+        },
+        "warningsCount": 1,
+        "warningSample": [
+          "Edge menu:choice:exit could not be routed cleanly"
+        ]
+      },
+      "after": {
+        "crossings": 25,
+        "nodeIntersections": 0,
+        "significantOverlaps": 0,
+        "totalLength": 24881,
+        "detourP95": 1166.8363139431876,
+        "detourMax": 1286.6728806229205,
+        "examinedSegments": 245,
+        "computeMs": 22.5826,
+        "warmComputeMs": 15.773899999999998,
+        "fallbacks": 0,
+        "routeBounds": {
+          "width": 1297.75,
+          "height": 2044
+        },
+        "warningsCount": 0,
+        "warningSample": []
+      }
+    },
+    "sixteen": {
+      "nodes": 19,
+      "edges": 33,
+      "before": {
+        "crossings": 77,
+        "nodeIntersections": 11,
+        "significantOverlaps": 66,
+        "totalLength": 64087.38000614877,
+        "detourP95": 3303.9910314352214,
+        "detourMax": 3469.6117707626527,
+        "examinedSegments": 377,
+        "computeMs": 24.467100000000016,
+        "warmComputeMs": 16.41300000000001,
+        "fallbacks": 2,
+        "routeBounds": {
+          "width": 851,
+          "height": 3460
+        },
+        "warningsCount": 2,
+        "warningSample": [
+          "Edge service-14:next could not be routed cleanly",
+          "Edge service-15:next could not be routed cleanly"
+        ]
+      },
+      "after": {
+        "crossings": 57,
+        "nodeIntersections": 0,
+        "significantOverlaps": 7,
+        "totalLength": 52587.99999999999,
+        "detourP95": 1707.9054268510006,
+        "detourMax": 1709.16302877063,
+        "examinedSegments": 626,
+        "computeMs": 2.588300000000004,
+        "warmComputeMs": 1.9832000000000107,
+        "fallbacks": 0,
+        "routeBounds": {
+          "width": 866,
+          "height": 3280
+        },
+        "warningsCount": 0,
+        "warningSample": []
+      }
+    },
+    "stress": {
+      "nodes": 128,
+      "edges": 2017,
+      "before": {
+        "crossings": 202508,
+        "nodeIntersections": 5466,
+        "significantOverlaps": 8717,
+        "totalLength": 9424052.032500044,
+        "detourP95": 1426.805346240104,
+        "detourMax": 4360.816757464643,
+        "examinedSegments": 525447,
+        "computeMs": 639.0037,
+        "warmComputeMs": 803.7249,
+        "fallbacks": 765,
+        "routeBounds": {
+          "width": 4436,
+          "height": 13158
+        },
+        "warningsCount": 765,
+        "warningSample": [
+          "Edge node-1:choice:pick-15 could not be routed cleanly",
+          "Edge node-3:choice:pick-0 could not be routed cleanly"
+        ]
+      },
+      "after": {
+        "crossings": 202508,
+        "nodeIntersections": 5466,
+        "significantOverlaps": 8717,
+        "totalLength": 9424052.032500044,
+        "detourP95": 1426.805346240104,
+        "detourMax": 4360.816757464643,
+        "examinedSegments": 525447,
+        "computeMs": 642.6374999999998,
+        "warmComputeMs": 611.0900000000001,
+        "fallbacks": 765,
+        "routeBounds": {
+          "width": 4436,
+          "height": 13158
+        },
+        "warningsCount": 765,
+        "warningSample": [
+          "Edge node-1:choice:pick-15 could not be routed cleanly",
+          "Edge node-3:choice:pick-0 could not be routed cleanly"
+        ]
+      }
+    }
+  },
+  "performance": {
+    "before-clerk": {
+      "base": "http://127.0.0.1:3214",
+      "stress": false,
+      "counts": {
+        "nodes": 8,
+        "edges": 23
+      },
+      "panZoom": {
+        "samples": 140,
+        "p50": 5,
+        "p95": 5.099999999999909,
+        "max": 5.100000000000136
+      },
+      "drag": {
+        "samples": 31,
+        "p50": 5,
+        "p95": 5.099999999999909,
+        "max": 5.099999999999909
+      },
+      "selection": {
+        "average": 17.363636363636363,
+        "p95": 31,
+        "max": 31
+      },
+      "hover": null,
+      "errors": []
+    },
+    "before-stress": {
+      "base": "http://127.0.0.1:3214",
+      "stress": true,
+      "counts": {
+        "nodes": 8,
+        "edges": 462
+      },
+      "panZoom": {
+        "samples": 162,
+        "p50": 5,
+        "p95": 10.099999999999909,
+        "max": 214.9000000000001
+      },
+      "drag": {
+        "samples": 78,
+        "p50": 9.899999999999636,
+        "p95": 30.100000000000364,
+        "max": 110
+      },
+      "selection": {
+        "average": 40.625,
+        "p95": 64,
+        "max": 64
+      },
+      "hover": null,
+      "errors": []
+    },
+    "after-clerk": {
+      "base": "http://127.0.0.1:3215",
+      "stress": false,
+      "counts": {
+        "nodes": 8,
+        "edges": 23
+      },
+      "panZoom": {
+        "samples": 136,
+        "p50": 5,
+        "p95": 5.100000000000136,
+        "max": 10
+      },
+      "drag": {
+        "samples": 31,
+        "p50": 5,
+        "p95": 5.099999999999909,
+        "max": 9.900000000000091
+      },
+      "selection": {
+        "average": 17.636363636363637,
+        "p95": 47,
+        "max": 47
+      },
+      "hover": null,
+      "errors": []
+    },
+    "after-stress": {
+      "base": "http://127.0.0.1:3215",
+      "stress": true,
+      "counts": {
+        "nodes": 8,
+        "edges": 462
+      },
+      "panZoom": {
+        "samples": 161,
+        "p50": 5,
+        "p95": 10.099999999999909,
+        "max": 210.0000000014902
+      },
+      "drag": {
+        "samples": 74,
+        "p50": 10,
+        "p95": 30.099999999999454,
+        "max": 113.70000000446998
+      },
+      "selection": {
+        "average": 38.875,
+        "p95": 49,
+        "max": 49
+      },
+      "hover": null,
+      "errors": []
+    }
+  },
+  "browserQA": {
+    "result": [
+      {
+        "port": 3214,
+        "kind": "clerk",
+        "width": 1366,
+        "nodes": 14,
+        "edges": 23,
+        "overflow": false,
+        "warning": "1 routing notes · Edge menu:choice:exit could not be routed cleanly"
+      },
+      {
+        "port": 3214,
+        "kind": "clerk",
+        "width": 1920,
+        "nodes": 14,
+        "edges": 23,
+        "overflow": false,
+        "warning": "1 routing notes · Edge menu:choice:exit could not be routed cleanly"
+      },
+      {
+        "port": 3214,
+        "kind": "clerk",
+        "width": 2560,
+        "nodes": 14,
+        "edges": 23,
+        "overflow": false,
+        "warning": "1 routing notes · Edge menu:choice:exit could not be routed cleanly"
+      },
+      {
+        "port": 3214,
+        "kind": "sixteen",
+        "width": 1366,
+        "nodes": 19,
+        "edges": 33,
+        "overflow": false,
+        "warning": "2 routing notes · Edge service-14:next could not be routed cleanly · Edge service-15:next could not be routed cleanly"
+      },
+      {
+        "port": 3214,
+        "kind": "sixteen",
+        "width": 1920,
+        "nodes": 19,
+        "edges": 33,
+        "overflow": false,
+        "warning": "2 routing notes · Edge service-14:next could not be routed cleanly · Edge service-15:next could not be routed cleanly"
+      },
+      {
+        "port": 3214,
+        "kind": "sixteen",
+        "width": 2560,
+        "nodes": 19,
+        "edges": 33,
+        "overflow": false,
+        "warning": "2 routing notes · Edge service-14:next could not be routed cleanly · Edge service-15:next could not be routed cleanly"
+      },
+      {
+        "port": 3214,
+        "kind": "stress",
+        "width": 1366,
+        "nodes": 128,
+        "edges": 2017,
+        "overflow": false,
+        "warning": "765 routing notes · Edge node-1:choice:pick-15 could not be routed cleanly · Edge node-3:choice:pick-0 could not be routed cleanly"
+      },
+      {
+        "port": 3214,
+        "kind": "stress",
+        "width": 1920,
+        "nodes": 128,
+        "edges": 2017,
+        "overflow": false,
+        "warning": "765 routing notes · Edge node-1:choice:pick-15 could not be routed cleanly · Edge node-3:choice:pick-0 could not be routed cleanly"
+      },
+      {
+        "port": 3214,
+        "kind": "stress",
+        "width": 2560,
+        "nodes": 128,
+        "edges": 2017,
+        "overflow": false,
+        "warning": "765 routing notes · Edge node-1:choice:pick-15 could not be routed cleanly · Edge node-3:choice:pick-0 could not be routed cleanly"
+      },
+      {
+        "port": 3215,
+        "kind": "clerk",
+        "width": 1366,
+        "nodes": 14,
+        "edges": 23,
+        "overflow": false,
+        "warning": "",
+        "workflow": true
+      },
+      {
+        "port": 3215,
+        "kind": "clerk",
+        "width": 1920,
+        "nodes": 14,
+        "edges": 23,
+        "overflow": false,
+        "warning": "",
+        "workflow": true
+      },
+      {
+        "port": 3215,
+        "kind": "clerk",
+        "width": 2560,
+        "nodes": 14,
+        "edges": 23,
+        "overflow": false,
+        "warning": "",
+        "workflow": true
+      },
+      {
+        "port": 3215,
+        "kind": "sixteen",
+        "width": 1366,
+        "nodes": 19,
+        "edges": 33,
+        "overflow": false,
+        "warning": ""
+      },
+      {
+        "port": 3215,
+        "kind": "sixteen",
+        "width": 1920,
+        "nodes": 19,
+        "edges": 33,
+        "overflow": false,
+        "warning": ""
+      },
+      {
+        "port": 3215,
+        "kind": "sixteen",
+        "width": 2560,
+        "nodes": 19,
+        "edges": 33,
+        "overflow": false,
+        "warning": ""
+      },
+      {
+        "port": 3215,
+        "kind": "stress",
+        "width": 1366,
+        "nodes": 128,
+        "edges": 2017,
+        "overflow": false,
+        "warning": "765 routing notes · Edge node-1:choice:pick-15 could not be routed cleanly · Edge node-3:choice:pick-0 could not be routed cleanly"
+      },
+      {
+        "port": 3215,
+        "kind": "stress",
+        "width": 1920,
+        "nodes": 128,
+        "edges": 2017,
+        "overflow": false,
+        "warning": "765 routing notes · Edge node-1:choice:pick-15 could not be routed cleanly · Edge node-3:choice:pick-0 could not be routed cleanly"
+      },
+      {
+        "port": 3215,
+        "kind": "stress",
+        "width": 2560,
+        "nodes": 128,
+        "edges": 2017,
+        "overflow": false,
+        "warning": "765 routing notes · Edge node-1:choice:pick-15 could not be routed cleanly · Edge node-3:choice:pick-0 could not be routed cleanly"
+      }
+    ],
+    "errors": []
+  },
+  "deployedBrowserQA": {
+    "result": [
+      {
+        "port": 3210,
+        "kind": "clerk",
+        "width": 1366,
+        "nodes": 14,
+        "edges": 23,
+        "overflow": false,
+        "warning": "",
+        "workflow": true
+      },
+      {
+        "port": 3210,
+        "kind": "clerk",
+        "width": 1920,
+        "nodes": 14,
+        "edges": 23,
+        "overflow": false,
+        "warning": "",
+        "workflow": true
+      },
+      {
+        "port": 3210,
+        "kind": "clerk",
+        "width": 2560,
+        "nodes": 14,
+        "edges": 23,
+        "overflow": false,
+        "warning": "",
+        "workflow": true
+      },
+      {
+        "port": 3210,
+        "kind": "sixteen",
+        "width": 1366,
+        "nodes": 19,
+        "edges": 33,
+        "overflow": false,
+        "warning": ""
+      },
+      {
+        "port": 3210,
+        "kind": "sixteen",
+        "width": 1920,
+        "nodes": 19,
+        "edges": 33,
+        "overflow": false,
+        "warning": ""
+      },
+      {
+        "port": 3210,
+        "kind": "sixteen",
+        "width": 2560,
+        "nodes": 19,
+        "edges": 33,
+        "overflow": false,
+        "warning": ""
+      },
+      {
+        "port": 3210,
+        "kind": "stress",
+        "width": 1366,
+        "nodes": 128,
+        "edges": 2017,
+        "overflow": false,
+        "warning": "765 routing notes · Edge node-1:choice:pick-15 could not be routed cleanly · Edge node-3:choice:pick-0 could not be routed cleanly"
+      },
+      {
+        "port": 3210,
+        "kind": "stress",
+        "width": 1920,
+        "nodes": 128,
+        "edges": 2017,
+        "overflow": false,
+        "warning": "765 routing notes · Edge node-1:choice:pick-15 could not be routed cleanly · Edge node-3:choice:pick-0 could not be routed cleanly"
+      },
+      {
+        "port": 3210,
+        "kind": "stress",
+        "width": 2560,
+        "nodes": 128,
+        "edges": 2017,
+        "overflow": false,
+        "warning": "765 routing notes · Edge node-1:choice:pick-15 could not be routed cleanly · Edge node-3:choice:pick-0 could not be routed cleanly"
+      }
+    ],
+    "errors": []
+  },
+  "endpointProof": {
+    "count": 2017,
+    "failures": []
+  },
+  "editorTests": 63,
+  "rpTests": 345,
+  "bundleSHA256": "e9906879331f4e7cabca00d82545dde34d353ca48526157d1bb5ffae1e0e2cbc",
+  "assetsSHA256": "a4e6ed0e2a7118be2a00189cadc1c07d01dbf81688a46554fac88c6cc3a7d98c",
+  "protectedDeploymentEqual": true,
+  "assetHTTPHashes": [
+    {
+      "path": "assets/elk-worker.min-r_yRvuMO.js",
+      "status": 200,
+      "sha256": "e4f5c51c6f2fd564bb64e52e81c4a85a316ef2f24f8b90e1db5eb886c765b030"
+    },
+    {
+      "path": "assets/elkjs-LICENSE.css",
+      "status": 200,
+      "sha256": "6838c4246662c28751cf1b44bcae7aaf260d220431978a04dab94a65dfa047fd"
+    },
+    {
+      "path": "assets/index-CMOB9P1X.css",
+      "status": 200,
+      "sha256": "c3e71f99c33f6064a96ccfc3b7c8d666ac0bf0746f574ae3f46ee7dda3535e4a"
+    },
+    {
+      "path": "assets/index-WOnPlIRa.js",
+      "status": 200,
+      "sha256": "1a58ba31cc94e7ad437358f019be3fa17362613756add161d7ccc0cc02dec70c"
+    },
+    {
+      "path": "assets/manual-routing.worker-CWNeR2nQ.js",
+      "status": 200,
+      "sha256": "d40e9b84ccedb9b47302d87bb92b52c162c602db374a5ca7a9fc630a4e7a8d75"
+    },
+    {
+      "path": "index.html",
+      "status": 200,
+      "sha256": "45ce9b6db6e93b0e292816647caeb3f57952f528ac1c9c7cfaff5ea8886f8992"
+    }
+  ],
+  "unauthenticatedCatalog": 403,
+  "images": {
+    "after-clerk-focused.png": "032d768907f83821a790f3f4b3a8fdcd75853f105ce954d856efb3ef2ea33e34",
+    "after-return-focus.png": "b6d3994c6f3527b0a638b311305c709bc47195ecc2654d72b02b293f61d26b1a",
+    "after-sixteen-1920.png": "667c1a72e87b75363e95013081bbe243620ab77f79ebc0c782418634659f99c6",
+    "before-clerk-focused.png": "5c1988e5e7ec4e7ea01c024a209ec2103c0338be0a20189ec842ea4b516ac0b6",
+    "before-sixteen-1920.png": "3d2ab7b6efa1f9365f5eab73b051a9c6af852ca843d4df4852e7848acfbf1e44"
+  }
+}
