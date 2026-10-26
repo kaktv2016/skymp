@@ -1,0 +1,10 @@
+// Shared staging/runtime adapter. Never supplies fabricated semantic evidence.
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const {createResourceVerifier}=require('./g241b-resources.cjs'),{structure,assessFaceTint}=require('./g241b-nif-structure.cjs');
+function createClosure({native,pluginFacts,dataRoot,packageRoot,reportDirectory=packageRoot,onReport=()=>{}}){
+ const lookupRecord=ref=>{const m=/^([a-f0-9]{1,6}):([A-Za-z0-9 _.-]+\.(?:esm|esp))$/i.exec(ref);assert(m,'Invalid resource identity');const index=pluginFacts.findIndex(p=>p.filename.toLowerCase()===m[2].toLowerCase());assert(index>=0&&!pluginFacts[index].light,'Unapproved resource plugin');return native.lookupEspmRecordById(index*0x1000000+parseInt(m[1],16));};
+ const callback=createResourceVerifier({dataRoot,approvedArchives:[],lookupRecord,resolveGlobal:id=>{const p=pluginFacts[id>>>24];assert(p&&!p.light,'Unsupported resolved resource');return (id&0xffffff).toString(16)+':'+p.filename;}});
+ return catalog=>{try{const diagnostic={};for(const t of catalog.templates){const local=t.pluginQualifiedBaseId.split(':')[0].padStart(8,'0');const file=path.join(packageRoot,'Data/meshes/actors/character/FaceGenData/FaceGeom/FrostveilNPCTest.esp',local+'.nif');diagnostic[local]=assessFaceTint(structure(fs.readFileSync(file)),local);}fs.writeFileSync(path.join(reportDirectory,'nif-material-diagnostics.json'),JSON.stringify(diagnostic,null,2));if(Object.values(diagnostic).some(d=>d.issues.length)){const e=Error('Owner FaceGen material requires correction/proof: '+JSON.stringify(diagnostic));e.code='FACEGEN_MATERIAL_BLOCKED';throw e;}const result=callback(catalog);onReport(result);return result;
+ }catch(error){const result={status:'BLOCKED_WITH_REASON',code:error.code??'UNKNOWN',reason:String(error.message)};onReport(result);fs.writeFileSync(path.join(reportDirectory,'resource-dependency-report.json'),JSON.stringify(result,null,2));throw Error('RESOURCE_CLOSURE_BLOCKED: '+error.message);}};
+}
+module.exports={createClosure};

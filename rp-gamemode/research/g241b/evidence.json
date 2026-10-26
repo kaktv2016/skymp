@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-26",
+  "baseline": "61fc544043cd09738f032ba36775b1497cd0516e",
+  "branch": "dev/npc-asset-integration-g241b",
+  "plugin": {
+    "path": "Data/FrostveilNPCTest.esp",
+    "size": 1545,
+    "sha256": "ecb1f7f70aa15cab92d4dfde7773bf920f88d6558623224c5940454ba59439fc",
+    "masters": [
+      "Skyrim.esm",
+      "Update.esm",
+      "Dawnguard.esm",
+      "HearthFires.esm",
+      "Dragonborn.esm"
+    ],
+    "light": false
+  },
+  "records": [
+    {
+      "localFormId": "00005900",
+      "rawFormId": "05005900",
+      "type": "NPC_",
+      "deleted": true,
+      "flags": 32,
+      "payloadSize": 0,
+      "editorId": "",
+      "facts": null
+    },
+    {
+      "localFormId": "00005901",
+      "rawFormId": "05005901",
+      "type": "NPC_",
+      "deleted": false,
+      "flags": 262144,
+      "payloadSize": 530,
+      "editorId": "FV_GuildClerk_Test",
+      "facts": {
+        "type": "NPC_",
+        "unique": true,
+        "sex": "female",
+        "race": "13746:Skyrim.esm",
+        "headParts": [
+          "510f9:Skyrim.esm",
+          "e4da2:Skyrim.esm",
+          "7291c:Skyrim.esm",
+          "ec1b2:Skyrim.esm"
+        ],
+        "outfit": "5902:FrostveilNPCTest.esp",
+        "inventory": [],
+        "inherits": false,
+        "unsafe": false
+      }
+    },
+    {
+      "localFormId": "00005906",
+      "rawFormId": "05005906",
+      "type": "NPC_",
+      "deleted": false,
+      "flags": 262144,
+      "payloadSize": 479,
+      "editorId": "FV_Warrior_Test",
+      "facts": {
+        "type": "NPC_",
+        "unique": true,
+        "sex": "male",
+        "race": "13744:Skyrim.esm",
+        "headParts": [
+          "f5009:Skyrim.esm",
+          "51406:Skyrim.esm",
+          "c7259:Skyrim.esm",
+          "24250:Skyrim.esm",
+          "8555f:Skyrim.esm"
+        ],
+        "outfit": "5905:FrostveilNPCTest.esp",
+        "inventory": [],
+        "inherits": false,
+        "unsafe": false
+      }
+    },
+    {
+      "localFormId": "00005903",
+      "rawFormId": "05005903",
+      "type": "NPC_",
+      "deleted": true,
+      "flags": 32,
+      "payloadSize": 0,
+      "editorId": "",
+      "facts": null
+    },
+    {
+      "localFormId": "00005904",
+      "rawFormId": "05005904",
+      "type": "NPC_",
+      "deleted": true,
+      "flags": 32,
+      "payloadSize": 0,
+      "editorId": "",
+      "facts": null
+    },
+    {
+      "localFormId": "00005902",
+      "rawFormId": "05005902",
+      "type": "OTFT",
+      "deleted": false,
+      "flags": 0,
+      "payloadSize": 45,
+      "editorId": "FV_GuildClerk_TestOutfit",
+      "facts": {
+        "type": "OTFT",
+        "items": [
+          "c5d11:Skyrim.esm",
+          "c5d12:Skyrim.esm"
+        ]
+      }
+    },
+    {
+      "localFormId": "00005905",
+      "rawFormId": "05005905",
+      "type": "OTFT",
+      "deleted": false,
+      "flags": 0,
+      "payloadSize": 42,
+      "editorId": "FV_Warrior_TestOutfit",
+      "facts": {
+        "type": "OTFT",
+        "items": [
+          "13ed9:Skyrim.esm",
+          "13ed7:Skyrim.esm"
+        ]
+      }
+    }
+  ],
+  "ownedAssetFiles": [
+    {
+      "path": "Data/meshes/actors/character/FaceGenData/FaceGeom/FrostveilNPCTest.esp/00005901.NIF",
+      "size": 204143,
+      "sha256": "e0e44eb8112c9b10bc9e6b547bf8a671152b2cd8714629ae7b9383c0d19d2aa3"
+    },
+    {
+      "path": "Data/meshes/actors/character/FaceGenData/FaceGeom/FrostveilNPCTest.esp/00005906.NIF",
+      "size": 267382,
+      "sha256": "6a2ba2bb0139999d8b88aaeda389479dc11bdc1620edd6ab559325527a678458"
+    },
+    {
+      "path": "Data/textures/actors/character/FaceGenData/FaceTint/FrostveilNPCTest.esp/00005901.dds",
+      "size": 1048704,
+      "sha256": "2bf59a37d76e13644b205f1778fbdfdf874c987b772a5e8375240b4d04e2e14c"
+    },
+    {
+      "path": "Data/textures/actors/character/FaceGenData/FaceTint/FrostveilNPCTest.esp/00005901.tga",
+      "size": 1048594,
+      "sha256": "fdf0b4fb6c08a21899dcc1b72e233bd9ebae4d05182620f43c435a7a5206ea0b"
+    },
+    {
+      "path": "Data/textures/actors/character/FaceGenData/FaceTint/FrostveilNPCTest.esp/00005906.dds",
+      "size": 1048704,
+      "sha256": "1e5dacdb9bfa2cf51a74fed55030d26bc3b52d0e2f14f827c883f71eed7c1fd8"
+    },
+    {
+      "path": "Data/textures/actors/character/FaceGenData/FaceTint/FrostveilNPCTest.esp/00005906.tga",
+      "size": 1048594,
+      "sha256": "29d8176c2b1715dd5133fbada9390068f44bdf111e5d70c39eb7b81ea1601bdd"
+    }
+  ],
+  "nativeReferenceCount": 21,
+  "nativeDependencyRecords": 85,
+  "nativeReferenceDiagnostics": [],
+  "pathAvailability": {
+    "candidateCount": 102,
+    "missingCount": 0,
+    "complete": false
+  },
+  "materialDiagnostics": {
+    "00005901": {
+      "shaderType": 4,
+      "faceShaderCount": 1,
+      "tintMapPresent": false,
+      "detailMapPresent": true,
+      "issues": [
+        "FACE_TINT_SLOT_EMPTY"
+      ],
+      "complete": false,
+      "reason": "Targeted diagnostic only; complete skin, geometry and engine-path semantics are not proven"
+    },
+    "00005906": {
+      "shaderType": 4,
+      "faceShaderCount": 1,
+      "tintMapPresent": true,
+      "detailMapPresent": true,
+      "issues": [
+        "DATA_PREFIX_REQUIRES_ENGINE_PROOF"
+      ],
+      "complete": false,
+      "reason": "Targeted diagnostic only; complete skin, geometry and engine-path semantics are not proven"
+    }
+  },
+  "staging": {
+    "path": "build/rp-audit/g241/dev-7FNiLN/staging-7RaVpv",
+    "bytes": 2570478,
+    "files": 5,
+    "catalogHash": "1e2e2eca7cf0179650508b2790f11fd570c51d5042d1710a5cebaad9eb7ade77",
+    "enabled": false,
+    "signed": false,
+    "status": "FACEGEN_MATERIAL_BLOCKED"
+  },
+  "tests": {
+    "rp": 375,
+    "actualOwnerAssetChecks": 6,
+    "editor": 80,
+    "client": 58,
+    "nativeFinalCases": 84,
+    "nativeFinalAssertions": 475789,
+    "nativeInitial": "83/84; Activate torch 25ms deadline",
+    "nativeFocused": "18 assertions pass",
+    "nativeRecheckSeed": 2957034403,
+    "serverBuild": "PASS",
+    "editorBuild": "PASS",
+    "clientTypecheck": "PASS",
+    "legacyNativeReload": "PASS; one existing UUID/base"
+  },
+  "sourceUnchanged": true,
+  "installedBaselineFilesUnchanged": 9,
+  "protectedManifestSHA256": "5edaa20a730ce79b34675b06224bd2a47ebfb4b116cef5af15296f10677d6616",
+  "productionDeployment": false,
+  "clientPublication": false,
+  "visualTestReady": false,
+  "multiplayer": "DEFERRED / UNVERIFIED",
+  "nifSchemaReference": "https://github.com/niftools/nifxml/blob/develop/nif.xml",
+  "nifSchemaObservedSHA256": "752c79786ceb217641fd7e94be4033898c97e9aa38025bf05f2cbee9cffbbf0d"
+}

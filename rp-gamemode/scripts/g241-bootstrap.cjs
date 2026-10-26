@@ -5,7 +5,9 @@ if(global.mp){
  const root=process.cwd(),config=isolated(root),options=JSON.parse(fs.readFileSync(path.join(root,'g241-approval.json'),'utf8'));
  if(options.schemaVersion!==1||options.enabled!==true||!Array.isArray(options.catalogs)||!options.catalogs.length)throw Error('G241 BLOCKED_MISSING_ASSETS: fixtures disabled; author, review and stage catalogs first');
  const {loadApprovedCatalog}=require(path.join(root,'runtime/modules/npc/catalog-loader.js')),{createRuntime}=require(path.join(root,'runtime/runtime.js')),{LocalAdminAuthority}=require(path.join(root,'runtime/modules/admin/local-authority.js'));
- const catalog=loadApprovedCatalog(path.join(root,'package'),options.catalogs,config.loadOrder,global.mp);
+ const packageName=options.packageDirectory??'package';assert(/^(package|staging-[A-Za-z0-9]+)$/.test(packageName));const packageRoot=path.join(root,packageName);assert.equal(fs.realpathSync(packageRoot),packageRoot);
+ let resourceVerifier;if(options.resourceVerification!==undefined){assert.equal(options.resourceVerification.kind,'g241b');const {pluginFacts}=require(path.join(root,'runtime/modules/npc/catalog-loader.js'));resourceVerifier=require(path.join(root,'g241b-closure.cjs')).createClosure({native:global.mp,pluginFacts:pluginFacts(config.loadOrder),dataRoot:options.resourceVerification.readOnlyDataRoot,packageRoot});}
+ const catalog=loadApprovedCatalog(packageRoot,options.catalogs,config.loadOrder,global.mp,resourceVerifier);
  for(const id of ['guild-clerk','warrior'])catalog.resolve(id);
  const authority=new LocalAdminAuthority(path.join(root,'admin'),['owner']);global.mp.on('connect',authority.connectionEvent);global.mp.on('disconnect',authority.connectionEvent);
  const runtime=createRuntime(global.mp,{npc:{storageRoot:path.join(root,'npc-registry'),templateOptions:{catalog,development:{isolationId:'g241-pair',templates:['guild-clerk','warrior'],verifyIsolated:()=>{isolated(root);return true;}}}},admin:{authorize:authority.authorize}});
