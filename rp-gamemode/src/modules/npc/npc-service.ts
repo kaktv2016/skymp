@@ -8,7 +8,7 @@ import type {NpcTemplateCatalog,TemplateAssignment} from './template-catalog';
 const KEY='7'.repeat(64), TAG='private.frostveil.npc', LABEL='frostveilNpcName', POSE='frostveilNpcPose';
 export const npcHints=['help','list','create clerk','select','info','rename','move here','rotate','disable','enable','delete','restore'];
 interface Definition {id:string;template:string;name:string;location:TransformLocation;enabled:boolean;deleted:boolean;formId:number|null;appearanceProfile:null;equipmentProfile:null;dialogueProfile:null;templateAssignment?:TemplateAssignment;revision?:number;fixture?:{isolationId:string;key:string};}
-export interface NpcOptions {catalog?:Pick<NpcTemplateCatalog,'resolve'|'list'>;development?:{isolationId:string;templates:readonly string[];verifyIsolated:()=>boolean};}
+export interface NpcOptions {catalog?:Pick<NpcTemplateCatalog,'resolve'|'list'>;development?:{isolationId:string;templates:readonly string[];verifyIsolated:()=>boolean;verifySession?:(actor:ActorId)=>boolean;canStream?:()=>boolean;qualifiedIdentity?:boolean};}
 interface Native {place(base:number):number;get(id:number,key:string):unknown;set(id:number,key:string,value:unknown):void;setEnabled(id:number,value:boolean):void;lookupEspmRecordById(id:number):{record?:{type:string}};makeProperty(name:string,options:unknown):void;}
 
 /** Neighbor updates run in FormView's update context, after vanilla movement.
@@ -64,6 +64,7 @@ export class NpcService {
   // Owner updater remains empty; these properties belong only to NPC actors.
   this.native.makeProperty(LABEL,{isVisibleByOwner:true,isVisibleByNeighbors:true,updateOwner:'',updateNeighbor:'if(ctx.refr && !ctx.refr.isDeleted() && typeof ctx.value === "string" && ctx.state.lastNpcName !== ctx.value){ if(ctx.refr.setDisplayName(ctx.value,true)) ctx.state.lastNpcName=ctx.value; }'});
   this.native.makeProperty(POSE,{isVisibleByOwner:true,isVisibleByNeighbors:true,updateOwner:'',updateNeighbor:'('+updateNpcPose.toString()+')(ctx);'});
+  if(this.options.development?.qualifiedIdentity)this.native.makeProperty('frostveilNpcQualifiedBase',{isVisibleByOwner:true,isVisibleByNeighbors:true,updateOwner:'',updateNeighbor:''});
   this.definitions=validate(this.journal.read(KEY)??[]);
   for(const d of this.definitions){if(d.formId===null)throw Error('Interrupted NPC provisioning: '+d.id);this.verify(d);this.apply(d);}
   this.ready=true;this.log('[rp-npc] ready definitions='+this.definitions.length);
@@ -72,12 +73,15 @@ export class NpcService {
  listRegistered(){if(!this.ready)return [];return this.definitions.filter(d=>d.enabled&&!d.deleted).map(d=>{this.verify(d);return {id:d.id,name:d.name,enabled:d.enabled,deleted:d.deleted};});}
  hints(){return [...npcHints,...(this.options.catalog?['templates',...this.options.catalog.list().map(t=>'create '+t.id)]:[]),...(this.options.development?['fixture create','fixture list','fixture cleanup']:[])];}
  stop(){this.ready=false;this.selections.clear();this.journal.close();}
+ get isReady(){return this.ready;}
  prune(){for(const [actor,selection] of this.selections){try{if(!this.allowed(actor)||this.adapter.sessionForActor(actor).guid!==selection.guid)this.selections.delete(actor);}catch{this.selections.delete(actor);}}}
  private save(next:Definition[]){const checked=validate(next);this.journal.append(KEY,checked);this.definitions=checked;}
  private template(id:string,expected?:TemplateAssignment){if(id==='clerk'){if(expected)throw Error('Clerk cannot have an assignment');return {baseId:0x39f83,base:'39f83:Skyrim.esm',displayName:'Courier Guild Clerk'};}if(!this.options.catalog)throw Error('Template catalog disabled; install/approve test assets first');return this.options.catalog.resolve(id,expected);}
  private verify(d:Definition){const t=this.template(d.template,d.templateAssignment);if(d.formId===null||this.native.get(d.formId,TAG)!==d.id||this.native.get(d.formId,'baseDesc')!==t.base)throw Error('NPC native identity mismatch: '+d.id);}
  /** Expected revision prevents an obsolete admin selection editing a newer record. */
  private create(actor:ActorId,id:string,fixture?:Definition['fixture'],location?:TransformLocation){
+  if(id!=='clerk'&&this.options.development?.verifySession&&!this.options.development.verifySession(actor))throw Error('Development client identity not verified; use /npc identity');
+  if(id!=='clerk'&&this.options.development?.qualifiedIdentity&&!/:(Skyrim|Update|Dawnguard|HearthFires|Dragonborn)\.esm$/i.test((location??this.adapter.fullLocation(actor)).cell))throw Error('Development fixture supports verified official cells/worlds only');
   const t=this.template(id);if(this.definitions.length>=64)throw Error('NPC limit reached (64 including deleted)');
   const d:Definition={id:randomUUID(),template:id,name:t.displayName,location:upright(location??this.adapter.fullLocation(actor)),enabled:true,deleted:false,formId:null,appearanceProfile:null,equipmentProfile:null,dialogueProfile:null,...(id!=='clerk'?{templateAssignment:(t as {assignment:TemplateAssignment}).assignment,revision:1}:{}),...(fixture?{fixture}:{})};
   this.save([...this.definitions,d]);
@@ -89,12 +93,14 @@ export class NpcService {
   const own=()=>this.definitions.filter(d=>d.fixture?.isolationId===dev.isolationId&&dev.templates.includes(d.fixture.key)&&d.template===d.fixture.key);
   const owned=own();for(const id of dev.templates)if(owned.filter(d=>d.fixture!.key===id).length>1)throw Error('Duplicate fixture identities; inspect journal');
   if(args[0]==='create'){
+   if(dev.verifySession&&!dev.verifySession(actor))throw Error('Development client identity not verified; use /npc identity');
    if(this.definitions.length+dev.templates.filter(id=>!owned.some(d=>d.fixture!.key===id)).length>64)throw Error('NPC limit reached (64 including deleted)');
    for(const [index,id] of dev.templates.entries()){const current=own().find(d=>d.fixture!.key===id);if(!current){const p=this.adapter.fullLocation(actor);const location:TransformLocation={...p,pos:[p.pos[0]+(index?128:-128),p.pos[1],p.pos[2]]};this.create(actor,id,{isolationId:dev.isolationId,key:id},location);}else{this.verify(current);if(current.deleted||!current.enabled){const d={...current,enabled:true,deleted:false,revision:current.revision!+1};this.save(this.definitions.map(v=>v.id===d.id?d:v));this.apply(d,current);}}}
   }else if(args[0]==='cleanup'){for(const current of own()){this.verify(current);if(!current.deleted||current.enabled){const d={...current,enabled:false,deleted:true,revision:current.revision!+1};this.save(this.definitions.map(v=>v.id===d.id?d:v));this.apply(d,current);}}}
   return own().map(d=>`${d.id} ${d.template} rev=${d.revision} ${d.deleted?'deleted':d.enabled?'enabled':'disabled'}`).join('\n')||'No development fixtures';
  }
  private apply(d:Definition,previous?:Definition){
+  if(d.template!=='clerk'&&this.options.development?.qualifiedIdentity&&(!previous||previous.templateAssignment?.catalogHash!==d.templateAssignment?.catalogHash))this.native.set(d.formId!,'frostveilNpcQualifiedBase',{version:1,catalogHash:d.templateAssignment!.catalogHash,base:d.templateAssignment!.base});
   this.verify(d);
   if(!previous||JSON.stringify(previous.location)!==JSON.stringify(d.location)){
    const location=upright(d.location);
@@ -102,8 +108,9 @@ export class NpcService {
    this.native.set(d.formId!,POSE,location);
   }
   if(!previous||previous.name!==d.name)this.native.set(d.formId!,LABEL,d.name);
-  if(!previous||previous.enabled!==d.enabled||previous.deleted!==d.deleted)this.native.setEnabled(d.formId!,d.enabled&&!d.deleted);
+  if(!previous||previous.enabled!==d.enabled||previous.deleted!==d.deleted)this.native.setEnabled(d.formId!,d.enabled&&!d.deleted&&(d.template==='clerk'||this.options.development?.canStream?.()!==false));
  }
+ syncDevelopmentVisibility(){if(!this.ready||!this.options.development?.canStream)return;const allowed=this.options.development.canStream();for(const d of this.definitions)if(d.template!=='clerk'&&d.formId!==null){this.verify(d);this.native.setEnabled(d.formId,d.enabled&&!d.deleted&&allowed);}}
  execute(actor:ActorId,args:readonly string[]):CommandResult{
   const fail=(message:string):CommandResult=>{this.log(`[rp-npc] actor=${actor.toString(16)} result=rejected reason=${message}`);return {ok:false,code:'NPC_REJECTED',message};};
   try{
@@ -136,6 +143,7 @@ export class NpcService {
      else if(command==='delete'&&!a.length){d.deleted=true;d.enabled=false;}
      else if(command==='restore'&&!a.length){d.deleted=false;d.enabled=true;}
      else return fail('Invalid command; /npc help');
+     if(d.template!=='clerk'&&this.options.development?.qualifiedIdentity&&!/:(Skyrim|Update|Dawnguard|HearthFires|Dragonborn)\.esm$/i.test(d.location.cell))return fail('Development fixture supports verified official cells/worlds only');
      if(JSON.stringify(d)!==JSON.stringify(current)){if(d.revision!==undefined)d.revision++;this.save(this.definitions.map(v=>v.id===d.id?d:v));try{this.apply(d,current);}catch(e){this.ready=false;throw e;}if(d.revision!==undefined)selection.revision=d.revision;}message='NPC updated: '+d.name;
     }
    }

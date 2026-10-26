@@ -1,5 +1,7 @@
 import {DialogueRuntime,DialogueStore} from './modules/dialogue/dialogue-runtime';
 import {dialogueSources} from './client/dialogue';
+import {developmentIdentitySources} from './client/development-identity';
+import {DevelopmentIdentity,DevelopmentIdentitySpec} from './modules/npc/development-identity';
 import {courierProgressionConfig} from './config/courier-progression';
 import {actorId} from './engine/ids';
 import { CommandRegistry } from './core/command-registry';
@@ -29,7 +31,7 @@ import {BlueprintService} from './modules/dialogue/blueprint-service';
 import {EditorAuthority} from './modules/dialogue/editor-authority';
 import {EditorHttpServer,loadEditorAssets} from './modules/dialogue/editor-http';
 
-export interface RuntimeOptions { scheduler?: Scheduler; logger?: Logger; chat?: false | (Partial<ChatConfig> & { now?: () => number }); profile?:Partial<ProfileLimits>&{now?:()=>number}; dice?: Partial<DiceSettings> & { rng?: DiceRng }; courier?: CourierOptions; economy?:EconomyOptions;admin?:AdminOptions; npc?:{storageRoot:string;templateOptions?:NpcOptions}; blueprintEditor?:{storageRoot:string;assetsRoot:string;port?:number}; }
+export interface RuntimeOptions { scheduler?: Scheduler; logger?: Logger; chat?: false | (Partial<ChatConfig> & { now?: () => number }); profile?:Partial<ProfileLimits>&{now?:()=>number}; dice?: Partial<DiceSettings> & { rng?: DiceRng }; courier?: CourierOptions; economy?:EconomyOptions;admin?:AdminOptions; npc?:{storageRoot:string;templateOptions?:NpcOptions;developmentIdentity?:{spec:DevelopmentIdentitySpec;verifyProfile:()=>boolean}}; blueprintEditor?:{storageRoot:string;assetsRoot:string;port?:number}; }
 export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
   if(options.blueprintEditor&&(!options.npc||options.chat===false))throw Error('Blueprint editor requires NPC and chat modules');
   const adapter = new SkyMpAdapter(rawMp);
@@ -87,12 +89,46 @@ export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
     });
     modules.register(courierModule(courier,commands,economy));
     if(options.npc){
-      const npc=new NpcService(rawMp as ConstructorParameters<typeof NpcService>[0],adapter,options.npc.storageRoot,actor=>admin.state(actor)!==null,logger.info,options.npc.templateOptions);
+      const devIdentity=options.npc.developmentIdentity;
+      if(devIdentity&&!options.npc.templateOptions?.development)throw Error('Identity handshake requires isolated NPC development options');
+      const proof=devIdentity?new DevelopmentIdentity(devIdentity.spec,a=>{try{return devIdentity.verifyProfile()?admin.principal(actorId(a)):null;}catch{return null;}},a=>JSON.stringify(adapter.sessionForActor(actorId(a)))):undefined;
+      const templateOptions=proof?{...options.npc.templateOptions,development:{...options.npc.templateOptions!.development!,verifySession:(a:ReturnType<typeof actorId>)=>proof.ready(a),canStream:()=>proof.anyReady(),qualifiedIdentity:true}}:options.npc.templateOptions;
+      const npc=new NpcService(rawMp as ConstructorParameters<typeof NpcService>[0],adapter,options.npc.storageRoot,actor=>admin.state(actor)!==null,logger.info,templateOptions);
+      // On a development restart, park restored custom actors synchronously
+      // before asynchronous module boot can yield to login/network ticks.
+      if(proof){npc.start();if(!npc.isReady)throw Error('Development NPC registry cannot be verified/parked');}
       modules.register({id:'rp-npc',dependencies:['rp-chat'],initialize:async(scope)=>{
-        scope.defer(()=>npc.stop());npc.start();
-        scope.defer(commands.register('npc',(ctx,args)=>npc.execute(ctx.actorId,args),'rp-npc',npc.hints()));
+        scope.defer(()=>npc.stop());if(!proof)npc.start();
+        scope.defer(commands.register('npc',(ctx,args)=>{
+          if(proof&&args[0]==='identity'){
+            try{
+              if(args.length===2&&args[1]==='status')return {ok:true,data:{systemMessage:proof.ready(ctx.actorId)?'Development identity verified for this authorized session':'Waiting for authorized client runtime proof'}};
+              if(args.length!==1)throw Error('Usage: /npc identity [status]');
+              const challenge=proof.issue(ctx.actorId);npc.syncDevelopmentVisibility();(rawMp as any).set(ctx.actorId,'frostveilNpcIdentity',challenge);
+              return {ok:true,data:{systemMessage:'Checking loaded Skyrim forms. Development-only FaceTint visual uncertainty remains.'}};
+            }catch(error){return {ok:false,code:'DEVELOPMENT_IDENTITY_REQUIRED',message:String(error)};}
+          }
+          return npc.execute(ctx.actorId,args);
+        },'rp-npc',[...npc.hints(),...(proof?['identity','identity status']:[])]));
         scope.defer(scheduler.every(1000,()=>npc.prune()));
         const native=rawMp as any,sources=dialogueSources();
+        if(proof){
+          const sources=developmentIdentitySources();native.makeProperty('frostveilNpcIdentity',{isVisibleByOwner:true,isVisibleByNeighbors:false,updateOwner:sources.owner,updateNeighbor:''});
+          scope.defer(events.register('_frostveilNpcIdentity',(sender,packet,...extra)=>{
+            if(extra.length)return;try{
+              const actor=actorId(sender),raw=packet as any;
+              if(raw?.op==='armed'){if(proof.arm(actor,raw.nonce)){npc.syncDevelopmentVisibility();logger.info('[g241d] mapper armed; isolated fixtures may stream');chat?.sendSystem(actor,'Development identity verified. /npc fixture create is available; visual acceptance pending.');}return;}
+              if(raw?.op==='mappingFault'){if(proof.ready(actor)){proof.clear();native.set(actor,'frostveilNpcIdentity',{op:'revoked'});npc.syncDevelopmentVisibility();logger.error('[g241d] runtime mapping fault; fixtures parked');}return;}
+              if(raw?.op!=='proof')return;
+              const ok=proof.receive(actor,raw);npc.syncDevelopmentVisibility();
+              if(ok){native.set(actor,'frostveilNpcIdentity',{op:'verified',nonce:raw.nonce,profileHash:devIdentity!.spec.profileHash,catalogHash:devIdentity!.spec.catalogHash});logger.info('[g241d] authorized runtime identity verified '+JSON.stringify({plugins:raw.plugins,bases:raw.bases}));}
+              else chat?.sendSystem(actor,'Development identity rejected; fixture spawning remains blocked.');
+            }catch{logger.error('[g241d] rejected malformed identity event');}
+          }));
+          native.makeEventSource('_frostveilNpcIdentity',sources.event);
+          let active=true;const clear=()=>{if(active){proof.clear();npc.syncDevelopmentVisibility();}};native.on('connect',clear);native.on('disconnect',clear);
+          scope.defer(scheduler.every(500,()=>npc.syncDevelopmentVisibility()));scope.defer(()=>{active=false;proof.clear();npc.syncDevelopmentVisibility();});
+        }
         const routes=courier.routes().map(r=>r.id),permits=courierProgressionConfig.permits.map(p=>p.id);
         const store=new DialogueStore(options.npc!.storageRoot+'-dialogues',routes,permits);
         scope.defer(()=>store.close());const graph=store.load();
