@@ -1,0 +1,1243 @@
+{
+  "milestone": "G2.4.1C",
+  "date": "2026-10-26",
+  "baselineCommit": "29ca47767d71ad8bbbf4d6cc36bef3a65e7237c5",
+  "catalogHash": "1e2e2eca7cf0179650508b2790f11fd570c51d5042d1710a5cebaad9eb7ade77",
+  "assets": [
+    {
+      "path": "Data/FrostveilNPCTest.esp",
+      "sha256": "ecb1f7f70aa15cab92d4dfde7773bf920f88d6558623224c5940454ba59439fc"
+    },
+    {
+      "path": "Data/meshes/actors/character/FaceGenData/FaceGeom/FrostveilNPCTest.esp/00005901.nif",
+      "sha256": "e0e44eb8112c9b10bc9e6b547bf8a671152b2cd8714629ae7b9383c0d19d2aa3",
+      "size": 204143
+    },
+    {
+      "path": "Data/textures/actors/character/FaceGenData/FaceTint/FrostveilNPCTest.esp/00005901.dds",
+      "sha256": "2bf59a37d76e13644b205f1778fbdfdf874c987b772a5e8375240b4d04e2e14c",
+      "size": 1048704
+    },
+    {
+      "path": "Data/meshes/actors/character/FaceGenData/FaceGeom/FrostveilNPCTest.esp/00005906.nif",
+      "sha256": "6a2ba2bb0139999d8b88aaeda389479dc11bdc1620edd6ab559325527a678458",
+      "size": 267382
+    },
+    {
+      "path": "Data/textures/actors/character/FaceGenData/FaceTint/FrostveilNPCTest.esp/00005906.dds",
+      "sha256": "1e5dacdb9bfa2cf51a74fed55030d26bc3b52d0e2f14f827c883f71eed7c1fd8",
+      "size": 1048704
+    }
+  ],
+  "materialReference": {
+    "actor": "Lydia",
+    "archive": "Skyrim - Meshes0.bsa",
+    "member": "meshes/actors/character/FaceGenData/FaceGeom/Skyrim.esm/000A2C8E.nif",
+    "sha256": "cbcd6c760a440d814fa71ff5d81f78dc24ad096b2cf7a7c99f29a09a782bbaa0"
+  },
+  "faces": [
+    {
+      "id": "00005901",
+      "sha256": "e0e44eb8112c9b10bc9e6b547bf8a671152b2cd8714629ae7b9383c0d19d2aa3",
+      "blockCount": 46,
+      "sceneNodes": 6,
+      "shapes": 6,
+      "skinInstances": 6,
+      "namedReferences": 88,
+      "shaderPaths": [
+        "textures/actors/character/mouth/mouthhuman.dds",
+        "textures/actors/character/mouth/mouthhuman_n.dds",
+        "textures/actors/character/female/femalehead.dds",
+        "textures/actors/character/female/femalehead_msn.dds",
+        "textures/actors/character/female/femalehead_sk.dds",
+        "textures/actors/character/female/femaleheaddetail_rough.dds",
+        "textures/actors/character/female/femalehead_s.dds",
+        "textures/actors/character/eyes/eyeblue.dds",
+        "textures/actors/character/eyes/eyebrown_n.dds",
+        "textures/actors/character/eyes/eyebrown_sk.dds",
+        "textures/cubemaps/eyecubemap.dds",
+        "textures/actors/character/eyes/eyeenvironmentmask_m.dds",
+        "textures/actors/character/femalebrows/femalebrow_08.dds",
+        "textures/actors/character/femalebrows/femalebrow_n.dds",
+        "textures/actors/character/hair/hairlong.dds",
+        "textures/actors/character/hair/hairlong_n.dds"
+      ],
+      "dds": {
+        "format": "DDS",
+        "sha256": "2bf59a37d76e13644b205f1778fbdfdf874c987b772a5e8375240b4d04e2e14c",
+        "size": 1048704,
+        "width": 512,
+        "height": 512,
+        "pixelFormat": "RGBA8",
+        "mipLevels": 1,
+        "payloadValidated": true
+      },
+      "material": {
+        "format": "SSE 20.2.0.7 / BS100",
+        "vanilla": {
+          "sha256": "cbcd6c760a440d814fa71ff5d81f78dc24ad096b2cf7a7c99f29a09a782bbaa0",
+          "shaderType": 4,
+          "flags1": 2185238275,
+          "flags2": 33587233,
+          "tintPath": "data\\Textures\\Actors\\Character\\FaceGenData\\FaceTint\\Skyrim.esm\\000A2C8E.dds",
+          "detailPath": "Actors\\Character\\Male\\BlankDetailmap.dds"
+        },
+        "authored": {
+          "sha256": "e0e44eb8112c9b10bc9e6b547bf8a671152b2cd8714629ae7b9383c0d19d2aa3",
+          "shaderType": 4,
+          "flags1": 2185238275,
+          "flags2": 33587233,
+          "tintPath": "",
+          "detailPath": "Actors\\Character\\Female\\FemaleHeadDetail_Rough.dds"
+        },
+        "semantics": {
+          "matchingFaceShaderFlags": true,
+          "vanillaTintPopulated": true,
+          "authoredTintPopulated": false,
+          "authoredTintMatchesExpected": false,
+          "vanillaUsesDataTexturesPrefix": true,
+          "authoredUsesDataTexturesPrefix": false
+        },
+        "staticAssessment": "PENDING_GAME_RENDER",
+        "limitations": [
+          "One vanilla comparison establishes a matching FaceTint material pattern only; it does not prove engine fallback behavior or rendering.",
+          "NIF scene, geometry and skin binding are not covered by this narrow parser.",
+          "No binary was modified."
+        ]
+      }
+    },
+    {
+      "id": "00005906",
+      "sha256": "6a2ba2bb0139999d8b88aaeda389479dc11bdc1620edd6ab559325527a678458",
+      "blockCount": 45,
+      "sceneNodes": 4,
+      "shapes": 6,
+      "skinInstances": 6,
+      "namedReferences": 80,
+      "shaderPaths": [
+        "textures/actors/character/mouth/mouthhuman.dds",
+        "textures/actors/character/mouth/mouthhuman_n.dds",
+        "textures/actors/character/male/malehead.dds",
+        "textures/actors/character/imperialmale/malehead_msn.dds",
+        "textures/actors/character/male/malehead_sk.dds",
+        "textures/actors/character/male/maleheaddetail_age40.dds",
+        "textures/actors/character/facegendata/facetint/frostveilnpctest.esp/00005906.dds",
+        "textures/actors/character/male/malehead_s.dds",
+        "textures/actors/character/eyes/eyehazel.dds",
+        "textures/actors/character/eyes/eyebrown_n.dds",
+        "textures/actors/character/eyes/eyebrown_sk.dds",
+        "textures/cubemaps/eyecubemap.dds",
+        "textures/actors/character/eyes/eyeenvironmentmask_m.dds",
+        "textures/actors/character/malebrows/malebrow_11.dds",
+        "textures/actors/character/malebrows/malebrow1_n.dds",
+        "textures/actors/character/hair/hairlong.dds",
+        "textures/actors/character/hair/hairlong_n.dds"
+      ],
+      "dds": {
+        "format": "DDS",
+        "sha256": "1e5dacdb9bfa2cf51a74fed55030d26bc3b52d0e2f14f827c883f71eed7c1fd8",
+        "size": 1048704,
+        "width": 512,
+        "height": 512,
+        "pixelFormat": "RGBA8",
+        "mipLevels": 1,
+        "payloadValidated": true
+      },
+      "material": {
+        "format": "SSE 20.2.0.7 / BS100",
+        "vanilla": {
+          "sha256": "cbcd6c760a440d814fa71ff5d81f78dc24ad096b2cf7a7c99f29a09a782bbaa0",
+          "shaderType": 4,
+          "flags1": 2185238275,
+          "flags2": 33587233,
+          "tintPath": "data\\Textures\\Actors\\Character\\FaceGenData\\FaceTint\\Skyrim.esm\\000A2C8E.dds",
+          "detailPath": "Actors\\Character\\Male\\BlankDetailmap.dds"
+        },
+        "authored": {
+          "sha256": "6a2ba2bb0139999d8b88aaeda389479dc11bdc1620edd6ab559325527a678458",
+          "shaderType": 4,
+          "flags1": 2185238275,
+          "flags2": 33587233,
+          "tintPath": "Data\\Textures\\actors\\Character\\FaceGenData\\FaceTint\\FrostveilNPCTest.esp\\00005906.dds",
+          "detailPath": "Actors\\Character\\Male\\MaleHeadDetail_Age40.dds"
+        },
+        "semantics": {
+          "matchingFaceShaderFlags": true,
+          "vanillaTintPopulated": true,
+          "authoredTintPopulated": true,
+          "authoredTintMatchesExpected": true,
+          "vanillaUsesDataTexturesPrefix": true,
+          "authoredUsesDataTexturesPrefix": true
+        },
+        "staticAssessment": "PASS_STATIC",
+        "limitations": [
+          "One vanilla comparison establishes a matching FaceTint material pattern only; it does not prove engine fallback behavior or rendering.",
+          "NIF scene, geometry and skin binding are not covered by this narrow parser.",
+          "No binary was modified."
+        ]
+      }
+    }
+  ],
+  "archives": [
+    {
+      "filename": "Skyrim - Meshes0.bsa",
+      "size": 1153126177,
+      "sha256": "3bcb3e42edb00aa63a06af43a6a5a092029632e9a3fdd2c90fced0cc07db5c7d",
+      "indexer": "rsm-bsa-4.1.0",
+      "version": 105
+    },
+    {
+      "filename": "Skyrim - Meshes1.bsa",
+      "size": 378762772,
+      "sha256": "49cc83cd6592a676481d62c8483657ac94aa51fc15c66b1a35a8f5fcbb870880",
+      "indexer": "rsm-bsa-4.1.0",
+      "version": 105
+    },
+    {
+      "filename": "Skyrim - Textures0.bsa",
+      "size": 652490581,
+      "sha256": "47ce44b6c8265153875f6a52aa5dada1890ce6b22ae527c448270ffbf26c90ef",
+      "indexer": "rsm-bsa-4.1.0",
+      "version": 105
+    },
+    {
+      "filename": "Skyrim - Textures1.bsa",
+      "size": 1511492648,
+      "sha256": "92516f098211f961ff2bbe8b398d546d5dd62deea789f60a46e1b749c1e758f2",
+      "indexer": "rsm-bsa-4.1.0",
+      "version": 105
+    },
+    {
+      "filename": "Skyrim - Textures2.bsa",
+      "size": 1345109830,
+      "sha256": "ebbbd4998a05ae520ce16a67ad27834487e4989f7b87aa5360acfcd95b5cc2b7",
+      "indexer": "rsm-bsa-4.1.0",
+      "version": 105
+    },
+    {
+      "filename": "Skyrim - Textures3.bsa",
+      "size": 1406304717,
+      "sha256": "ad1557a02b7a2922f314c10c1c957ee09aea0be3732274cf737502929a6ba1b5",
+      "indexer": "rsm-bsa-4.1.0",
+      "version": 105
+    },
+    {
+      "filename": "Skyrim - Textures4.bsa",
+      "size": 1265325033,
+      "sha256": "53fe60b2831cd49f9d73ed36779ced234a310e0f76f229dd9d53ffa5c8c02bdf",
+      "indexer": "rsm-bsa-4.1.0",
+      "version": 105
+    },
+    {
+      "filename": "Skyrim - Textures5.bsa",
+      "size": 813639992,
+      "sha256": "f6cf263cd3753f2921c1a0e7d40aa10a37625cee3ba92e7d2bb8ce3b0147bf80",
+      "indexer": "rsm-bsa-4.1.0",
+      "version": 105
+    },
+    {
+      "filename": "Skyrim - Textures6.bsa",
+      "size": 97210200,
+      "sha256": "4ec70fe57e45d8331c70c47a037a619e08e2d663500a5607a7abde6f0da44cab",
+      "indexer": "rsm-bsa-4.1.0",
+      "version": 105
+    },
+    {
+      "filename": "Skyrim - Textures7.bsa",
+      "size": 677006639,
+      "sha256": "a494c65fe3472ea9898bfe8f30b651ae1a840fbb1099d2561898194d0551aeb3",
+      "indexer": "rsm-bsa-4.1.0",
+      "version": 105
+    },
+    {
+      "filename": "Skyrim - Textures8.bsa",
+      "size": 255927303,
+      "sha256": "31fb46d6aa2cdd4d7124063fa7ee77831448dee19ad8fb69793679cb9540af94",
+      "indexer": "rsm-bsa-4.1.0",
+      "version": 105
+    }
+  ],
+  "resourcePaths": [
+    {
+      "path": "meshes/actors/character/character assets/1stpersonfemalebody_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/1stpersonfemalehands_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/1stpersonfemalehandsargonian_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/1stpersonmalebody_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/1stpersonmalehands_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/1stpersonmalehandsargonian_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/childbody.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/childfeet.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/childhands.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/eyesfemale.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/eyesmale.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/faceparts/femalebrows.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/faceparts/malebrows.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/femalebody_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/femalefeet_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/femalehands_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/femalehandsargonian_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/femaletailargonian.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/hair/female/hair12.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/hair/female/hairline12.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/hair/male/hair09.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/hair/male/hairline09.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/malebody_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/malefeet_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/malehands_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/malehandsargonian_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/character/character assets/maletailargonian.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/dragon/character assets/dragon.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/horse/character assets/horse.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/actors/sabrecat/character assets/sabrecatsnow.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/armor/imperial/f/1stpersoncuirasslight_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/armor/imperial/f/bootslight_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/armor/imperial/f/cuirasslight_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/armor/imperial/m/1stpersoncuirasslight_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/armor/imperial/m/bootslight_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/armor/imperial/m/cuirasslight_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/clothes/warlock/1stpersonwarlockrobes_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/clothes/warlock/1stpersonwarlockrobes_f_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/clothes/warlock/warlockboots_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/clothes/warlock/warlockboots_f_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/clothes/warlock/warlockrobes_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "meshes/clothes/warlock/warlockrobes_f_1.nif",
+      "archives": [
+        "Skyrim - Meshes0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/argonianfemale/argonianfemalebody.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/argonianfemale/argonianfemalebody_msn.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/argonianfemale/argonianfemalebody_s.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/argonianfemale/argonianfemalehands.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/argonianfemale/argonianfemalehands_msn.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/argonianfemale/argonianfemalehands_s.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/argonianmale/argonianmalebody.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/argonianmale/argonianmalebody_msn.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/argonianmale/argonianmalebody_s.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/argonianmale/argonianmalehands.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/argonianmale/argonianmalehands_msn.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/argonianmale/argonianmalehands_s.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/eyes/eyeblue.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/eyes/eyebrown_n.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/eyes/eyebrown_sk.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/eyes/eyeenvironmentmask_m.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/eyes/eyehazel.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/facegendata/facetint/frostveilnpctest.esp/00005901.dds",
+      "archives": [],
+      "loose": {
+        "sha256": "2bf59a37d76e13644b205f1778fbdfdf874c987b772a5e8375240b4d04e2e14c",
+        "approvedOwnerAsset": true
+      },
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/facegendata/facetint/frostveilnpctest.esp/00005906.dds",
+      "archives": [],
+      "loose": {
+        "sha256": "1e5dacdb9bfa2cf51a74fed55030d26bc3b52d0e2f14f827c883f71eed7c1fd8",
+        "approvedOwnerAsset": true
+      },
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/female/femalebody_1.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/female/femalebody_1_msn.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/female/femalebody_1_s.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/female/femalebody_1_sk.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/female/femalehands_1.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/female/femalehands_1_msn.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/female/femalehands_1_s.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/female/femalehands_1_sk.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/female/femalehead.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/female/femalehead_msn.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/female/femalehead_s.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/female/femalehead_sk.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/female/femaleheaddetail_rough.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/femalebrows/femalebrow_08.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/femalebrows/femalebrow_n.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/femalechild/upperbodyfemale.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/femaleold/femalebody_1_msn.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/femaleold/femalehands_1_msn.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/hair/hairlong.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/hair/hairlong_n.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/imperialmale/malehead_msn.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/male/facedetails/faceleftsideburnscar.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/male/facedetails/faceleftsideburnscar_n.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/male/malebody_1.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/male/malebody_1_msn.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/male/malebody_1_s.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/male/malebody_1_sk.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/male/malehands_1.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/male/malehands_1_msn.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/male/malehands_1_s.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/male/malehands_1_sk.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/male/malehead.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/male/malehead_s.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/male/malehead_sk.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/male/maleheaddetail_age40.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/malebrows/malebrow1_n.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/malebrows/malebrow_11.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/malechild/handmale.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/malechild/handmale_n.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/malechild/handmale_sk.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/malechild/upperbodymale.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/malechild/upperbodymale_n.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/malechild/upperbodymale_sk.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/maleold/malebody_1_msn.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/maleold/malehands_1_msn.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/mouth/mouthhuman.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/actors/character/mouth/mouthhuman_n.dds",
+      "archives": [
+        "Skyrim - Textures0.bsa"
+      ],
+      "loose": null,
+      "available": true
+    },
+    {
+      "path": "textures/cubemaps/eyecubemap.dds",
+      "archives": [
+        "Skyrim - Textures3.bsa"
+      ],
+      "loose": null,
+      "available": true
+    }
+  ],
+  "levels": {
+    "STRUCTURAL_VALIDATION": "PARTIAL",
+    "RESOURCE_VALIDATION": "PARTIAL",
+    "RUNTIME_VISUAL_VALIDATION": "PENDING_GAME_RENDER"
+  },
+  "resourceValidationMs": 32539.4899,
+  "identity": {
+    "source": "installed-activation",
+    "serverOrder": [
+      "Skyrim.esm",
+      "Update.esm",
+      "Dawnguard.esm",
+      "HearthFires.esm",
+      "Dragonborn.esm",
+      "FrostveilCourierNavigation.esp",
+      "FrostveilNPCTest.esp"
+    ],
+    "clientFullOrder": [
+      "Skyrim.esm",
+      "Update.esm",
+      "Dawnguard.esm",
+      "HearthFires.esm",
+      "Dragonborn.esm",
+      "ccBGSSSE001-Fish.esm",
+      "ccBGSSSE025-AdvDSGS.esm",
+      "unofficial skyrim special edition patch.esp",
+      "Natural Waterfalls.esp",
+      "FrostveilCourierNavigation.esp",
+      "SMIM-SE-Merged-All.esp",
+      "BlendedRoads.esp",
+      "Freak's Floral Meadows.esp",
+      "Ulvenwald.esp",
+      "Embers XD.esp",
+      "Lux.esp",
+      "RaceMenu.esp"
+    ],
+    "contentIdentities": {
+      "skyrim.esm": {
+        "server": "2bbc77fdec35a70ef96b710f8c525e50a1db9e63e11a391a0eb9ee8f56d36107",
+        "client": "2bbc77fdec35a70ef96b710f8c525e50a1db9e63e11a391a0eb9ee8f56d36107"
+      },
+      "update.esm": {
+        "server": "c1795e0a1218da45dbfd523f064f1857b42805c49714c46091e75277e525aed9",
+        "client": "c1795e0a1218da45dbfd523f064f1857b42805c49714c46091e75277e525aed9"
+      },
+      "dawnguard.esm": {
+        "server": "1bda804009a21228acf6b30aa6aa7a692b247ff8a0313fe9aa69b3617ed4a6c4",
+        "client": "1bda804009a21228acf6b30aa6aa7a692b247ff8a0313fe9aa69b3617ed4a6c4"
+      },
+      "hearthfires.esm": {
+        "server": "ad4ca9f32c81e7ddd3e39ec95e03b07841f20712989e598778442ea69b6e6a97",
+        "client": "ad4ca9f32c81e7ddd3e39ec95e03b07841f20712989e598778442ea69b6e6a97"
+      },
+      "dragonborn.esm": {
+        "server": "5f44f343552688c04f73bf83de58b90f70c7376b133fbbcb56b6fe33acf8778b",
+        "client": "5f44f343552688c04f73bf83de58b90f70c7376b133fbbcb56b6fe33acf8778b"
+      },
+      "frostveilcouriernavigation.esp": {
+        "server": "9a4a546f9fae714251dde91955b27a3b01cb79cabcbe4e1ab80fff9bcd549930",
+        "client": "9a4a546f9fae714251dde91955b27a3b01cb79cabcbe4e1ab80fff9bcd549930"
+      },
+      "frostveilnpctest.esp": {
+        "server": "ecb1f7f70aa15cab92d4dfde7773bf920f88d6558623224c5940454ba59439fc",
+        "client": "ecb1f7f70aa15cab92d4dfde7773bf920f88d6558623224c5940454ba59439fc"
+      }
+    },
+    "clientBaseProof": "UNAVAILABLE",
+    "inputHashes": {
+      "pluginsText": "2c3089e79b73b0ea8530173e2f839bfdb7d044f4226c93bd8b951d629b8ee39f",
+      "loadorderText": "48aa3d3148c5ce39aba51ac4e9e772d4aef178d1ac32f71ff737582d916d2f9b",
+      "cccText": "abdbd029c2aaf1c401c7537ae8bd9201258eb68a36f0513253c54d7c0e244a3b"
+    },
+    "implementationHashes": {
+      "reader": "11aae0d9aee59ee9f9780b8ca73b193ba3129612dcbeebe59967334940d756d6",
+      "planner": "031532ac70f516a466ec1f8cad9ddd0ef9037f7c161150d3d83f7fcab8bab882"
+    }
+  },
+  "readiness": {
+    "candidateReady": false,
+    "blockers": [
+      "PLUGIN_INDEX_MISMATCH:FrostveilCourierNavigation.esp",
+      "PLUGIN_INACTIVE:FrostveilNPCTest.esp",
+      "PLUGIN_INDEX_MISMATCH:FrostveilNPCTest.esp",
+      "BASE_IDENTITY_UNVERIFIED:5901:FrostveilNPCTest.esp",
+      "BASE_IDENTITY_UNVERIFIED:5906:FrostveilNPCTest.esp",
+      "BASE_IDENTITY_UNVERIFIED:39f83:Skyrim.esm",
+      "PRACTICAL_RESOURCE_CHECKS_INCOMPLETE",
+      "NO_SUPPORTED_LOCAL_ACTIVATION_HANDOFF"
+    ],
+    "productionApproval": false
+  },
+  "integrity": {
+    "protectedBefore": "5edaa20a730ce79b34675b06224bd2a47ebfb4b116cef5af15296f10677d6616",
+    "protectedAfter": "5edaa20a730ce79b34675b06224bd2a47ebfb4b116cef5af15296f10677d6616",
+    "ownerSourceFilesUnchanged": true,
+    "installedFilesUnchanged": true,
+    "installedFileCount": 9
+  },
+  "tests": {
+    "rp": 384,
+    "realAssets": 11,
+    "editor": 80,
+    "clientSource": 58,
+    "nativeCases": 84,
+    "nativeAssertions": 474604,
+    "launcherTrustInstaller": 148
+  }
+}

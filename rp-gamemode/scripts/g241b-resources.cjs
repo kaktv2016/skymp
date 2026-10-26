@@ -89,6 +89,30 @@ function inspectDds(input) {
   return { format: 'DDS', sha256: hash(bytes), size: bytes.length, width, height };
 }
 
+// NIF shader paths use Data\Textures in vanilla FaceGen as well as bare
+// Actors\... strings. Normalize for the audit lookup only, never rewrite NIFs
+// or claim this proves renderer path resolution. Reject traversal BEFORE strip.
+function shaderTexturePath(input) {
+  let value=normalizeResourcePath(input);
+  if(value.startsWith('data/'))value=value.slice(5);
+  if(!value.startsWith('textures/'))value='textures/'+value;
+  if(!/^textures\/(actors|effects|cubemaps|shared|clutter|architecture|landscape|armor|weapons|dlc01|dlc02)\/.+\.dds$/.test(value))
+    fail('SHADER_TEXTURE_PATH_UNSUPPORTED','Unrecognized shader texture root: '+input);
+  return value;
+}
+
+// The two owner CK exports are RGBA8, one mip, exact row pitch. Other DDS
+// formats remain supported by inspectDds's header diagnostic, but cannot be
+// promoted under this narrow FaceTint validation contract.
+function inspectFaceTintDds(input) {
+  const b=Buffer.isBuffer(input)?input:Buffer.from(input),base=inspectDds(b);
+  if(b.readUInt32LE(80)!==65||b.readUInt32LE(84)!==0||b.readUInt32LE(88)!==32||
+     b.readUInt32LE(28)!==1||b.readUInt32LE(20)!==base.width*4||
+     [92,96,100,104].some((offset,i)=>b.readUInt32LE(offset)!==[255,65280,16711680,4278190080][i])||
+     b.length!==128+base.width*base.height*4)fail('FACE_TINT_DDS_FORMAT','Expected complete single-mip RGBA8 FaceTint DDS');
+  return {...base,pixelFormat:'RGBA8',mipLevels:1,payloadValidated:true};
+}
+
 function safeLooseFile(root, relative) {
   const normalized = normalizeResourcePath(relative);
   const base = fs.realpathSync(root);
@@ -183,7 +207,7 @@ function createResourceVerifier({ dataRoot, approvedArchives = [], approvedLoose
   }
   let activeApprovedLoose = approvedLoose;
   function requireNifSemantic(bytes, scan, resourcePath) {
-    if (typeof nifSemanticVerifier !== 'function') fail('NIF_SEMANTIC_VERIFIER_UNAVAILABLE', `No structural Skyrim NIF parser is installed for ${resourcePath}; path strings alone cannot prove shader/skin closure`);
+    if (typeof nifSemanticVerifier !== 'function') fail('NIF_SEMANTIC_VERIFIER_UNAVAILABLE', `No approved complete NIF semantic adapter for ${resourcePath}; bounded structure diagnostics alone do not establish full shader/skin closure`);
     const evidence = nifSemanticVerifier(bytes, { path: resourcePath, sha256: scan.sha256, scan });
     if (!evidence || evidence.parser !== 'nifly' || evidence.complete !== true || evidence.skinBindings !== true || evidence.textureReferencesComplete !== true ||
         !Array.isArray(evidence.references) || !Number.isInteger(evidence.blockCount) || evidence.blockCount !== scan.blockCount) {
@@ -363,4 +387,4 @@ function createResourceVerifier({ dataRoot, approvedArchives = [], approvedLoose
   return verifyResourceClosure;
 }
 
-module.exports = { inspectNif, inspectDds, normalizeResourcePath, createResourceVerifier, MAX_NIF };
+module.exports = { inspectNif, inspectDds, inspectFaceTintDds, shaderTexturePath, normalizeResourcePath, createResourceVerifier, MAX_NIF };
