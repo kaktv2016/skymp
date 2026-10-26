@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const repo=path.resolve(__dirname,'../..'),{guard,manifest}=require('./g241-dev.cjs');
 async function probe(root){const {root:r,config}=guard(root),before=manifest();
  try{
-  const c=JSON.parse(fs.readFileSync(path.join(r,'g241d-config.json'))),{ScampServer}=require(path.join(repo,'build/dist/server/scam_native.node')),mp=new ScampServer(JSON.stringify(config));mp._setSelf(mp);
+  const c=JSON.parse(fs.readFileSync(path.join(r,'g241d-config.json'))),{ScampServer}=require(path.join(r,'scam_native.node')),mp=new ScampServer(JSON.stringify(config));mp._setSelf(mp);
   const {loadApprovedCatalog}=require(path.join(r,'runtime/modules/npc/catalog-loader.js')),{createDevelopmentVerifier}=require('./g241d-resources.cjs');
   const catalog=loadApprovedCatalog(path.join(r,c.packageDirectory),[{filename:'g241.json',sha256:c.policy.catalogHash}],config.loadOrder,mp,createDevelopmentVerifier({root:r,packageRoot:path.join(r,c.packageDirectory),dataRoot:path.join(c.game,'Data'),evidence:c.resourceEvidence,policy:c.policy,verifyIsolation:()=>config.g241d===true&&config.maxPlayers===1&&config.port===17777}));
   const {createRuntime}=require(path.join(repo,'rp-gamemode/.test-build/runtime.js'));
