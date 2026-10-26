@@ -1,6 +1,5 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),assert=require('node:assert/strict');
-const {isolated}=require('./g241-bootstrap.cjs');
 const {createDevelopmentVerifier,HASH}=require('./g241d-resources.cjs');
 const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
 const assetCache=new Map();
@@ -15,21 +14,24 @@ function activeProfile(root){
  for(const asset of config.policy.assets){const f=path.join(config.game,asset.path),s=fs.lstatSync(f);assert(s.isFile()&&!s.isSymbolicLink()&&s.nlink===1&&s.size===asset.size);const stamp=[s.dev,s.ino,s.size,s.mtimeMs,s.ctimeMs,asset.sha256].join(':');if(assetCache.get(f)!==stamp){assert.equal(sha(fs.readFileSync(f)),asset.sha256,'Development asset changed');assetCache.set(f,stamp);}}
  return config;
 }
-function start(root,mp){
+function start(root,mp,isolated){
+ let stage='ISOLATION';const mark=(name,state='CHECK')=>{stage=name;console.log('[g241d-stage] '+name+' '+state);};try{mark(stage);
+ assert.equal(typeof isolated,'function','Validated bootstrap isolation guard required');
  const settings=isolated(root);assert.equal(settings.g241d,true);assert.equal(settings.maxPlayers,1);
- const config=activeProfile(root),packageRoot=path.join(root,config.packageDirectory);
+ mark('LOCAL_PROFILE_TRUST');const config=activeProfile(root),packageRoot=path.join(root,config.packageDirectory);
  assert(/^staging-[A-Za-z0-9]+$/.test(config.packageDirectory));assert.equal(fs.realpathSync(packageRoot),packageRoot);
- const verifier=createDevelopmentVerifier({root,packageRoot,dataRoot:path.join(config.game,'Data'),evidence:config.resourceEvidence,policy:config.policy,verifyIsolation:()=>{isolated(root);return settings.port===17777&&settings.maxPlayers===1;}});
+ mark('RESOURCE_CATALOG');const verifier=createDevelopmentVerifier({root,packageRoot,dataRoot:path.join(config.game,'Data'),evidence:config.resourceEvidence,policy:config.policy,verifyIsolation:()=>{isolated(root);return settings.port===17777&&settings.maxPlayers===1;}});
  const {loadApprovedCatalog}=require(path.join(root,'runtime/modules/npc/catalog-loader.js'));
  const catalog=loadApprovedCatalog(packageRoot,[{filename:'g241.json',sha256:HASH}],settings.loadOrder,mp,verifier);
- assert.equal(config.identitySpec.catalogHash,HASH);assert.equal(config.identitySpec.profileHash,config.profileHash);
+ mark('PLUGIN_IDENTITY');assert.equal(config.identitySpec.catalogHash,HASH);assert.equal(config.identitySpec.profileHash,config.profileHash);
  const {pluginFacts}=require(path.join(root,'runtime/modules/npc/catalog-loader.js'));const facts=pluginFacts(settings.loadOrder);
  assert.deepEqual(config.identitySpec.plugins.map(p=>[p.filename,p.sha256,p.serverIndex]),facts.map((p,index)=>[p.filename,p.sha256,index]));
  for(const id of ['guild-clerk','warrior']){const t=catalog.resolve(id),[local,plugin]=t.base.split(':');assert(config.identitySpec.bases.some(b=>b.plugin===plugin&&b.localId===parseInt(local,16)&&b.serverId===t.baseId));}
  const {createRuntime}=require(path.join(root,'runtime/runtime.js')),{LocalAdminAuthority}=require(path.join(root,'runtime/modules/admin/local-authority.js'));
  const authority=new LocalAdminAuthority(path.join(root,'admin'),['owner']);mp.on('connect',authority.connectionEvent);mp.on('disconnect',authority.connectionEvent);
  const runtime=createRuntime(mp,{npc:{storageRoot:path.join(root,'npc-registry'),templateOptions:{catalog,development:{isolationId:'g241-pair',templates:['guild-clerk','warrior'],verifyIsolated:()=>{isolated(root);return true;}}},developmentIdentity:{spec:config.identitySpec,verifyProfile:()=>{activeProfile(root);return true;}}},admin:{authorize:authority.authorize}});
- runtime.start().then(()=>{const health={status:'SAFE_WAITING',pid:process.pid,catalogHash:HASH,profileHash:config.profileHash,customAutoSpawns:0,waiting:'AUTHORIZED_RUNTIME_PROOF_AND_MAPPER_ARM'};fs.writeFileSync(path.join(root,'g241d-status.json'),JSON.stringify(health));fs.writeFileSync(path.join(root,'data/g241d-health.json'),JSON.stringify(health));console.log('[g241d] SAFE_WAITING: /npc identity after explicit local admin grant. No custom fixture auto-spawn.');}).catch(e=>{console.error(e);process.exit(1);});
+ mark('RUNTIME_MODULE_BOOT');runtime.start().then(()=>{mark('HEALTH_PUBLISH');const health={status:'SAFE_WAITING',startupId:process.env.FROSTVEIL_G241D_STARTUP_ID,pid:process.pid,catalogHash:HASH,profileHash:config.profileHash,customAutoSpawns:0,waiting:'AUTHORIZED_RUNTIME_PROOF_AND_MAPPER_ARM'};fs.writeFileSync(path.join(root,'g241d-status.json'),JSON.stringify(health));fs.writeFileSync(path.join(root,'data/g241d-health.json'),JSON.stringify(health));mark('READY','PASS');console.log('[g241d] SAFE_WAITING: /npc identity after explicit local admin grant. No custom fixture auto-spawn.');}).catch(e=>{mark(stage,'FAILED');console.error(e);process.exit(1);});
  return runtime;
+ }catch(error){mark(stage,'FAILED');throw error;}
 }
 module.exports={activeProfile,start};

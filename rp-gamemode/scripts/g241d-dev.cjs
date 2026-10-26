@@ -1,5 +1,5 @@
 'use strict';
-const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),assert=require('node:assert/strict'),{spawnSync}=require('node:child_process');
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),assert=require('node:assert/strict'),{spawnSync,spawn}=require('node:child_process');
 const {guard,manifest}=require('./g241-dev.cjs'),{sourceManifest}=require('./g241b-integrate.cjs');
 const repo=path.resolve(__dirname,'../..'),audit=path.join(repo,'build/rp-audit/g241d'),launcher=path.resolve(repo,'../skyrim-rp-launcher');
 const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
@@ -26,7 +26,7 @@ async function prepare(root){
   const identitySpec={version:1,catalogHash:policy.catalogHash,profileHash:planDigest(policy),plugins:plugins.map((p,i)=>{const bytes=fs.readFileSync(config.loadOrder[i]);return{filename:p.filename,sha256:p.sha256,serverIndex:i,size:bytes.length,crc32:crc(bytes)};}),bases:[{plugin:'Skyrim.esm',localId:0x39f83,serverId:0x39f83},...['5901','5906'].map(n=>({plugin:'FrostveilNPCTest.esp',localId:parseInt(n,16),serverId:npcIndex*0x1000000+parseInt(n,16)}))]};
   fs.writeFileSync(path.join(root,'g241d-resource-proof.json'),JSON.stringify({catalogHash:policy.catalogHash,policyHash:sha(Buffer.from(JSON.stringify(policy))),archives,nativeDependencyCount:85,nativeDependencyErrors:0},null,2));
   const game='C:/Program Files (x86)/Steam/steamapps/common/Skyrim Special Edition',clientConfig=path.join(process.env.LOCALAPPDATA,'Skyrim Special Edition');
-  const startup=path.join(root,'start-g241d-visible.ps1');const text=`$ErrorActionPreference='Stop'\nSet-Location -LiteralPath '${root.replaceAll("'","''")}'\n& '${process.execPath.replaceAll("'","''")}' '${__filename.replaceAll("'","''")}' serve '${root.replaceAll("'","''")}' 2>&1 | Tee-Object -FilePath '${path.join(audit,'isolated-server.log').replaceAll("'","''")}'\n`;fs.writeFileSync(startup,text);
+  const startup=path.join(root,'start-g241d-visible.ps1');fs.writeFileSync(startup,startupScript(root));
   const devConfig={schemaVersion:1,game,clientConfig,packageDirectory:path.basename(stage),policy,profileHash:planDigest(policy),identitySpec,resourceEvidence:evidence,metadataRoot:null};fs.writeFileSync(path.join(root,'g241d-config.json'),JSON.stringify(devConfig,null,2));
   const verifier=require('./g241d-resources.cjs').createDevelopmentVerifier({root,packageRoot:stage,dataRoot:path.join(game,'Data'),evidence,policy,verifyIsolation:()=>{rootConfig(root);return true;}});
   const {loadApprovedCatalog}=require(path.join(root,'runtime/modules/npc/catalog-loader.js'));const snapshot=loadApprovedCatalog(stage,[{filename:'g241.json',sha256:policy.catalogHash}],config.loadOrder,native,verifier);assert.equal(snapshot.list().length,2);
@@ -39,8 +39,28 @@ function seal(root){requireIdlePorts();const {root:r}=rootConfig(root),file=path
  for(const n of ['g241-bootstrap.cjs','g241d-runtime.cjs','g241d-resources.cjs'])fs.copyFileSync(path.join(__dirname,n),path.join(r,n));
  assert.equal(sha(fs.readFileSync(path.join(r,'scam_native.node'))),'a9e77780133b3c064a8abc9aa6f6971b1c73ff3c1b2d1539af404b3cbe389157','Unverified native addon');
  const names=['g241-bootstrap.cjs','g241d-runtime.cjs','g241d-resources.cjs','g241b-nif-structure.cjs','g241b-resources.cjs','g241d-resource-proof.json','runtime/runtime.js','runtime/client/development-identity.js','runtime/modules/npc/development-identity.js','runtime/modules/npc/npc-service.js','scam_native.node','dist_back/skymp5-server.js'];
+ assert.equal(h.startScript,path.join(r,'start-g241d-visible.ps1'),'Startup script must remain inside the isolated root');fs.writeFileSync(h.startScript,startupScript(r));h.startScriptSHA256=sha(fs.readFileSync(h.startScript));
  h.artifacts=names.map(n=>({path:n,sha256:sha(fs.readFileSync(path.join(r,n)))}));h.serveScriptSHA256=sha(fs.readFileSync(__filename));h.adminToolSHA256=sha(fs.readFileSync(path.join(__dirname,'admin-local.cjs')));h.serverConfigDigest=sha(Buffer.from(JSON.stringify({...JSON.parse(fs.readFileSync(path.join(r,'g241d-config.json'))),metadataRoot:null})));fs.writeFileSync(file,JSON.stringify(h,null,2));console.log(JSON.stringify({state:'SEALED_PENDING_OWNER_ACTION',artifacts:h.artifacts.length,profileHash:h.profileHash}));
 }
-function serve(root){const {root:r}=rootConfig(root),h=JSON.parse(fs.readFileSync(path.join(audit,'owner-handoff.json')));assert.equal(sha(fs.readFileSync(__filename)),h.serveScriptSHA256);for(const a of h.artifacts)assert.equal(sha(fs.readFileSync(path.join(r,a.path))),a.sha256,'Sealed runtime artifact changed');assert.equal(sha(Buffer.from(JSON.stringify({...JSON.parse(fs.readFileSync(path.join(r,'g241d-config.json'))),metadataRoot:null}))),h.serverConfigDigest);require('./g241d-runtime.cjs').activeProfile(r);const p=spawnSync(process.execPath,[path.join(r,'dist_back/skymp5-server.js')],{cwd:r,stdio:'inherit',windowsHide:false});if(p.error)throw p.error;process.exitCode=p.status??1;}
-if(require.main===module){const [command,root,...extra]=process.argv.slice(2);assert(!extra.length&&root);if(command==='prepare')prepare(root).catch(e=>{console.error(e);process.exitCode=1;});else if(command==='seal')seal(root);else if(command==='serve')serve(root);else throw Error('Usage: g241d-dev.cjs prepare|seal|serve <existing isolated root>');}
-module.exports={prepare,rootConfig,crc};
+function startupScript(root){return `$ErrorActionPreference='Stop'
+Set-Location -LiteralPath '${root.replaceAll("'","''")}'
+& '${process.execPath.replaceAll("'","''")}' '${__filename.replaceAll("'","''")}' serve '${root.replaceAll("'","''")}'
+exit $LASTEXITCODE
+`;}
+function captureEngine(root,logs,echo=true){
+ fs.mkdirSync(logs,{recursive:true});const stdout=path.join(logs,'stdout.log'),stderr=path.join(logs,'stderr.log');fs.writeFileSync(stdout,'');fs.writeFileSync(stderr,'');
+ let markerBuffer='',lastStage;return new Promise((resolve,reject)=>{const child=spawn(process.execPath,[path.join(root,'dist_back/skymp5-server.js')],{cwd:root,stdio:['ignore','pipe','pipe'],windowsHide:false});
+  child.stdout.on('data',b=>{markerBuffer=(markerBuffer+b.toString('utf8')).slice(-16384);for(const m of markerBuffer.matchAll(/\[g241d-stage\] ([A-Z_]+) (CHECK|PASS|FAILED)/g))lastStage={stage:m[1],state:m[2]};fs.appendFileSync(stdout,b);if(echo)process.stdout.write(b);});child.stderr.on('data',b=>{fs.appendFileSync(stderr,b);if(echo)process.stderr.write(b);});
+  child.once('error',e=>{fs.appendFileSync(stderr,e.stack+'\n');reject(e);});child.once('close',(code,signal)=>{fs.writeFileSync(path.join(logs,'exit.json'),JSON.stringify({pid:child.pid,code,signal,lastStage}));resolve({code:code??1,signal,pid:child.pid,stdout,stderr});});
+ });
+}
+async function serve(root){
+ const logs=path.join(audit,'startup-'+Date.now()+'-'+process.pid);fs.mkdirSync(logs,{recursive:true});
+ const record=(stage,state)=>{const value={stage,state,pid:process.pid,at:new Date().toISOString(),logs};fs.appendFileSync(path.join(logs,'stages.jsonl'),JSON.stringify(value)+'\n');console.log('[g241d-startup] '+JSON.stringify(value));};
+ let stage='ISOLATION';try{record(stage,'CHECK');const {root:r}=rootConfig(root);record(stage,'PASS');stage='RUNTIME_SEAL';record(stage,'CHECK');const h=JSON.parse(fs.readFileSync(path.join(audit,'owner-handoff.json')));assert.equal(sha(fs.readFileSync(__filename)),h.serveScriptSHA256);for(const a of h.artifacts)assert.equal(sha(fs.readFileSync(path.join(r,a.path))),a.sha256,'Sealed runtime artifact changed: '+a.path);assert.equal(sha(Buffer.from(JSON.stringify({...JSON.parse(fs.readFileSync(path.join(r,'g241d-config.json'))),metadataRoot:null}))),h.serverConfigDigest);record(stage,'PASS');
+ stage='LOCAL_PROFILE_TRUST';record(stage,'CHECK');require('./g241d-runtime.cjs').activeProfile(r);record(stage,'PASS');stage='ENGINE_PROCESS';process.env.FROSTVEIL_G241D_STARTUP_ID??=crypto.randomUUID();assert(/^[a-f0-9-]{36}$/.test(process.env.FROSTVEIL_G241D_STARTUP_ID),'Invalid startup identity');record(stage,'START');const p=await captureEngine(r,logs);record(stage,p.code===0?'EXIT_OK':'EXIT_FAILED');process.exitCode=p.code;
+ }catch(e){record(stage,'FAILED');fs.appendFileSync(path.join(logs,'stderr.log'),e.stack+'\n');console.error('[g241d-startup] Failed '+stage+'; diagnostics: '+logs);throw e;}
+}
+
+if(require.main===module){const [command,root,...extra]=process.argv.slice(2);assert(!extra.length&&root);if(command==='prepare')prepare(root).catch(e=>{console.error(e);process.exitCode=1;});else if(command==='seal')seal(root);else if(command==='serve')serve(root).catch(e=>{console.error(e);process.exitCode=1;});else throw Error('Usage: g241d-dev.cjs prepare|seal|serve <existing isolated root>');}
+module.exports={prepare,rootConfig,crc,captureEngine,startupScript};
