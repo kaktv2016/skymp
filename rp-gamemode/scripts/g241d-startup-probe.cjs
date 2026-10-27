@@ -1,6 +1,6 @@
 'use strict';
 // Server-only diagnostic. No client/profile activation, no admin, no custom spawn.
-const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),crypto=require('node:crypto'),{spawn,execFileSync}=require('node:child_process'),{pathToFileURL}=require('node:url');
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),crypto=require('node:crypto'),{execFileSync}=require('node:child_process'),{pathToFileURL}=require('node:url');
 const {guard,manifest}=require('./g241-dev.cjs'),{rootConfig,captureEngine}=require('./g241d-dev.cjs');
 const repo=path.resolve(__dirname,'../..'),audit=path.join(repo,'build/rp-audit/g241d'),sha=b=>crypto.createHash('sha256').update(b).digest('hex');
 async function diagnosticRuntime(root,source,mp){
@@ -29,10 +29,10 @@ async function run(source){
  fs.writeFileSync(path.join(root,'server-settings.json'),JSON.stringify(settings,null,2));
  fs.writeFileSync(settings.gamemodePath,`require(${JSON.stringify(__filename)}).diagnosticRuntime(process.cwd(),${JSON.stringify(source)},global.mp).catch(e=>{console.error(e);process.exit(1);});`);
  const startup=path.join(root,'start-diagnostic.ps1');fs.writeFileSync(startup,`$ErrorActionPreference='Stop'\n& '${process.execPath.replaceAll("'","''")}' '${__filename.replaceAll("'","''")}' supervise '${root.replaceAll("'","''")}'\nexit $LASTEXITCODE\n`);
- const startupId=crypto.randomUUID();const child=spawn(shell,['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',startup],{cwd:root,windowsHide:true,stdio:'ignore',env:{...process.env,FROSTVEIL_G241D_STARTUP_ID:startupId}});
+ const {inspectProcess,evaluateStartup,startIsolatedPowerShell}=await import(pathToFileURL(path.resolve(repo,'../skyrim-rp-launcher/scripts/npc-startup.mjs')).href);
+ const startupId=crypto.randomUUID();const child=await startIsolatedPowerShell({root,startScript:startup,startupId,logs:path.join(audit,'diagnostic-powershell-launch-'+Date.now()+'.json')});
  let result;
  try{
-  const {inspectProcess,evaluateStartup}=await import(pathToFileURL(path.resolve(repo,'../skyrim-rp-launcher/scripts/npc-startup.mjs')).href);
   const deadline=Date.now()+20000;let health;
   while(Date.now()<deadline){try{const response=await fetch('http://127.0.0.1:17778/g241d-health.json',{signal:AbortSignal.timeout(1000)});if(response.ok){health=await response.json();break;}}catch{}await new Promise(r=>setTimeout(r,250));}
   assert.equal(health?.status,'DIAGNOSTIC_ONLY_PROFILE_INACTIVE','Diagnostic engine did not boot; inspect '+path.join(root,'logs'));
