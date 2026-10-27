@@ -2,6 +2,22 @@
 
 Date: 2026-10-27. Scope: existing development activation only. **No Skyrim launch, real profile activation, session grant or visual acceptance was performed.**
 
+## Follow-up: owner launch failure at 17:32 on 2026-10-27 (Asia/Bangkok)
+
+The owner retry reached active profile state but timed out with ECONNREFUSED. Its real evidence is `readiness-1793097167443-11656.json`: 118 failed HTTP attempts over 60,001 ms, with **no new supervisor startup directory**. This was a second failure at the **outer PowerShell process execution boundary**, before Node supervision or native engine initialization; the previous Temp import fix was not reached by this attempt.
+
+On this machine, Node 24.11.1's `spawn(powershell, …, {detached:true, stdio:'ignore'})` produces a PowerShell 5.1 process that exits **0 without executing -File**. A harmless sentinel reproduces that behavior; switching only -NoExit to -NonInteractive does not fix it. The non-detached controls execute the sentinel, and Start-Process executes it with its intended exit code 7. Evidence: `outer-launch-matrix.json`, `outer-ignore-stdout.log`, `outer-files-stdout.log`, and the real Windows regression test.
+
+The owner CLI now uses the established Windows **Start-Process -WindowStyle Normal** mechanism through a bounded, hidden non-detached helper. It returns the actual visible server PowerShell PID, preserves the same script/root/startup identity, and records helper stdout/stderr and creation diagnostics. The original three-level server ancestry and exclusive loopback ownership checks are unchanged. Readiness detects an exited/incorrect outer process immediately and includes the launch timestamp so an early server failure preceding the first HTTP attempt is still found. It does not accept PID creation alone as success.
+
+The native diagnostic probe now calls **the same launcher function** as the owner CLI. Actual result: PowerShell **20320** → supervisor **9480** → engine **21056**, both 127.0.0.1:17777/17778 owned by that engine, real diagnostic HTTP response, zero custom actors, and clean owned-tree shutdown with both ports released. Its diagnostic health remains rejected for Play. See `outer-hotfix-server-probe.log` and `hotfix-server-probe.json`.
+
+The **actual sealed owner startup script** was also exercised through that new launcher with the real receipt left reverted: it executed, retained its failure log and was correctly rejected at LOCAL_PROFILE_TRUST within seconds. Evidence: `outer-hotfix-negative-launch.json` and `outer-hotfix-negative-readiness.json`. No confirmation was simulated and no installed profile was activated.
+
+Follow-up validation: RP **395/395**, real assets/startup **15/15**, client **58/58**, Launcher **161/161** (including the real outer-console and early-exit regressions); Launcher typecheck and script syntax passed. Independent read-only review found no actionable issue. Source-only recovery snapshot: `build/rp-audit/g241d/outer-hotfix-before-1793098361271`. Final integrity evidence: `outer-hotfix-integrity-final.json` verifies 145 production files, 7 owner source assets and 2 installed profile files unchanged, with all 12 runtime seals valid. The twelve deployed runtime artifacts, original supervisor/configuration seal and owned assets are unchanged; this patch changes the local launch helper and its diagnostic harness only. No installed client or public Launcher release is required.
+
+Follow-up commits: Launcher `9ecb7ae58b3f5cb32af5077223e939297bb2d98e`; SkyMP diagnostic harness `f0528de231519903214c87f18b78edd91f90a229`. Pushed only to the same authorized owner development branches. This report follows in the SkyMP branch. Real owner activation/Skyrim launch/visual acceptance after this follow-up remains pending; use the same owner command below.
+
 ## Root cause and failed gate
 
 The actual pinned server engine reproduces an unconditional **gate 2: runtime module loading** failure. SkyMP `requireTemp()` copies gamemode source to `%TEMP%/skymp5-server…/*.js`. The D bootstrap used `require('./g241d-runtime.cjs')`, which resolved beside that temporary copy instead of the verified isolated root. The process exits with code 1 before runtime boot completes or health is published. This is not evidence of a port conflict or insufficient startup timeout.
