@@ -2,6 +2,28 @@
 
 Date: 2026-10-27. Scope: existing development activation only. **No Skyrim launch, real profile activation, session grant or visual acceptance was performed.**
 
+## Follow-up: reconnect routing and apparently reset inventory
+
+The earlier advice to reconnect with normal Launcher Play was incorrect for the active development profile. Both launch paths select the **same Steam installation**. Normal Play runs the signed production preparation/repair path; recipe 1.0.20 includes `Data/Platform/Plugins/skymp5-client-settings.txt`. Launcher diagnostics at 2026-10-27 18:57 (Asia/Bangkok) show graphics repair followed by SKSE startup. The observed settings file matches the authenticated receipt's original bytes (127.0.0.1:7777), while plugins.txt still matches its activated bytes. Only the test server 17777 is listening. This explains the missing automatic connection; it is not a second game installation.
+
+Inventory is separately persisted by server environment. The primary server uses `build/dist/server/rp-world`; the isolated server uses `build/rp-audit/g241/dev-7FNiLN/world`. The primary character still has **38 inventory entries** and its existing file, while the isolated profile-1 character has **21 entries**. They are distinct character records even though their profile number is the same. The configured test spawn is near the existing Rift Watchtower area, so a similar location does not imply the same character database. No inventory migration/reset is performed or warranted by this evidence. Persistence within the test world still needs the intended real reconnect test.
+
+Added local owner CLI command `play` for an already running isolated server. It checks the sealed server root, private boot identity, a matching successful READY receipt, and then current health/startup UUID/process ancestry/exclusive UDP/TCP ownership. It reuses the existing GameLauncher/SKSE code and does not start another server. These checks run again immediately before launching. It does not run production Play's file repair or make another copy of the game/mods.
+
+If normal Play has restored a known original configuration, `play` uses the existing authenticated exact-before/after revert, with a **restore CONFIRM** and a separate **activation CONFIRM**. Arbitrary owner edits, invalid metadata, changed assets and running-game conflicts remain fatal. Already valid active profiles need neither recovery nor another activation prompt. This recovery is performed only when the owner invokes the command; the agent did not activate the real profile or open Skyrim.
+
+Changed Launcher files: `scripts/npc-development.mjs`, `scripts/npc-startup.mjs`, `src/main/management/npc-development.ts`, `tests/npc-development.test.ts`, `tests/npc-startup.test.mjs`. Build/typecheck and syntax checks passed; the relevant **165/165** Launcher regressions passed, including known-baseline recovery, declined recovery, arbitrary edit preservation, no rewrite for an active profile, and stale/missing startup receipt rejection. Independent read-only review found no actionable issue.
+
+Read-only verification of the actual running server passed READY with engine PID **12484**; no restart or client launch occurred. `rejoin-protected-final.json` confirms production files, both real installed config files, and both primary/test character files were byte-identical after this work. Source-only recovery snapshot: `build/rp-audit/g241d/rejoin-before-1793103025167`. Launcher commit **127cacdf5a9848977e8a0665fe687a301eed78a8**, pushed to the existing authorized owner development branch. No public Launcher release, signed-pack modification or server deployment was needed.
+
+While the test server console remains open and Skyrim is closed, reconnect using:
+
+```powershell
+node "C:\Users\basba\OneDrive\Desktop\skyrim-rp\skyrim-rp-launcher\scripts\npc-development.mjs" play
+```
+
+If prompted, read and confirm the recovery and activation plans. Then obtain a fresh session grant/identity proof as required and verify the same two fixture UUIDs, no duplicate actors, and test-character inventory after reconnect. Normal Launcher Play is for the primary profile/server; the primary 7777 server was not running during this investigation. Real rejoin acceptance is still pending the owner.
+
 ## Follow-up: owner launch failure at 17:32 on 2026-10-27 (Asia/Bangkok)
 
 The owner retry reached active profile state but timed out with ECONNREFUSED. Its real evidence is `readiness-1793097167443-11656.json`: 118 failed HTTP attempts over 60,001 ms, with **no new supervisor startup directory**. This was a second failure at the **outer PowerShell process execution boundary**, before Node supervision or native engine initialization; the previous Temp import fix was not reached by this attempt.
