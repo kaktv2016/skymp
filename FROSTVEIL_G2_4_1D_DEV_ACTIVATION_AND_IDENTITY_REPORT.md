@@ -1,5 +1,7 @@
 # Frostveil G2.4.1D — development activation and identity
 
+**2026-10-28 evidence update:** Owner activation, real Skyrim identity/mapper arm, two-NPC rendering and retained NPCs after isolated restart are now observed/owner-confirmed. The original preparation-time statuses below are historical. See `FROSTVEIL_G2_4_2_SINGLE_CLIENT_VISUAL_REPORT.md` for current results, the safely recovered stale PID writer leases, and the unexplained prior native exit. Detailed visual, streaming and reconnect acceptance is not inferred from structural tests.
+
 Date: 2026-10-27. **Implementation and isolated artifacts are prepared; actual activation and Skyrim proof remain owner actions.** No custom actor has been created in the real native test environment. This is not production or visual acceptance.
 
 | Status | Result |
