@@ -1049,6 +1049,15 @@ void ActionListener::OnHit(const RawMessageData& rawMsgData,
   const FormDesc& aggressorCellOrWorld = aggressor->GetCellOrWorld();
   const FormDesc& targetCellOrWorld = targetRef->GetCellOrWorld();
 
+  // Server-only cancellable policy before Papyrus hit reactions, damage and
+  // hit bookkeeping. Neither client health nor a custom event grants damage.
+  CustomEvent attempt(aggressor->GetFormId(), "onHitAttempt",
+                      nlohmann::json::array({ targetRef->GetFormId(),
+                                              hitData.source }).dump());
+  if (!attempt.Fire(&partOne.worldState)) {
+    return;
+  }
+
   if (aggressorCellOrWorld != targetCellOrWorld) {
     const std::vector<std::string>& files = partOne.worldState.espmFiles;
     spdlog::error(

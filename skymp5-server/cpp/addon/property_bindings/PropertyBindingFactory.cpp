@@ -27,10 +27,23 @@
 #include "TypeBinding.h"
 #include "WorldOrCellDescBinding.h"
 
+namespace {
+class CombatVetoVersionBinding : public PropertyBinding
+{
+public:
+  std::string GetPropertyName() const override { return "combatVetoVersion"; }
+  Napi::Value Get(Napi::Env env, ScampServer&, uint32_t) override
+  {
+    return Napi::Number::New(env, 1);
+  }
+};
+}
+
 std::map<std::string, std::shared_ptr<PropertyBinding>>
 PropertyBindingFactory::CreateStandardPropertyBindings()
 {
   std::map<std::string, std::shared_ptr<PropertyBinding>> result;
+  result["combatVetoVersion"] = std::make_shared<CombatVetoVersionBinding>();
   result["actorNeighbors"] = std::make_shared<ActorNeighborsBinding>();
   result["angle"] = std::make_shared<AngleBinding>();
   result["appearance"] = std::make_shared<AppearanceBinding>();

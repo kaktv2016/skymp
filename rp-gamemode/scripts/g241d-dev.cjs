@@ -37,8 +37,10 @@ async function prepare(root){
 function seal(root){requireIdlePorts();const {root:r}=rootConfig(root),file=path.join(audit,'owner-handoff.json'),h=JSON.parse(fs.readFileSync(file));
  const visit=(source,target)=>{for(const n of fs.readdirSync(source)){const a=path.join(source,n),b=path.join(target,n);if(fs.statSync(a).isDirectory())visit(a,b);else{fs.mkdirSync(path.dirname(b),{recursive:true});if(!fs.existsSync(b)||sha(fs.readFileSync(a))!==sha(fs.readFileSync(b)))fs.copyFileSync(a,b);}}};visit(path.join(repo,'rp-gamemode/.test-build'),path.join(r,'runtime'));
  for(const n of ['g241-bootstrap.cjs','g241d-runtime.cjs','g241d-resources.cjs'])fs.copyFileSync(path.join(__dirname,n),path.join(r,n));
- assert.equal(sha(fs.readFileSync(path.join(r,'scam_native.node'))),'a9e77780133b3c064a8abc9aa6f6971b1c73ff3c1b2d1539af404b3cbe389157','Unverified native addon');
- const names=['g241-bootstrap.cjs','g241d-runtime.cjs','g241d-resources.cjs','g241b-nif-structure.cjs','g241b-resources.cjs','g241d-resource-proof.json','runtime/runtime.js','runtime/client/development-identity.js','runtime/modules/npc/development-identity.js','runtime/modules/npc/npc-service.js','scam_native.node','dist_back/skymp5-server.js'];
+ // G2.4.2.1 local source build: native veto + opt-in bounded minidumps.
+ // Rebuilding requires explicit review/update of this exact artifact pin.
+ assert.equal(sha(fs.readFileSync(path.join(r,'scam_native.node'))),'e7a9da57df5f5ea32d94cdfd37a0dd15e1980117ca0b0ddc22f013904bef8855','Unverified native addon');
+ const names=['g241-bootstrap.cjs','g241d-runtime.cjs','g241d-resources.cjs','g241b-nif-structure.cjs','g241b-resources.cjs','g241d-resource-proof.json','runtime/runtime.js','runtime/client/development-identity.js','runtime/modules/npc/development-identity.js','runtime/modules/npc/npc-service.js','scam_native.node','dist_back/skymp5-server.js','runtime/core/event-router.js','runtime/modules/economy/journal.js','runtime/modules/economy/writer-process.js'];
  assert.equal(h.startScript,path.join(r,'start-g241d-visible.ps1'),'Startup script must remain inside the isolated root');fs.writeFileSync(h.startScript,startupScript(r));h.startScriptSHA256=sha(fs.readFileSync(h.startScript));
  h.artifacts=names.map(n=>({path:n,sha256:sha(fs.readFileSync(path.join(r,n)))}));h.serveScriptSHA256=sha(fs.readFileSync(__filename));h.adminToolSHA256=sha(fs.readFileSync(path.join(__dirname,'admin-local.cjs')));h.serverConfigDigest=sha(Buffer.from(JSON.stringify({...JSON.parse(fs.readFileSync(path.join(r,'g241d-config.json'))),metadataRoot:null})));fs.writeFileSync(file,JSON.stringify(h,null,2));console.log(JSON.stringify({state:'SEALED_PENDING_OWNER_ACTION',artifacts:h.artifacts.length,profileHash:h.profileHash}));
 }
@@ -49,7 +51,8 @@ exit $LASTEXITCODE
 `;}
 function captureEngine(root,logs,echo=true){
  fs.mkdirSync(logs,{recursive:true});const stdout=path.join(logs,'stdout.log'),stderr=path.join(logs,'stderr.log');fs.writeFileSync(stdout,'');fs.writeFileSync(stderr,'');
- let markerBuffer='',lastStage;return new Promise((resolve,reject)=>{const child=spawn(process.execPath,[path.join(root,'dist_back/skymp5-server.js')],{cwd:root,stdio:['ignore','pipe','pipe'],windowsHide:false});
+ const dumpDirectory=path.join(audit,'native-dumps');fs.mkdirSync(dumpDirectory,{recursive:true});
+ let markerBuffer='',lastStage;return new Promise((resolve,reject)=>{const child=spawn(process.execPath,['--report-on-fatalerror','--report-directory='+logs,path.join(root,'dist_back/skymp5-server.js')],{cwd:root,env:{...process.env,FROSTVEIL_ISOLATED_NATIVE_DUMPS:dumpDirectory},stdio:['ignore','pipe','pipe'],windowsHide:false});
   child.stdout.on('data',b=>{markerBuffer=(markerBuffer+b.toString('utf8')).slice(-16384);for(const m of markerBuffer.matchAll(/\[g241d-stage\] ([A-Z_]+) (CHECK|PASS|FAILED)/g))lastStage={stage:m[1],state:m[2]};fs.appendFileSync(stdout,b);if(echo)process.stdout.write(b);});child.stderr.on('data',b=>{fs.appendFileSync(stderr,b);if(echo)process.stderr.write(b);});
   child.once('error',e=>{fs.appendFileSync(stderr,e.stack+'\n');reject(e);});child.once('close',(code,signal)=>{fs.writeFileSync(path.join(logs,'exit.json'),JSON.stringify({pid:child.pid,code,signal,lastStage}));resolve({code:code??1,signal,pid:child.pid,stdout,stderr});});
  });

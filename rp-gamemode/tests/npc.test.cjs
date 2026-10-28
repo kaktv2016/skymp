@@ -16,7 +16,7 @@ test('neighbor pose defeats stale movement, wraps yaw, stops offsets, and reacqu
  const f=fixture(t);f.run('create','clerk');f.run('rotate','90');const pose=[...f.forms.values()][0].frostveilNpcPose;
  let position=[-20,20,30],yaw=0,id=5,loaded=true;const calls=[];
  const ref={isDeleted:()=>false,is3DLoaded:()=>loaded,getFormID:()=>id,getWorldSpace:()=>({getFormID:()=>60}),getPositionX:()=>position[0],getPositionY:()=>position[1],getPositionZ:()=>position[2],getAngleX:()=>0,getAngleY:()=>0,getAngleZ:()=>yaw};
- const actor={enableAI:v=>{assert.equal(v,true);calls.push(['ai',v]);},setDontMove:v=>assert.equal(v,true),clearKeepOffsetFromActor:()=>calls.push(['clear'])};
+ const actor={isGhost:()=>true,setGhost:()=>{},stopCombat:()=>{},stopCombatAlarm:()=>{},enableAI:v=>{assert.equal(v,true);calls.push(['ai',v]);},setDontMove:v=>assert.equal(v,true),clearKeepOffsetFromActor:()=>calls.push(['clear'])};
  const sp={Actor:{from:()=>actor},Game:{getFormFromFile:()=>({getFormID:()=>60})},Cell:{from:()=>null},WorldSpace:{from:v=>v},TESModPlatform:{moveRefrToPosition:(r,c,w,x,y,z,rx,ry,rz)=>{position=[x,y,z];yaw=rz*180/Math.PI;calls.push(['move']);}}};
  const ctx={value:pose,refr:ref,sp,state:{},_model:{movement:{pos:[-20,20,30],rot:[0,0,0],runMode:'Running'}}};
  const update=new Function('ctx',f.properties.frostveilNpcPose.updateNeighbor);update(ctx);

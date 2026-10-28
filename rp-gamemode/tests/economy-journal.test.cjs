@@ -1,5 +1,16 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const modulePath=process.env.G11_JOURNAL_TEST_MODULE??path.resolve(__dirname,'../.test-build/modules/economy/journal.js');
+test('writer identity rejects active/unknown owners and recovers PID reuse without losing state',()=>{
+ const {EconomyJournal}=require(modulePath),{randomUUID}=require('node:crypto'),key='f'.repeat(64);
+ for(const mode of ['active','unknown','reused','legacy-reused']){
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'fv-lease-id-')),initial=new EconomyJournal(root);initial.append(key,{balance:17});initial.close();
+  const file=path.join(root,'writer.lock'),old={pid:12345,token:randomUUID(),...(mode==='legacy-reused'?{}:{processIdentity:'windows:100'})};fs.writeFileSync(file,JSON.stringify(old));
+  const probe=pid=>pid===process.pid?{alive:true,identity:'windows:300'}:mode==='unknown'?{alive:true}:mode==='legacy-reused'?{alive:true,identity:'windows:200',startedAtMs:fs.statSync(file).mtimeMs+5000}:{alive:true,identity:mode==='active'?'windows:100':'windows:200'};
+  const journal=new EconomyJournal(root,undefined,probe);
+  try{if(['active','unknown'].includes(mode)){assert.throws(()=>journal.read(key),/already active/);assert.deepEqual(JSON.parse(fs.readFileSync(file)),old);}else{assert.deepEqual(journal.read(key),{balance:17});assert.equal(JSON.parse(fs.readFileSync(file)).processIdentity,'windows:300');journal.close();}}
+  finally{fs.rmSync(root,{recursive:true,force:true});}
+ }
+});
 test('economy journal commits/reopens, refuses a second writer and repairs only a torn final append',()=>{
  const {EconomyJournal}=require(modulePath),root=fs.mkdtempSync(path.join(os.tmpdir(),'frostveil-economy-test-'));
  const key='a'.repeat(64),store=new EconomyJournal(root);let reopened;

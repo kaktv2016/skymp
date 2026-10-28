@@ -6,10 +6,55 @@
 #include "HitMessage.h"
 #include "PacketParser.h"
 #include "libespm/Loader.h"
+#include "gamemode_events/GameModeEvent.h"
 
 PartOne& GetPartOne();
 extern espm::Loader l;
 using namespace std::chrono_literals;
+
+TEST_CASE("Server hit veto prevents damage and hit side effects before native dispatch", "[Hit][FrostveilProtection]")
+{
+  class Veto : public FakeListener {
+  public:
+    bool block = true;
+    size_t attempts = 0;
+    bool OnMpApiEvent(const GameModeEvent& event) override {
+      if (std::string(event.GetName()) == "onHitAttempt") {
+        const auto args = nlohmann::json::parse(event.GetArgumentsJsonArray());
+        REQUIRE(args[0] == 0xff000000);
+        REQUIRE(args[1] == 0xff000000);
+        ++attempts;
+        return !block;
+      }
+      return true;
+    }
+  };
+  auto& p = GetPartOne();
+  DoConnect(p, 0);
+  p.CreateActor(0xff000000, {0, 0, 0}, 0, 0x3c);
+  p.SetUserActor(0, 0xff000000);
+  auto& actor = p.worldState.GetFormAt<MpActor>(0xff000000);
+  auto listener = std::make_shared<Veto>();
+  p.worldState.listeners.push_back(listener);
+  RawMessageData raw; raw.userId = 0;
+  HitMessage msg; msg.data.aggressor = 0x14; msg.data.target = 0x14;
+  msg.data.source = 0x1f4; // Unarmed, no inventory fixture required.
+  const auto before = std::chrono::steady_clock::now() - 10s;
+  actor.SetLastHitTime(0xff000000, before);
+  p.Messages().clear();
+  p.GetActionListener().OnHit(raw, msg);
+  REQUIRE(listener->attempts == 1);
+  REQUIRE(actor.GetChangeForm().actorValues.healthPercentage == 1.f);
+  REQUIRE(actor.GetLastHitTime(0xff000000) == before);
+  REQUIRE(p.Messages().empty());
+  listener->block = false;
+  p.GetActionListener().OnHit(raw, msg);
+  REQUIRE(listener->attempts == 2);
+  REQUIRE(actor.GetLastHitTime(0xff000000) > before);
+  p.worldState.listeners.pop_back();
+  p.DestroyActor(0xff000000);
+  DoDisconnect(p, 0);
+}
 
 namespace {
 const auto kExtraWornTrue = [] {

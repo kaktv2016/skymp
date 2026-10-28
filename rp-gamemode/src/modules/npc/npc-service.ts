@@ -6,8 +6,10 @@ import type {CommandResult} from '../../core/command-registry';
 import type {NpcTemplateCatalog,TemplateAssignment} from './template-catalog';
 
 const KEY='7'.repeat(64), TAG='private.frostveil.npc', LABEL='frostveilNpcName', POSE='frostveilNpcPose';
-export const npcHints=['help','list','create clerk','select','info','rename','move here','rotate','disable','enable','delete','restore'];
-interface Definition {id:string;template:string;name:string;location:TransformLocation;enabled:boolean;deleted:boolean;formId:number|null;appearanceProfile:null;equipmentProfile:null;dialogueProfile:null;templateAssignment?:TemplateAssignment;revision?:number;fixture?:{isolationId:string;key:string};}
+export const npcHints=['help','list','create clerk','select','info','rename','move here','rotate','disable','enable','delete','restore','movement stationary','combat passive','combat enabled'];
+interface NpcPolicy {version:1;movement:'STATIONARY';combat:'PASSIVE_PROTECTED'|'COMBAT_ENABLED';}
+interface Definition {id:string;template:string;name:string;location:TransformLocation;enabled:boolean;deleted:boolean;formId:number|null;appearanceProfile:null;equipmentProfile:null;dialogueProfile:null;templateAssignment?:TemplateAssignment;revision?:number;fixture?:{isolationId:string;key:string};policy?:NpcPolicy;}
+const policyOf=(d:Definition):NpcPolicy=>d.policy??{version:1,movement:'STATIONARY',combat:'PASSIVE_PROTECTED'};
 export interface NpcOptions {catalog?:Pick<NpcTemplateCatalog,'resolve'|'list'>;development?:{isolationId:string;templates:readonly string[];verifyIsolated:()=>boolean;verifySession?:(actor:ActorId)=>boolean;canStream?:()=>boolean;qualifiedIdentity?:boolean};}
 interface Native {place(base:number):number;get(id:number,key:string):unknown;set(id:number,key:string,value:unknown):void;setEnabled(id:number,value:boolean):void;lookupEspmRecordById(id:number):{record?:{type:string}};makeProperty(name:string,options:unknown):void;}
 
@@ -18,6 +20,16 @@ function updateNpcPose(ctx:any){
  const p=ctx.value,r=ctx.refr,sp=ctx.sp;
  if(!p||!r||r.isDeleted()||!r.is3DLoaded())return;
  const actor=sp.Actor.from(r);if(!actor)return;
+ const passive=p.policy?.combat!=='COMBAT_ENABLED',protectionKey=r.getFormID()+':'+passive;
+ if(ctx.state.npcProtectionKey!==protectionKey){
+  ctx.state.npcProtectionKey=protectionKey; // Bound a failed native attempt too.
+  try{
+  if(ctx.state.npcProtectionActor!==r.getFormID()){ctx.state.npcProtectionActor=r.getFormID();ctx.state.npcOriginalGhost=actor.isGhost();}
+  actor.setGhost(passive?true:ctx.state.npcOriginalGhost===true);
+  // One transition cleanup for pre-existing aggro; never a per-update combat reset.
+  if(passive){actor.stopCombat();actor.stopCombatAlarm();}
+  }catch(error){ctx.state.npcProtectionError=String(error);if(typeof sp.printConsole==='function')sp.printConsole('[Frostveil NPC] protection native call failed: '+String(error));}
+ }
  const parts=p.cell.split(':');
  const target=sp.Game.getFormFromFile(parseInt(parts[0],16),parts[1]);
  if(!target)return;
@@ -44,9 +56,10 @@ function validate(value:unknown):Definition[]{
  const ids=new Set<string>(),forms=new Set<number>();
  for(const d of value){
   if(!d||typeof d!=='object')throw Error('Invalid NPC definition');
-  const extra=['templateAssignment','revision','fixture'].filter(k=>Object.prototype.hasOwnProperty.call(d,k));
+  const extra=['templateAssignment','revision','fixture','policy'].filter(k=>Object.prototype.hasOwnProperty.call(d,k));
+  if(d.policy!==undefined&&(!d.policy||Object.keys(d.policy).sort().join(',')!=='combat,movement,version'||d.policy.version!==1||d.policy.movement!=='STATIONARY'||!['PASSIVE_PROTECTED','COMBAT_ENABLED'].includes(d.policy.combat)))throw Error('Invalid NPC policy');
   if(Object.keys(d).filter(k=>!extra.includes(k)).sort().join(',')!=='appearanceProfile,deleted,dialogueProfile,enabled,equipmentProfile,formId,id,location,name,template'||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(d.id)||ids.has(d.id)||typeof d.template!=='string'||!/^[a-z][a-z0-9-]{0,47}$/.test(d.template)||typeof d.name!=='string'||!d.name.trim()||[...d.name].length>64||/[\x00-\x1f\x7f-\x9f]/.test(d.name)||typeof d.enabled!=='boolean'||typeof d.deleted!=='boolean'||!d.location||typeof d.location.cell!=='string'||d.location.cell.length>128||!/^([a-f0-9]+):[^:]+\.(esm|esp|esl)$/i.test(d.location.cell)||![d.location.pos,d.location.rot].every(a=>Array.isArray(a)&&a.length===3&&a.every((n:unknown)=>typeof n==='number'&&Number.isFinite(n)&&Math.abs(n)<1e7))||![d.appearanceProfile,d.equipmentProfile,d.dialogueProfile].every(v=>v===null)||!(d.formId===null||(Number.isInteger(d.formId)&&d.formId>=0xff000000&&d.formId<=0xffffffff&&!forms.has(d.formId))))throw Error('Invalid NPC definition');
-  if(d.template==='clerk'){if(extra.length)throw Error('Legacy Clerk cannot be reassigned');}
+  if(d.template==='clerk'){if(extra.some(k=>k!=='policy'))throw Error('Legacy Clerk cannot be reassigned');}
   else{const a=d.templateAssignment;if(!a||Object.keys(a).sort().join(',')!=='assetManifestRevision,base,catalogHash,catalogId,catalogVersion'||!Number.isSafeInteger(a.catalogVersion)||a.catalogVersion<1||!Number.isSafeInteger(d.revision)||d.revision<1||!['catalogId','assetManifestRevision'].every(k=>typeof a[k]==='string'&&/^[a-z][a-z0-9-]{0,47}$/.test(a[k]))||!/^[a-f0-9]{64}$/.test(a.catalogHash)||!/^[a-f0-9]{1,6}:[A-Za-z0-9][A-Za-z0-9 _.-]*\.esp$/.test(a.base)||a.base.includes('..'))throw Error('Invalid template assignment');if(extra.includes('fixture')&&(!d.fixture||d.fixture.key!==d.template||Object.keys(d.fixture).sort().join(',')!=='isolationId,key'||!['isolationId','key'].every(k=>typeof d.fixture[k]==='string'&&/^[a-z][a-z0-9-]{0,47}$/.test(d.fixture[k]))))throw Error('Invalid fixture identity');}
   ids.add(d.id);if(d.formId!==null)forms.add(d.formId);
  }
@@ -74,6 +87,11 @@ export class NpcService {
  hints(){return [...npcHints,...(this.options.catalog?['templates',...this.options.catalog.list().map(t=>'create '+t.id)]:[]),...(this.options.development?['fixture create','fixture list','fixture cleanup']:[])];}
  stop(){this.ready=false;this.selections.clear();this.journal.close();}
  get isReady(){return this.ready;}
+ permitsHit(aggressor:unknown,target:unknown):boolean {
+  if(!Number.isSafeInteger(aggressor)||!Number.isSafeInteger(target))return false;
+  for(const id of [aggressor,target]){const d=this.definitions.find(d=>d.formId===id);if(d){if(!this.ready||policyOf(d).combat==='PASSIVE_PROTECTED')return false;try{this.verify(d);}catch{return false;}}}
+  return true;
+ }
  prune(){for(const [actor,selection] of this.selections){try{if(!this.allowed(actor)||this.adapter.sessionForActor(actor).guid!==selection.guid)this.selections.delete(actor);}catch{this.selections.delete(actor);}}}
  private save(next:Definition[]){const checked=validate(next);this.journal.append(KEY,checked);this.definitions=checked;}
  private template(id:string,expected?:TemplateAssignment){if(id==='clerk'){if(expected)throw Error('Clerk cannot have an assignment');return {baseId:0x39f83,base:'39f83:Skyrim.esm',displayName:'Courier Guild Clerk'};}if(!this.options.catalog)throw Error('Template catalog disabled; install/approve test assets first');return this.options.catalog.resolve(id,expected);}
@@ -105,8 +123,9 @@ export class NpcService {
   if(!previous||JSON.stringify(previous.location)!==JSON.stringify(d.location)){
    const location=upright(d.location);
    this.native.set(d.formId!,'locationalData',{cellOrWorldDesc:location.cell,pos:[...location.pos],rot:[...location.rot]});
-   this.native.set(d.formId!,POSE,location);
+   this.native.set(d.formId!,POSE,{...location,policy:policyOf(d)});
   }
+  else if(previous&&JSON.stringify(policyOf(d))!==JSON.stringify(policyOf(previous)))this.native.set(d.formId!,POSE,{...upright(d.location),policy:policyOf(d)});
   if(!previous||previous.name!==d.name)this.native.set(d.formId!,LABEL,d.name);
   if(!previous||previous.enabled!==d.enabled||previous.deleted!==d.deleted)this.native.setEnabled(d.formId!,d.enabled&&!d.deleted&&(d.template==='clerk'||this.options.development?.canStream?.()!==false));
  }
@@ -133,11 +152,13 @@ export class NpcService {
    }else{
     const selection=this.selections.get(actor);if(!selection||selection.guid!==session.guid)return fail('Select a registered NPC first');
     const current=this.definitions.find(d=>d.id===selection.id)!;this.verify(current);if(current.revision!==undefined&&selection.revision!==current.revision)return fail('NPC revision changed; select again');const d=structuredClone(current);
-    if(command==='info'&&!a.length)message=JSON.stringify(d);
+    if(command==='info'&&!a.length)message=JSON.stringify({...d,policy:policyOf(d)});
     else{
      if(command==='rename'&&a.length)d.name=a.join(' ');
      else if(command==='move'&&a.length===1&&a[0]==='here')d.location=upright(this.adapter.fullLocation(actor));
      else if(command==='rotate'&&a.length===1&&/^[-+]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(a[0]!)){const degrees=Number(a[0]);if(!Number.isFinite(degrees)||Math.abs(degrees)>3600)return fail('Rotation must be within -3600..3600 degrees');d.location.rot=[0,0,((degrees%360)+360)%360];}
+     else if(command==='combat'&&a.length===1&&['passive','enabled'].includes(a[0]!))d.policy={...policyOf(d),combat:a[0]==='enabled'?'COMBAT_ENABLED':'PASSIVE_PROTECTED'};
+     else if(command==='movement'&&a.length===1&&a[0]==='stationary')d.policy={...policyOf(d),movement:'STATIONARY'};
      else if(command==='disable'&&!a.length)d.enabled=false;
      else if(command==='enable'&&!a.length&&!d.deleted)d.enabled=true;
      else if(command==='delete'&&!a.length){d.deleted=true;d.enabled=false;}

@@ -98,6 +98,8 @@ export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
       // before asynchronous module boot can yield to login/network ticks.
       if(proof){npc.start();if(!npc.isReady)throw Error('Development NPC registry cannot be verified/parked');}
       modules.register({id:'rp-npc',dependencies:['rp-chat'],initialize:async(scope)=>{
+        if((rawMp as any).get(0,'combatVetoVersion')!==1)throw Error('NPC protection requires verified native combat veto version 1');
+        scope.defer(events.registerVeto('onHitAttempt',(aggressor,target)=>npc.permitsHit(aggressor,target)));
         scope.defer(()=>npc.stop());if(!proof)npc.start();
         scope.defer(commands.register('npc',(ctx,args)=>{
           if(proof&&args[0]==='identity'){

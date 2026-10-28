@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {createHash, randomUUID} from 'node:crypto';
+import {writerProcess, type WriterProcess} from './writer-process';
 
 const LIMIT=16*1024*1024;
 function hash(value:string){return createHash('sha256').update(value).digest('hex');}
@@ -20,7 +21,7 @@ function decode(bytes:Buffer){
 export class EconomyJournal {
  private root?:string;private identity?:string;private token:string|undefined;private closed=false;
  private latest=new Map<string,{seq:number;hash:string}>();
- constructor(private readonly directory:string,private readonly fault?:(point:string)=>void){}
+ constructor(private readonly directory:string,private readonly fault?:(point:string)=>void,private readonly inspectWriter:(pid:number)=>WriterProcess=writerProcess){}
  private open(){
   if(this.closed)throw Error('Journal closed');
   if(!this.root){
@@ -30,7 +31,12 @@ export class EconomyJournal {
    const lock=path.join(this.root,'writer.lock');
    if(fs.existsSync(lock)){
     const observed=regular(lock),previous=JSON.parse(fs.readFileSync(lock,'utf8'));if(!Number.isSafeInteger(previous.pid)||previous.pid<1||typeof previous.token!=='string'||!/^[a-f0-9-]{36}$/.test(previous.token))throw Error('Invalid journal writer lease');
-    let dead=false;try{process.kill(previous.pid,0);}catch(e){if((e as NodeJS.ErrnoException).code==='ESRCH')dead=true;else throw e;}if(!dead)throw Error('Economy journal writer already active');
+    if(previous.processIdentity!==undefined&&(typeof previous.processIdentity!=='string'||previous.processIdentity.length>200||!/^(windows:\d+|linux:[a-f0-9-]+:\d+)$/.test(previous.processIdentity)))throw Error('Invalid journal process identity');
+    const owner=this.inspectWriter(previous.pid);
+    // Legacy leases can be proven stale only if the OS process was created
+    // after the immutable lease. A one-second margin avoids timestamp rounding.
+    const reused=owner.identity&&previous.processIdentity?owner.identity!==previous.processIdentity:previous.processIdentity===undefined&&owner.startedAtMs!==undefined&&owner.startedAtMs>observed.mtimeMs+1000;
+    if(owner.alive&&!reused)throw Error('Economy journal writer already active');
     // Immutable, exclusive claim per stale token. Contenders cannot unlink a
     // successor's lease using their earlier stale observation. If takeover itself
     // crashes, retain the claim and require stopped-server operator recovery.
@@ -40,7 +46,8 @@ export class EconomyJournal {
     if(again.dev!==observed.dev||again.ino!==observed.ino||again.ctimeMs!==observed.ctimeMs||current.token!==previous.token||current.pid!==previous.pid)throw Error('Journal writer changed during takeover');
     fs.unlinkSync(lock);
    }
-   const fd=fs.openSync(lock,'wx',0o600);try{this.token=randomUUID();fs.writeFileSync(fd,JSON.stringify({pid:process.pid,token:this.token}));fs.fsyncSync(fd);}finally{fs.closeSync(fd);}
+   const own=this.inspectWriter(process.pid);if(!own.alive)throw Error('Cannot verify current journal writer');
+   const fd=fs.openSync(lock,'wx',0o600);try{this.token=randomUUID();fs.writeFileSync(fd,JSON.stringify({pid:process.pid,token:this.token,...(own.identity?{processIdentity:own.identity}:{})}));fs.fsyncSync(fd);}finally{fs.closeSync(fd);}
   }
   noLinks(this.root);const stat=fs.statSync(this.root);if(stat.dev+':'+stat.ino!==this.identity||!this.token)throw Error('Journal root identity changed');
   const lock=path.join(this.root,'writer.lock');regular(lock);if(JSON.parse(fs.readFileSync(lock,'utf8')).token!==this.token)throw Error('Journal writer identity changed');

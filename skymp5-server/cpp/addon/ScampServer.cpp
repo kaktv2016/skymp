@@ -1,4 +1,5 @@
 #include "ScampServer.h"
+#include "IsolatedCrashDump.h"
 
 #include "Bot.h"
 #include "ConditionsEvaluator.h"
@@ -177,6 +178,7 @@ ScampServer::ScampServer(const Napi::CallbackInfo& info)
   : ObjectWrap(info)
   , tickEnv(info.Env())
 {
+  IsolatedCrashDump::Install();
   try {
     promRegistry = std::make_shared<prometheus::Registry>();
     partOne = std::make_shared<PartOne>();
