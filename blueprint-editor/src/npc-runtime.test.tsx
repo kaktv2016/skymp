@@ -1,0 +1,13 @@
+// @vitest-environment jsdom
+import React from 'react';
+import {it,expect,vi,afterEach} from 'vitest';
+import {render,screen,cleanup} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {NpcRuntimePanel} from './npc-runtime';
+afterEach(cleanup);
+it('prepares and explicitly authorizes a restart request without claiming activation or installing files',async()=>{
+ let revision=1,requested:string|null=null;const request=vi.fn(async(op:string)=>{if(op.endsWith('/status'))return {revision,active:null,requested,identityReady:false,plans:revision>1?[{id:'plan',templates:['guild-clerk'],status:'PROFILE_READY',render:'RENDER_PENDING',diagnostics:[]}]:[]};if(op.endsWith('/prepare')){revision++;return {id:'plan',status:'RESTART_REQUIRED'};}if(op.endsWith('/review'))return {token:'token',notice:'Owner confirmation remains mandatory'};if(op.endsWith('/promote')){revision++;requested='plan';return {status:'RESTART_REQUIRED'};}throw Error(op);});
+ const user=userEvent.setup();render(<NpcRuntimePanel request={request} approvalId={'a'.repeat(64)}/>);await screen.findByText('การเปิดใช้ในเกม');await user.click(screen.getByRole('button',{name:'ตรวจความพร้อมใช้งาน'}));await screen.findByText(/guild-clerk/);await user.click(screen.getByRole('button',{name:'ตรวจแผนเปิดใช้'}));await screen.findByText('Owner confirmation remains mandatory');await user.click(screen.getByRole('button',{name:'ยืนยันขอเปิดใช้เมื่อ restart'}));await screen.findByText(/บันทึกคำขอแล้ว/);expect(request.mock.calls.some(([op])=>op.includes('create')||op.includes('install'))).toBe(false);
+});
+it('shows actionable profile diagnostics and does not offer direct browser plugin installation',async()=>{render(<NpcRuntimePanel approvalId="a" request={async()=>({revision:1,active:null,plans:[{id:'plan',templates:['new-npc'],status:'PROFILE_PREPARATION_REQUIRED',diagnostics:[{code:'MISSING_CLIENT_ASSET',file:'Data/Example.esp'}]}]})}/>);await screen.findByText('Data/Example.esp');expect(screen.getByText(/ยังขาดไฟล์ฝั่งเกม/)).toBeTruthy();expect(screen.queryByRole('button',{name:'Install'})).toBeNull();});
+it('an applied revoked plan explains restart and offers no review or rollback that would revive it',async()=>{render(<NpcRuntimePanel approvalId="a" request={async()=>({revision:1,active:'plan',plans:[{id:'plan',authorized:true,templates:['new-npc'],status:'REVOKED_RESTART_REQUIRED',diagnostics:[]}]})}/>);await screen.findByText(/ระงับแล้ว.*ต้อง restart/);expect(screen.queryByRole('button',{name:'ตรวจแผนเปิดใช้'})).toBeNull();expect(screen.queryByRole('button',{name:'ใช้ revision นี้เมื่อ restart'})).toBeNull();});

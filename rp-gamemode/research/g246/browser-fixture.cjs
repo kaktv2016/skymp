@@ -1,0 +1,12 @@
+'use strict';
+// Synthetic browser authority only, over an actual previously validated source
+// snapshot. Never connects to the owner's live admin session or creates actors.
+const fs=require('node:fs'),path=require('node:path'),{AssetLibrary,sha,canonical}=require('../../scripts/g245-assets.cjs'),{RuntimeOnboarding}=require('../../scripts/g246-onboarding.cjs');
+const repo=path.resolve(__dirname,'../../..'),audit=path.join(repo,'build/rp-audit/g246'),result=JSON.parse(fs.readFileSync(path.join(audit,'native-integration-result.json'))),intake=path.join(result.work,'intake');
+const names=fs.readdirSync(path.join(intake,'snapshots')),id=names.find(n=>/^[a-f0-9]{64}$/.test(n)),sourceRoot=path.join(intake,'snapshots',id),manifest=JSON.parse(fs.readFileSync(path.join(sourceRoot,'manifest.json')));if(sha(Buffer.from(canonical(manifest)))!==id)throw Error('Fixture manifest changed');const work=fs.mkdtempSync(path.join(audit,'browser-'));
+const library=new AssetLibrary({storageRoot:path.join(work,'intake'),sources:()=>[{id:'fixture',label:'Frostveil NPCTest · verified existing exports',plugin:manifest.source.plugin,root:sourceRoot}],environment:()=>{throw Error('Browser-only fixture');},journalModule:require('../../.test-build/modules/economy/journal.js')});library.scan=()=>({id,manifest});
+library.onboarding=new RuntimeOnboarding(library,{prepare:approval=>({schemaVersion:1,profileHash:'a'.repeat(64),catalogHash:'b'.repeat(64),templates:approval.selectedTemplates,diagnostics:[],profileReady:true,render:'RENDER_PENDING'}),active:()=>null,identityReady:()=>false});
+const {EditorAuthority}=require('../../.test-build/modules/dialogue/editor-authority.js'),{EditorHttpServer,loadEditorAssets}=require('../../.test-build/modules/dialogue/editor-http.js'),authority=new EditorAuthority(()=>({principal:'g246-browser-fixture',identity:'synthetic-not-owner-session'}));
+const http=new EditorHttpServer(authority,undefined,loadEditorAssets(path.join(repo,'blueprint-editor/dist')),(op,input,p)=>op.startsWith('assets/')?library.execute(op.slice(7),input,p):{npcs:[],templates:[],identityReady:false,reassignment:{supported:false},weaponLoadout:{editable:false}});
+setInterval(()=>fs.writeFileSync(path.join(audit,'browser-login.private.json'),JSON.stringify({grant:authority.issue(1)})),30000);
+http.listen(13211).then(url=>{fs.writeFileSync(path.join(audit,'browser-login.private.json'),JSON.stringify({grant:authority.issue(1)}));console.log(url+'/npc-assets');});process.on('SIGINT',()=>{void http.close().finally(()=>{library.close();process.exit(0);});});
