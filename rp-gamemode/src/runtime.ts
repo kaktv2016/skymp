@@ -30,10 +30,12 @@ import {BlueprintStore} from './modules/dialogue/blueprint-store';
 import {BlueprintService} from './modules/dialogue/blueprint-service';
 import {EditorAuthority} from './modules/dialogue/editor-authority';
 import {EditorHttpServer,loadEditorAssets} from './modules/dialogue/editor-http';
+import {NpcManagementService} from './modules/npc/management-service';
 
-export interface RuntimeOptions { scheduler?: Scheduler; logger?: Logger; chat?: false | (Partial<ChatConfig> & { now?: () => number }); profile?:Partial<ProfileLimits>&{now?:()=>number}; dice?: Partial<DiceSettings> & { rng?: DiceRng }; courier?: CourierOptions; economy?:EconomyOptions;admin?:AdminOptions; npc?:{storageRoot:string;templateOptions?:NpcOptions;developmentIdentity?:{spec:DevelopmentIdentitySpec;verifyProfile:()=>boolean}}; blueprintEditor?:{storageRoot:string;assetsRoot:string;port?:number}; }
+export interface RuntimeOptions { scheduler?: Scheduler; logger?: Logger; chat?: false | (Partial<ChatConfig> & { now?: () => number }); profile?:Partial<ProfileLimits>&{now?:()=>number}; dice?: Partial<DiceSettings> & { rng?: DiceRng }; courier?: CourierOptions; economy?:EconomyOptions;admin?:AdminOptions; npc?:{storageRoot:string;templateOptions?:NpcOptions;developmentIdentity?:{spec:DevelopmentIdentitySpec;verifyProfile:()=>boolean}}; blueprintEditor?:{storageRoot:string;assetsRoot:string;port?:number}; npcManagement?:{assetsRoot:string;port?:number;verifyIntegrity:()=>void}; }
 export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
   if(options.blueprintEditor&&(!options.npc||options.chat===false))throw Error('Blueprint editor requires NPC and chat modules');
+  if(options.npcManagement&&(!options.npc?.developmentIdentity||!options.npc.templateOptions?.development?.qualifiedIdentity||options.chat===false||options.blueprintEditor))throw Error('NPC management requires a separate verified isolated development listener');
   const adapter = new SkyMpAdapter(rawMp);
   const identity = new IdentityService(adapter,options.profile);
   const commands = new CommandRegistry();
@@ -94,6 +96,7 @@ export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
       const proof=devIdentity?new DevelopmentIdentity(devIdentity.spec,a=>{try{return devIdentity.verifyProfile()?admin.principal(actorId(a)):null;}catch{return null;}},a=>JSON.stringify(adapter.sessionForActor(actorId(a)))):undefined;
       const templateOptions=proof?{...options.npc.templateOptions,development:{...options.npc.templateOptions!.development!,verifySession:(a:ReturnType<typeof actorId>)=>proof.ready(a),canStream:()=>proof.anyReady(),qualifiedIdentity:true}}:options.npc.templateOptions;
       const npc=new NpcService(rawMp as ConstructorParameters<typeof NpcService>[0],adapter,options.npc.storageRoot,actor=>admin.state(actor)!==null,logger.info,templateOptions);
+      let managementGrant:((actor:ReturnType<typeof actorId>)=>string)|undefined;
       // On a development restart, park restored custom actors synchronously
       // before asynchronous module boot can yield to login/network ticks.
       if(proof){npc.start();if(!npc.isReady)throw Error('Development NPC registry cannot be verified/parked');}
@@ -102,6 +105,9 @@ export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
         scope.defer(events.registerVeto('onHitAttempt',(aggressor,target)=>npc.permitsHit(aggressor,target)));
         scope.defer(()=>npc.stop());if(!proof)npc.start();
         scope.defer(commands.register('npc',(ctx,args)=>{
+          if(args[0]==='manage'){
+            try{if(args.length!==1||!managementGrant)throw Error('NPC management unavailable');return {ok:true,data:{systemMessage:managementGrant(ctx.actorId)}};}catch{return {ok:false,code:'ADMIN_REQUIRED',message:'Verified development admin session required'};}
+          }
           if(proof&&args[0]==='identity'){
             try{
               if(args.length===2&&args[1]==='status')return {ok:true,data:{systemMessage:proof.ready(ctx.actorId)?'Development identity verified for this authorized session':'Waiting for authorized client runtime proof'}};
@@ -111,7 +117,7 @@ export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
             }catch(error){return {ok:false,code:'DEVELOPMENT_IDENTITY_REQUIRED',message:String(error)};}
           }
           return npc.execute(ctx.actorId,args);
-        },'rp-npc',[...npc.hints(),...(proof?['identity','identity status']:[])]));
+        },'rp-npc',[...npc.hints(),...(proof?['identity','identity status']:[]),...(options.npcManagement?['manage']:[])]));
         scope.defer(scheduler.every(1000,()=>npc.prune()));
         const native=rawMp as any,sources=dialogueSources();
         if(proof){
@@ -161,6 +167,16 @@ export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
             catch{return {ok:false,code:'ADMIN_REQUIRED',message:'Admin permission required'};}
           },'rp-blueprint-editor'));
           logger.info(`[rp-blueprint] loopback editor listening at ${url}`);
+        }
+        if(options.npcManagement){
+          if(!options.admin?.authorize)throw Error('NPC management requires verified admin authority');
+          const authority=new EditorAuthority(actor=>{const principal=admin.principal(actor);if(!principal)return null;return {principal,identity:JSON.stringify(adapter.sessionForActor(actor))};});
+          const management=new NpcManagementService(npc,adapter,options.npcManagement.verifyIntegrity,id=>{const g=blueprints?.forNpc(id)??graph;return {id:g.id,version:g.version};});
+          const http=new EditorHttpServer(authority,undefined,loadEditorAssets(options.npcManagement.assetsRoot),(op,input,p)=>management.execute(op,input,p));
+          scope.defer(()=>{managementGrant=undefined;management.clear();return http.close();});
+          const url=await http.listen(options.npcManagement.port??13210);
+          managementGrant=actor=>`NPC Management: ${url}/npcs\nOne-time login grant (valid 60 seconds): ${authority.issue(actor)}`;
+          logger.info(`[rp-npc-management] isolated loopback listener ${url}/npcs`);
         }
         logger.info('[rp-dialogue] clerk graph v'+graph.version+' ready; native Activate-key transport registered');
 

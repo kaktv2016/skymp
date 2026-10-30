@@ -24,7 +24,7 @@ export function loadEditorAssets(directory:string):ReadonlyMap<string,EditorAsse
 export class EditorHttpServer {
  private server;private host='';private requests=0;private window=Date.now();
  private listening=false;private closed=false;
- constructor(private authority:EditorAuthority,private service:BlueprintService,private assets:ReadonlyMap<string,EditorAsset>){
+ constructor(private authority:EditorAuthority,private service:BlueprintService|undefined,private assets:ReadonlyMap<string,EditorAsset>,private npc?:(operation:string,input:unknown,principal:ReturnType<EditorAuthority['verify']>)=>unknown){
   this.server=createServer((req,res)=>{void this.handle(req,res);});this.server.requestTimeout=10000;this.server.headersTimeout=10000;this.server.maxConnections=32;
  }
  async listen(port=3210){if(this.closed||this.listening)throw Error('Editor listener is not available');if(!Number.isInteger(port)||port<0||port>65535)throw Error('Invalid editor port');await new Promise<void>((resolve,reject)=>{this.server.once('error',reject);this.server.listen(port,'127.0.0.1',()=>{this.server.removeListener('error',reject);this.listening=true;resolve();});});this.host='127.0.0.1:'+(this.server.address() as AddressInfo).port;return 'http://'+this.host;}
@@ -37,7 +37,7 @@ export class EditorHttpServer {
    if(req.socket.remoteAddress!=='127.0.0.1'||req.headers.host!==this.host||req.headers['sec-fetch-site']==='cross-site')return this.send(res,403,{error:'Forbidden origin'});
    if(Date.now()-this.window>60000){this.window=Date.now();this.requests=0;}if(++this.requests>600)return this.send(res,429,{error:'Request rate exceeded'});
    const url=new URL(req.url??'/','http://'+this.host);
-   if(req.method==='GET'&&!url.pathname.startsWith('/api/')){const asset=this.assets.get(url.pathname);if(!asset)return this.send(res,404,{error:'Not found'});res.writeHead(200,{'Content-Type':asset.type});res.end(asset.body);return;}
+   if(req.method==='GET'&&!url.pathname.startsWith('/api/')){const asset=this.assets.get(url.pathname==='/npcs'&&this.npc?'/':url.pathname);if(!asset)return this.send(res,404,{error:'Not found'});res.writeHead(200,{'Content-Type':asset.type});res.end(asset.body);return;}
    if(req.method!=='POST'||req.headers.origin!=='http://'+this.host)return this.send(res,403,{error:'Forbidden method or origin'});
    const input=await this.body(req);
    if(url.pathname==='/api/login'){
@@ -48,6 +48,8 @@ export class EditorHttpServer {
    const principal=this.authority.verify(cookie,req.headers['x-fv-csrf']);
    if(url.pathname==='/api/logout'){this.authority.logout(cookie);res.setHeader('Set-Cookie','fv-editor=; HttpOnly; SameSite=Strict; Path=/api; Max-Age=0');return this.send(res,200,{ok:true});}
    const op=url.pathname.slice('/api/'.length);if(!url.pathname.startsWith('/api/'))throw Error('Unknown operation');
+   if(op.startsWith('npc/')){if(!this.npc)throw Error('NPC management disabled');return this.send(res,200,this.npc(op.slice(4),input,principal));}
+   if(!this.service)throw Error('Graph editing disabled on this listener');
    const result=op==='catalog'||op==='graph'||op==='references'?this.service.read(op,input):this.service.execute(op,input,principal.principal);this.send(res,200,result);
   }catch(error){const message=error instanceof Error?error.message:'Request failed';const status=/credentials|authorization|CSRF|login/.test(message)?401:/conflict/.test(message)?409:/rate/.test(message)?429:400;this.send(res,status,{error:message.slice(0,240)});}
  }

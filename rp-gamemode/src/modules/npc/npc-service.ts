@@ -1,4 +1,4 @@
-import {randomUUID} from 'node:crypto';
+import {randomUUID,createHash} from 'node:crypto';
 import {EconomyJournal} from '../economy/journal';
 import type {SkyMpAdapter, TransformLocation} from '../../engine/adapter';
 import type {ActorId} from '../../engine/ids';
@@ -87,6 +87,38 @@ export class NpcService {
  hints(){return [...npcHints,...(this.options.catalog?['templates',...this.options.catalog.list().map(t=>'create '+t.id)]:[]),...(this.options.development?['fixture create','fixture list','fixture cleanup']:[])];}
  stop(){this.ready=false;this.selections.clear();this.journal.close();}
  get isReady(){return this.ready;}
+ /** Isolated management uses the same registry and actor lifecycle, never a second store. */
+ private managementAccess(actor:ActorId,mutation=false){
+  if(!this.allowed(actor))throw Error('Admin authorization required');
+  this.adapter.sessionForActor(actor);
+  const dev=this.options.development;
+  if(!this.ready||!dev?.qualifiedIdentity||!dev.verifyIsolated()||!this.options.catalog)throw Error('NPC management requires the verified isolated development environment');
+  if(mutation&&(!dev.verifySession?.(actor)||!dev.canStream?.()))throw Error('Development identity unverified; use /npc identity');
+ }
+ managementSnapshot(actor:ActorId){
+  this.managementAccess(actor);
+  const npcs=this.definitions.map(d=>{this.verify(d);return {...structuredClone(d),policy:policyOf(d),revisionToken:this.managementRevision(d)};});
+  return {npcs,templates:this.options.catalog!.list(),identityReady:this.options.development!.verifySession?.(actor)===true};
+ }
+ private managementRevision(d:Definition){return createHash('sha256').update(JSON.stringify(d)).digest('hex');}
+ managementCreate(actor:ActorId,id:string,expected:TemplateAssignment,name:string){
+  this.managementAccess(actor,true);const dev=this.options.development!;
+  if(!dev.templates.includes(id)||id==='clerk')throw Error('Unknown/unapproved development template');
+  this.options.catalog!.resolve(id,expected);
+  if(typeof name!=='string'||!name.trim()||[...name].length>64||/[\x00-\x1f\x7f-\x9f]/.test(name))throw Error('Invalid NPC name');
+  const d=this.create(actor,id,undefined,undefined,name);this.log(`[rp-npc-management] actor=${actor.toString(16)} create=${d.id} template=${id}`);
+  return {id:d.id,status:'APPLIED_PENDING_RENDER_PROOF'};
+ }
+ managementRename(actor:ActorId,id:string,revision:string,name:string){
+  this.managementAccess(actor,true);const current=this.definitions.find(d=>d.id===id);
+  if(!current)throw Error('Unknown managed NPC');this.verify(current);
+  if(current.template==='clerk')throw Error('Original production Clerk is read-only in development management');
+  if(this.managementRevision(current)!==revision)throw Error('NPC revision conflict; refresh and review again');
+  if(current.deleted)throw Error('Deleted NPC is read-only');
+  const d={...structuredClone(current),name};
+  if(d.name!==current.name){d.revision=(d.revision??0)+1;this.save(this.definitions.map(v=>v.id===id?d:v));try{this.apply(d,current);}catch(e){this.ready=false;throw e;}}
+  this.log(`[rp-npc-management] actor=${actor.toString(16)} rename=${id}`);return {id,status:'APPLIED_PENDING_RENDER_PROOF'};
+ }
  permitsHit(aggressor:unknown,target:unknown):boolean {
   if(!Number.isSafeInteger(aggressor)||!Number.isSafeInteger(target))return false;
   for(const id of [aggressor,target]){const d=this.definitions.find(d=>d.formId===id);if(d){if(!this.ready||policyOf(d).combat==='PASSIVE_PROTECTED')return false;try{this.verify(d);}catch{return false;}}}
@@ -97,11 +129,11 @@ export class NpcService {
  private template(id:string,expected?:TemplateAssignment){if(id==='clerk'){if(expected)throw Error('Clerk cannot have an assignment');return {baseId:0x39f83,base:'39f83:Skyrim.esm',displayName:'Courier Guild Clerk'};}if(!this.options.catalog)throw Error('Template catalog disabled; install/approve test assets first');return this.options.catalog.resolve(id,expected);}
  private verify(d:Definition){const t=this.template(d.template,d.templateAssignment);if(d.formId===null||this.native.get(d.formId,TAG)!==d.id||this.native.get(d.formId,'baseDesc')!==t.base)throw Error('NPC native identity mismatch: '+d.id);}
  /** Expected revision prevents an obsolete admin selection editing a newer record. */
- private create(actor:ActorId,id:string,fixture?:Definition['fixture'],location?:TransformLocation){
+ private create(actor:ActorId,id:string,fixture?:Definition['fixture'],location?:TransformLocation,name?:string){
   if(id!=='clerk'&&this.options.development?.verifySession&&!this.options.development.verifySession(actor))throw Error('Development client identity not verified; use /npc identity');
   if(id!=='clerk'&&this.options.development?.qualifiedIdentity&&!/:(Skyrim|Update|Dawnguard|HearthFires|Dragonborn)\.esm$/i.test((location??this.adapter.fullLocation(actor)).cell))throw Error('Development fixture supports verified official cells/worlds only');
   const t=this.template(id);if(this.definitions.length>=64)throw Error('NPC limit reached (64 including deleted)');
-  const d:Definition={id:randomUUID(),template:id,name:t.displayName,location:upright(location??this.adapter.fullLocation(actor)),enabled:true,deleted:false,formId:null,appearanceProfile:null,equipmentProfile:null,dialogueProfile:null,...(id!=='clerk'?{templateAssignment:(t as {assignment:TemplateAssignment}).assignment,revision:1}:{}),...(fixture?{fixture}:{})};
+  const d:Definition={id:randomUUID(),template:id,name:name??t.displayName,location:upright(location??this.adapter.fullLocation(actor)),enabled:true,deleted:false,formId:null,appearanceProfile:null,equipmentProfile:null,dialogueProfile:null,...(id!=='clerk'?{templateAssignment:(t as {assignment:TemplateAssignment}).assignment,revision:1}:{}),...(fixture?{fixture}:{})};
   this.save([...this.definitions,d]);
   try{const form=this.native.place(t.baseId);if(!Number.isInteger(form)||form<0xff000000||form>0xffffffff)throw Error('Invalid spawned actor');this.native.setEnabled(form,false);this.native.set(form,TAG,d.id);d.formId=form;this.save(this.definitions.map(v=>v.id===d.id?d:v));this.apply(d);}catch(e){this.ready=false;throw e;}return d;
  }

@@ -1,10 +1,10 @@
 import {createHash} from 'node:crypto';
 
-export interface TemplateAssignment {catalogId:string;catalogVersion:number;catalogHash:string;base:string;assetManifestRevision:string;}
-export interface ApprovedTemplate {id:string;displayName:string;base:string;baseId:number;assignment:TemplateAssignment;details:{description:string;appearance:{race:string;sex:string;headParts:string[]};fixedOutfit:{form:string;items:string[]};weapon:{form:string;count:number}|null;requiredPlugin:string;requiredPluginSHA256:string};}
+import type {TemplateAssignment,TemplateMetadata,ApprovedTemplate} from './catalog-model';
+export type {TemplateAssignment,TemplateMetadata,ApprovedTemplate} from './catalog-model';
 export interface PluginFact {filename:string;sha256:string;masters:string[];light:boolean;}
 export interface ReviewedTombstone {form:string;type:'NPC_';flags:32;payloadSize:0;}
-export interface RecordFact {type:string;unique?:boolean;sex?:string;race?:string;headParts?:string[];outfit?:string;inventory?:{form:string;count:number}[];inherits?:boolean;unsafe?:boolean;items?:string[];slots?:number;}
+export interface RecordFact {type:string;editorId?:string;unique?:boolean;sex?:string;race?:string;headParts?:string[];outfit?:string;inventory?:{form:string;count:number}[];inherits?:boolean;unsafe?:boolean;items?:string[];slots?:number;}
 export interface CatalogEnvironment {plugins:PluginFact[];record(ref:string):RecordFact|undefined;verifyAsset(asset:{path:string;sha256:string;size:number}):void;verifyResourceClosure?(catalog:unknown):void;}
 const HASH=/^[a-f0-9]{64}$/,ID=/^[a-z][a-z0-9-]{0,47}$/,PLUGIN=/^[A-Za-z0-9][A-Za-z0-9 _.-]{0,90}\.(esm|esp)$/;
 const identifier=(v:unknown):v is string=>typeof v==='string'&&ID.test(v);
@@ -15,6 +15,7 @@ function canonical(v:any):string{if(Array.isArray(v))return '['+v.map(canonical)
 export function catalogHash(value:unknown){const v={...(value as any)};delete v.catalogHash;return createHash('sha256').update(canonical(v)).digest('hex');}
 export function qualified(value:any):{local:number;plugin:string}{if(typeof value!=='string')throw Error('Invalid qualified form');const m=/^([a-f0-9]{1,6}):(.+)$/i.exec(value);if(!m||!PLUGIN.test(m[2]!)||m[2]!.includes('..')||!parseInt(m[1]!,16)||parseInt(m[1]!,16).toString(16)!==m[1])throw Error('Invalid qualified form; light/transient forms unsupported');return {local:parseInt(m[1]!,16),plugin:m[2]!};}
 function same(a:unknown,b:unknown){return canonical(a)===canonical(b);}
+function recordLabel(record:RecordFact,fallback:string){return record.editorId?.replace(/^(Clothes|Armor)/,'').replace(/Race$/,'').replace(/([a-z])([A-Z])/g,'$1 $2').replace(/_/g,' ')||fallback;}
 /** Pure validation consumes file/native facts produced by the confined loader.
  * No appearance setters, equipment writes, network events or registry writes. */
 export function validateCatalog(raw:unknown,approvedHash:string,env:CatalogEnvironment):ApprovedTemplate[]{
@@ -35,7 +36,12 @@ export function validateCatalog(raw:unknown,approvedHash:string,env:CatalogEnvir
   const outfit=get(t.fixedOutfit.form,'OTFT');if(!t.fixedOutfit.items.length||!same(outfit.items,t.fixedOutfit.items)||new Set(t.fixedOutfit.items).size!==t.fixedOutfit.items.length)throw Error('Fixed outfit mismatch');let slots=0;for(const item of t.fixedOutfit.items){const r=get(item,'ARMO');if(!Number.isInteger(r.slots)||!r.slots||((slots&r.slots)!==0))throw Error('Invalid/conflicting armor slots');slots|=r.slots;}
   if(t.weapon!==null){object(t.weapon,'form,count');if(t.weapon.count!==1)throw Error('Invalid weapon count');get(t.weapon.form,'WEAP');}
   const hex=q.local.toString(16).padStart(8,'0');for(const file of [`Data/meshes/actors/character/FaceGenData/FaceGeom/${q.plugin}/${hex}.nif`,`Data/textures/actors/character/FaceGenData/FaceTint/${q.plugin}/${hex}.dds`])if(!assetPaths.has(file.toLowerCase()))throw Error('Missing matching FaceGen '+file);
-  const index=env.plugins.findIndex(p=>p.filename.toLowerCase()===q.plugin.toLowerCase());result.push({id:t.id,displayName:t.displayName,base:t.pluginQualifiedBaseId,baseId:index*0x1000000+q.local,assignment:{catalogId:c.catalogId,catalogVersion:c.catalogVersion,catalogHash:c.catalogHash,base:t.pluginQualifiedBaseId,assetManifestRevision:c.assetManifestRevision},details:{description:t.description,appearance:t.appearance,fixedOutfit:t.fixedOutfit,weapon:t.weapon,requiredPlugin:t.requiredPlugin,requiredPluginSHA256:plugins.get(q.plugin.toLowerCase())!.sha256}});
+  const index=env.plugins.findIndex(p=>p.filename.toLowerCase()===q.plugin.toLowerCase());
+  const metadata:TemplateMetadata={appearancePreset:t.id,raceLabel:recordLabel(get(t.appearance.race,'RACE'),t.appearance.race),sex:t.appearance.sex,category:'Authored fixed configuration',outfitLabel:t.fixedOutfit.items.map((form:string)=>recordLabel(get(form,'ARMO'),form)).join(' + '),
+   outfitItems:t.fixedOutfit.items.map((form:string)=>({form,label:recordLabel(get(form,'ARMO'),form),slots:get(form,'ARMO').slots!})),
+   faceGen:c.assets.filter((a:{path:string})=>a.path.toLowerCase().includes('/'+q.plugin.toLowerCase()+'/'+hex+'.')),
+   dependencies:c.plugins.map((p:PluginFact)=>({filename:p.filename,sha256:p.sha256})),approval:'DEVELOPMENT_ONLY',renderProof:'PENDING_RENDER_PROOF'};
+  result.push({id:t.id,displayName:t.displayName,base:t.pluginQualifiedBaseId,baseId:index*0x1000000+q.local,assignment:{catalogId:c.catalogId,catalogVersion:c.catalogVersion,catalogHash:c.catalogHash,base:t.pluginQualifiedBaseId,assetManifestRevision:c.assetManifestRevision},details:{description:t.description,appearance:t.appearance,fixedOutfit:t.fixedOutfit,weapon:t.weapon,requiredPlugin:t.requiredPlugin,requiredPluginSHA256:plugins.get(q.plugin.toLowerCase())!.sha256,metadata}});
  }
  // File pairs and record types alone cannot prove all NIF/headpart/ARMA/texture
  // dependencies. An independently verified authoring validator must supply this
