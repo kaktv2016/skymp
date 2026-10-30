@@ -10,7 +10,7 @@ function installNpcEditorAssets(root,assets){
  if(!prepared.some(a=>a.relative==='index.html'))throw Error('UI shell missing');
  const stage=path.join(root,'.npc-management-ui.stage-'+randomUUID());noLinks(root,stage);fs.mkdirSync(stage);fs.mkdirSync(path.join(stage,'assets'));
  for(const item of prepared){const target=path.join(stage,item.relative);noLinks(root,target);const fd=fs.openSync(target,'wx');try{fs.writeFileSync(fd,item.body);fs.fsyncSync(fd);}finally{fs.closeSync(fd);}}
- noLinks(root,destination);if(old){const current=stat(destination);if(!current||current.ino!==old.ino||current.dev!==old.dev)throw Error('UI destination changed during staging');fs.renameSync(destination,path.join(root,'.npc-management-ui.before-'+randomUUID()));}else if(stat(destination))throw Error('UI destination appeared during staging');
- fs.renameSync(stage,destination);return prepared.map(a=>'npc-management-ui/'+a.relative);
+ let displaced;noLinks(root,destination);if(old){const current=stat(destination);if(!current||current.ino!==old.ino||current.dev!==old.dev)throw Error('UI destination changed during staging');displaced=path.join(root,'.npc-management-ui.before-'+randomUUID());fs.renameSync(destination,displaced);}else if(stat(destination))throw Error('UI destination appeared during staging');
+ try{fs.renameSync(stage,destination);}catch(error){if(displaced&&!stat(destination)){try{noLinks(root,displaced);noLinks(root,destination);fs.renameSync(displaced,destination);}catch(restoreError){throw new AggregateError([error,restoreError],'UI swap failed; prior and staged directories retained for recovery');}}throw error;}return prepared.map(a=>'npc-management-ui/'+a.relative);
 }
 module.exports={installNpcEditorAssets};
