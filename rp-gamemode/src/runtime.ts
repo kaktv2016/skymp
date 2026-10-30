@@ -34,6 +34,8 @@ import {NpcManagementService} from './modules/npc/management-service';
 
 export interface RuntimeOptions { scheduler?: Scheduler; logger?: Logger; chat?: false | (Partial<ChatConfig> & { now?: () => number }); profile?:Partial<ProfileLimits>&{now?:()=>number}; dice?: Partial<DiceSettings> & { rng?: DiceRng }; courier?: CourierOptions; economy?:EconomyOptions;admin?:AdminOptions; npc?:{storageRoot:string;templateOptions?:NpcOptions;developmentIdentity?:{spec:DevelopmentIdentitySpec;verifyProfile:()=>boolean}}; blueprintEditor?:{storageRoot:string;assetsRoot:string;port?:number}; npcManagement?:{assetsRoot:string;port?:number;verifyIntegrity:()=>void;closeAssetLibrary?:()=>void;assetLibrary?:(op:string,input:unknown,principal:{actor:ReturnType<typeof actorId>;principal:string;identity:string},assertLive:()=>void)=>unknown}; }
 export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
+  let npcIdentityReady:(actor:number)=>boolean=()=>false;
+  let invalidateNpcIdentity:()=>void=()=>{};
   if(options.blueprintEditor&&(!options.npc||options.chat===false))throw Error('Blueprint editor requires NPC and chat modules');
   if(options.npcManagement&&(!options.npc?.developmentIdentity||!options.npc.templateOptions?.development?.qualifiedIdentity||options.chat===false||options.blueprintEditor))throw Error('NPC management requires a separate verified isolated development listener');
   const adapter = new SkyMpAdapter(rawMp);
@@ -94,8 +96,10 @@ export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
       const devIdentity=options.npc.developmentIdentity;
       if(devIdentity&&!options.npc.templateOptions?.development)throw Error('Identity handshake requires isolated NPC development options');
       const proof=devIdentity?new DevelopmentIdentity(devIdentity.spec,a=>{try{return devIdentity.verifyProfile()?admin.principal(actorId(a)):null;}catch{return null;}},a=>JSON.stringify(adapter.sessionForActor(actorId(a)))):undefined;
+      npcIdentityReady=actor=>proof?.ready(actor)??false;
       const templateOptions=proof?{...options.npc.templateOptions,development:{...options.npc.templateOptions!.development!,verifySession:(a:ReturnType<typeof actorId>)=>proof.ready(a),canStream:()=>proof.anyReady(),qualifiedIdentity:true}}:options.npc.templateOptions;
       const npc=new NpcService(rawMp as ConstructorParameters<typeof NpcService>[0],adapter,options.npc.storageRoot,actor=>admin.state(actor)!==null,logger.info,templateOptions);
+      invalidateNpcIdentity=()=>{proof?.clear();npc.syncDevelopmentVisibility();};
       let managementGrant:((actor:ReturnType<typeof actorId>)=>string)|undefined;
       // On a development restart, park restored custom actors synchronously
       // before asynchronous module boot can yield to login/network ticks.
@@ -125,11 +129,11 @@ export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
           scope.defer(events.register('_frostveilNpcIdentity',(sender,packet,...extra)=>{
             if(extra.length)return;try{
               const actor=actorId(sender),raw=packet as any;
-              if(raw?.op==='armed'){if(proof.arm(actor,raw.nonce)){npc.syncDevelopmentVisibility();logger.info('[g241d] mapper armed; isolated fixtures may stream');chat?.sendSystem(actor,'Development identity verified. /npc fixture create is available; visual acceptance pending.');}return;}
-              if(raw?.op==='mappingFault'){if(proof.ready(actor)){proof.clear();native.set(actor,'frostveilNpcIdentity',{op:'revoked'});npc.syncDevelopmentVisibility();logger.error('[g241d] runtime mapping fault; fixtures parked');}return;}
+              if(raw?.op==='armed'){if(proof.arm(actor,raw.nonce,raw.specHash)){npc.syncDevelopmentVisibility();logger.info('[g241d] mapper armed; isolated fixtures may stream');chat?.sendSystem(actor,'Development identity verified. /npc fixture create is available; visual acceptance pending.');}return;}
+              if(raw?.op==='mappingFault'){if(proof.fault(actor,raw.nonce,raw.specHash)){native.set(actor,'frostveilNpcIdentity',{op:'revoked'});npc.syncDevelopmentVisibility();logger.error('[g241d] runtime mapping fault; fixtures parked');}return;}
               if(raw?.op!=='proof')return;
               const ok=proof.receive(actor,raw);npc.syncDevelopmentVisibility();
-              if(ok){native.set(actor,'frostveilNpcIdentity',{op:'verified',nonce:raw.nonce,profileHash:devIdentity!.spec.profileHash,catalogHash:devIdentity!.spec.catalogHash});logger.info('[g241d] authorized runtime identity verified '+JSON.stringify({plugins:raw.plugins,bases:raw.bases}));}
+              if(ok){native.set(actor,'frostveilNpcIdentity',{op:'verified',nonce:raw.nonce,profileHash:devIdentity!.spec.profileHash,catalogHash:devIdentity!.spec.catalogHash,...(devIdentity!.spec.version===2?{specHash:devIdentity!.spec.specHash}:{})});logger.info('[g241d] authorized runtime identity verified '+JSON.stringify({plugins:raw.plugins,bases:raw.bases}));}
               else chat?.sendSystem(actor,'Development identity rejected; fixture spawning remains blocked.');
             }catch{logger.error('[g241d] rejected malformed identity event');}
           }));
@@ -197,6 +201,7 @@ export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
   }
   return {
     adapter, identity, commands, modules, events, chat, economy, admin,
+    npcIdentityReady:(actor:number)=>npcIdentityReady(actor),invalidateNpcIdentity:()=>invalidateNpcIdentity(),
     start: () => modules.boot(),
     stop: () => modules.shutdown(),
   };

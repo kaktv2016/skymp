@@ -4,7 +4,7 @@ const repo=path.resolve(import.meta.dirname,'../../..'),audit=path.join(repo,'bu
 const h=JSON.parse(await fs.readFile(path.join(repo,'build/rp-audit/g241d/owner-handoff.json'),'utf8'));
 const {root}=require('../../scripts/g241-dev.cjs').guard(h.isolatedRoot);require('./deployment.cjs').idle(root);
 require('../../scripts/g241d-runtime.cjs').activeProfile(root);
-const {validateRuntimeSeal}=await import(pathToFileURL(path.join(launcher,'scripts/npc-runtime-seal.mjs')).href);validateRuntimeSeal(h.artifacts);
+const {validateRuntimeSeal}=await import(pathToFileURL(path.join(launcher,'scripts/npc-runtime-seal.mjs')).href);validateRuntimeSeal(h.artifacts,h.runtimeSealVersion??1);
 const hash=async f=>createHash('sha256').update(await fs.readFile(f)).digest('hex');
 for(const a of h.artifacts)if(await hash(path.join(root,a.path))!==a.sha256)throw Error('Sealed isolated artifact differs: '+a.path);
 if(await hash(h.startScript)!==h.startScriptSHA256||await hash(h.serveScript)!==h.serveScriptSHA256)throw Error('Startup artifact differs');
