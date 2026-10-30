@@ -36,7 +36,7 @@ async function prepare(root){
 }
 function seal(root){requireIdlePorts();const {root:r}=rootConfig(root),file=path.join(audit,'owner-handoff.json'),h=JSON.parse(fs.readFileSync(file));
  const visit=(source,target)=>{for(const n of fs.readdirSync(source)){const a=path.join(source,n),b=path.join(target,n);if(fs.statSync(a).isDirectory())visit(a,b);else{fs.mkdirSync(path.dirname(b),{recursive:true});if(!fs.existsSync(b)||sha(fs.readFileSync(a))!==sha(fs.readFileSync(b)))fs.copyFileSync(a,b);}}};visit(path.join(repo,'rp-gamemode/.test-build'),path.join(r,'runtime'));
- for(const n of ['g241-bootstrap.cjs','g241d-runtime.cjs','g241d-resources.cjs'])fs.copyFileSync(path.join(__dirname,n),path.join(r,n));
+ for(const n of ['g241-bootstrap.cjs','g241d-runtime.cjs','g241d-resources.cjs']){if(n==='g241d-runtime.cjs')require(path.join(repo,'skymp5-server/node_modules/esbuild')).buildSync({entryPoints:[path.join(__dirname,n)],outfile:path.join(r,n),bundle:true,platform:'node',format:'cjs',external:['./g241d-resources.cjs','./g241b-resources.cjs','./g241b-nif-structure.cjs'],logLevel:'silent'});else fs.copyFileSync(path.join(__dirname,n),path.join(r,n));}
  // G2.4.2.1 local source build: native veto + opt-in bounded minidumps.
  // Rebuilding requires explicit review/update of this exact artifact pin.
  assert.equal(sha(fs.readFileSync(path.join(r,'scam_native.node'))),'e7a9da57df5f5ea32d94cdfd37a0dd15e1980117ca0b0ddc22f013904bef8855','Unverified native addon');

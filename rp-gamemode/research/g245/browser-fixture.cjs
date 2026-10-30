@@ -1,0 +1,11 @@
+'use strict';
+// Browser-only synthetic authority over a private copy of a real validated
+// snapshot. No native server/client/session or live catalog is involved.
+const fs=require('node:fs'),path=require('node:path'),{AssetLibrary,sha,canonical}=require('../../scripts/g245-assets.cjs');
+const repo=path.resolve(__dirname,'../../..'),audit=path.join(repo,'build/rp-audit/g245');
+const latest=fs.readdirSync(audit).filter(n=>n.startsWith('integration-')&&fs.existsSync(path.join(audit,n,'result.json'))).sort((a,b)=>fs.statSync(path.join(audit,a,'result.json')).mtimeMs-fs.statSync(path.join(audit,b,'result.json')).mtimeMs).at(-1);if(!latest)throw Error('Run the real-file integration first');
+const result=JSON.parse(fs.readFileSync(path.join(audit,latest,'result.json'))),sourceRoot=path.join(result.staged,'intake/snapshots',result.manifestId),manifest=JSON.parse(fs.readFileSync(path.join(sourceRoot,'manifest.json'))),id=sha(Buffer.from(canonical(manifest))),work=fs.mkdtempSync(path.join(audit,'browser-'));
+const library=new AssetLibrary({storageRoot:path.join(work,'intake'),sources:()=>[{id:'fixture',label:'Frostveil NPCTest · reviewed owned exports',plugin:'FrostveilNPCTest.esp',root:sourceRoot}],environment:()=>{throw Error('Private UI fixture uses the already validated immutable snapshot');},journalModule:require('../../.test-build/modules/economy/journal.js')});library.scan=()=>({id,manifest});
+const {EditorAuthority}=require('../../.test-build/modules/dialogue/editor-authority.js'),{EditorHttpServer,loadEditorAssets}=require('../../.test-build/modules/dialogue/editor-http.js');
+const authority=new EditorAuthority(()=>({principal:'browser-fixture-only',identity:'synthetic-not-a-real-game-session'}));const http=new EditorHttpServer(authority,undefined,loadEditorAssets(path.join(repo,'blueprint-editor/dist')),(op,input,p)=>op.startsWith('assets/')?library.execute(op.slice(7),input,p):{npcs:[],templates:[],identityReady:false,reassignment:{supported:false,reason:'Synthetic browser fixture'},weaponLoadout:{editable:false,reason:'No actor changes'}});
+http.listen(13211).then(url=>{fs.writeFileSync(path.join(audit,'browser-login.private.json'),JSON.stringify({grant:authority.issue(1)}));console.log(url+'/npc-assets');});process.on('SIGINT',()=>{void http.close().finally(()=>{library.close();process.exit(0);});});

@@ -37,7 +37,7 @@ export class EditorHttpServer {
    if(req.socket.remoteAddress!=='127.0.0.1'||req.headers.host!==this.host||req.headers['sec-fetch-site']==='cross-site')return this.send(res,403,{error:'Forbidden origin'});
    if(Date.now()-this.window>60000){this.window=Date.now();this.requests=0;}if(++this.requests>600)return this.send(res,429,{error:'Request rate exceeded'});
    const url=new URL(req.url??'/','http://'+this.host);
-   if(req.method==='GET'&&!url.pathname.startsWith('/api/')){const asset=this.assets.get(url.pathname==='/npcs'&&this.npc?'/':url.pathname);if(!asset)return this.send(res,404,{error:'Not found'});res.writeHead(200,{'Content-Type':asset.type});res.end(asset.body);return;}
+   if(req.method==='GET'&&!url.pathname.startsWith('/api/')){const asset=this.assets.get(['/npcs','/npc-assets'].includes(url.pathname)&&this.npc?'/':url.pathname);if(!asset)return this.send(res,404,{error:'Not found'});res.writeHead(200,{'Content-Type':asset.type});res.end(asset.body);return;}
    if(req.method!=='POST'||req.headers.origin!=='http://'+this.host)return this.send(res,403,{error:'Forbidden method or origin'});
    const input=await this.body(req);
    if(url.pathname==='/api/login'){

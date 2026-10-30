@@ -32,7 +32,7 @@ import {EditorAuthority} from './modules/dialogue/editor-authority';
 import {EditorHttpServer,loadEditorAssets} from './modules/dialogue/editor-http';
 import {NpcManagementService} from './modules/npc/management-service';
 
-export interface RuntimeOptions { scheduler?: Scheduler; logger?: Logger; chat?: false | (Partial<ChatConfig> & { now?: () => number }); profile?:Partial<ProfileLimits>&{now?:()=>number}; dice?: Partial<DiceSettings> & { rng?: DiceRng }; courier?: CourierOptions; economy?:EconomyOptions;admin?:AdminOptions; npc?:{storageRoot:string;templateOptions?:NpcOptions;developmentIdentity?:{spec:DevelopmentIdentitySpec;verifyProfile:()=>boolean}}; blueprintEditor?:{storageRoot:string;assetsRoot:string;port?:number}; npcManagement?:{assetsRoot:string;port?:number;verifyIntegrity:()=>void}; }
+export interface RuntimeOptions { scheduler?: Scheduler; logger?: Logger; chat?: false | (Partial<ChatConfig> & { now?: () => number }); profile?:Partial<ProfileLimits>&{now?:()=>number}; dice?: Partial<DiceSettings> & { rng?: DiceRng }; courier?: CourierOptions; economy?:EconomyOptions;admin?:AdminOptions; npc?:{storageRoot:string;templateOptions?:NpcOptions;developmentIdentity?:{spec:DevelopmentIdentitySpec;verifyProfile:()=>boolean}}; blueprintEditor?:{storageRoot:string;assetsRoot:string;port?:number}; npcManagement?:{assetsRoot:string;port?:number;verifyIntegrity:()=>void;closeAssetLibrary?:()=>void;assetLibrary?:(op:string,input:unknown,principal:{actor:ReturnType<typeof actorId>;principal:string;identity:string},assertLive:()=>void)=>unknown}; }
 export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
   if(options.blueprintEditor&&(!options.npc||options.chat===false))throw Error('Blueprint editor requires NPC and chat modules');
   if(options.npcManagement&&(!options.npc?.developmentIdentity||!options.npc.templateOptions?.development?.qualifiedIdentity||options.chat===false||options.blueprintEditor))throw Error('NPC management requires a separate verified isolated development listener');
@@ -172,8 +172,8 @@ export function createRuntime(rawMp: unknown, options: RuntimeOptions = {}) {
           if(!options.admin?.authorize)throw Error('NPC management requires verified admin authority');
           const authority=new EditorAuthority(actor=>{const principal=admin.principal(actor);if(!principal)return null;return {principal,identity:JSON.stringify(adapter.sessionForActor(actor))};});
           const management=new NpcManagementService(npc,adapter,options.npcManagement.verifyIntegrity,id=>{const g=blueprints?.forNpc(id)??graph;return {id:g.id,version:g.version};});
-          const http=new EditorHttpServer(authority,undefined,loadEditorAssets(options.npcManagement.assetsRoot),(op,input,p)=>management.execute(op,input,p));
-          scope.defer(()=>{managementGrant=undefined;management.clear();return http.close();});
+          const http=new EditorHttpServer(authority,undefined,loadEditorAssets(options.npcManagement.assetsRoot),(op,input,p)=>op.startsWith('assets/')&&options.npcManagement?.assetLibrary?options.npcManagement.assetLibrary(op.slice(7),input,p,()=>{if(admin.principal(p.actor)!==p.principal||JSON.stringify(adapter.sessionForActor(p.actor))!==p.identity)throw Error('Asset authorization expired');}):management.execute(op,input,p));
+          scope.defer(()=>{managementGrant=undefined;management.clear();options.npcManagement?.closeAssetLibrary?.();return http.close();});
           const url=await http.listen(options.npcManagement.port??13210);
           managementGrant=actor=>`NPC Management: ${url}/npcs\nOne-time login grant (valid 60 seconds): ${authority.issue(actor)}`;
           logger.info(`[rp-npc-management] isolated loopback listener ${url}/npcs`);

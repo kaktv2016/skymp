@@ -1,12 +1,14 @@
 import React,{useEffect,useRef,useState} from 'react';
 import type {ApprovedTemplate} from '../../rp-gamemode/src/modules/npc/catalog-model';
 import './npc-management.css';
+import {AssetLibraryPanel} from './npc-assets';
 
 type Template=Omit<ApprovedTemplate,'baseId'|'base'>&{configurationId:string;availability:string};
 interface ManagedNpc {id:string;template:string;name:string;revisionToken:string;enabled:boolean;deleted:boolean;location:{cell:string;pos:number[];rot:number[]};policy:{movement:string;combat:string};dialogue:{id:string;version:number}|null;}
 interface Snapshot {npcs:ManagedNpc[];templates:Template[];identityReady:boolean;reassignment:{supported:boolean;reason:string};weaponLoadout:{editable:boolean;reason:string};}
 interface Review {token:string;expires:number;notice:string;after:unknown;}
 export function NpcManagementApp(){
+ const [assetsOpen,setAssetsOpen]=useState(location.pathname==='/npc-assets');
  useEffect(()=>{document.title='Frostveil · NPC Management';},[]);
  const [csrf,setCsrf]=useState(''),[grant,setGrant]=useState(''),[snapshot,setSnapshot]=useState<Snapshot>(),[selected,setSelected]=useState<string|null>(null),[templateId,setTemplateId]=useState(''),[name,setName]=useState('');
  const [query,setQuery]=useState(''),[race,setRace]=useState(''),[sex,setSex]=useState(''),[category,setCategory]=useState(''),[availability,setAvailability]=useState('');
@@ -25,6 +27,7 @@ export function NpcManagementApp(){
  return <div className="npc-studio">
   <header className="npc-header"><div><span className="npc-kicker">FROSTVEIL · DEVELOPMENT STUDIO</span><h1>NPC Appearance & Equipment</h1><p>จัดการตัวละครจากแค็ตตาล็อกที่ตรวจสอบแล้ว</p></div><span className="npc-badge">ISOLATED · LOCAL ONLY</span></header>
   {error&&<div role="alert" className="npc-error">{error}</div>}{message&&<div role="status" className="npc-success">{message}</div>}
+  {csrf&&snapshot&&<details open={assetsOpen} onToggle={e=>setAssetsOpen(e.currentTarget.open)}><summary>Asset Library · นำเข้าและอนุมัติ NPC assets</summary>{assetsOpen&&<AssetLibraryPanel request={request}/>}</details>}
   {!csrf?<main className="npc-login"><span className="npc-kicker">AUTHORIZED ADMIN ACCESS</span><h2>เชื่อมต่อ session ในเกม</h2><p>เข้าเซิร์ฟเวอร์ทดสอบ ขอสิทธิ์ owner แล้วใช้ <code>/npc identity</code> และ <code>/npc manage</code></p><form onSubmit={e=>{e.preventDefault();void task(async()=>{const auth=await request('login',{grant},'');setGrant('');setCsrf(auth.csrf);await refresh(auth.csrf);});}}><label>รหัสจาก /npc manage<input type="password" autoComplete="off" value={grant} onChange={e=>setGrant(e.target.value)} required maxLength={64}/></label><button disabled={busy}>เข้าสู่ระบบ</button></form><p className="npc-muted">รหัสใช้ได้ครั้งเดียว · สิทธิ์หมดเมื่อ session หรือสิทธิ์แอดมินสิ้นสุด</p></main>:<>
   <div className="npc-toolbar"><span className={snapshot?.identityReady?'npc-ready':'npc-pending'}>{snapshot?.identityReady?'● Identity verified · mapper armed':'● IDENTITY_UNVERIFIED — ใช้ /npc identity ในเกม'}</span><div><button disabled={busy} onClick={()=>void task(()=>refresh())}>รีเฟรช</button><button disabled={busy} onClick={()=>void task(async()=>{await request('logout',{});setCsrf('');setSnapshot(undefined);setReview(undefined);})}>ออกจากระบบ</button></div></div>
   <main className="npc-workspace">

@@ -18,6 +18,16 @@ export function ownedPluginRecords(data:Buffer,reviewed:readonly ReviewedTombsto
  walk(24+data.readUInt32LE(4),data.length,0);if(consumed.size!==reviewedIds.size)throw Error('Reviewed tombstone absent from binary');return records;
 }
 export function pluginFacts(files:string[]):PluginFact[]{if(files.length>254)throw Error('Unsupported load order');return files.map(file=>{noLinks(file);const fd=fs.openSync(file,'r');try{const hash=createHash('sha256'),chunk=Buffer.alloc(1024*1024);let n;while((n=fs.readSync(fd,chunk,0,chunk.length,null)))hash.update(chunk.subarray(0,n));const head=Buffer.alloc(24);if(fs.readSync(fd,head,0,24,0)!==24)throw Error('Truncated plugin');const length=head.readUInt32LE(4);if(length>1024*1024)throw Error('Plugin header exceeds bound');const data=Buffer.alloc(24+length);if(fs.readSync(fd,data,0,data.length,0)!==data.length)throw Error('Truncated header');return {filename:path.basename(file),sha256:hash.digest('hex'),...pluginHeader(data)};}finally{fs.closeSync(fd);}});}
+/** Reuses the exact owned-record gate. Optional bounded decompression is
+ * supplied by the local importer, never by game/UI input. */
+export function authoredPluginRecords(data:Buffer,reviewed:readonly ReviewedTombstone[]=[],pluginName?:string,decompress?:(bytes:Buffer,size:number)=>Buffer){
+ const identities=ownedPluginRecords(data,reviewed,pluginName),records:{id:number;type:string;flags:number;fields:{type:string;data:Buffer}[]}[]=[];
+ const walk=(start:number,end:number)=>{for(let p=start;p<end;){const type=data.toString('ascii',p,p+4),size=data.readUInt32LE(p+4),next=p+(type==='GRUP'?size:24+size);if(type==='GRUP')walk(p+24,next);else if(identities.has(data.readUInt32LE(p+12)&0xffffff)){
+  const flags=data.readUInt32LE(p+8);let payload=data.subarray(p+24,next);if(flags&0x40000){if(payload.length<4||!decompress)throw Error('Compressed record requires bounded decompression');const expected=payload.readUInt32LE(0);if(!expected||expected>1024*1024)throw Error('Decompressed record bound');payload=decompress(payload.subarray(4),expected);if(payload.length!==expected)throw Error('Decompressed record size mismatch');}const fields:{type:string;data:Buffer}[]=[];
+  for(let k=0;k<payload.length;){if(k+6>payload.length)throw Error('Truncated authored field');const name=payload.toString('ascii',k,k+4),length=payload.readUInt16LE(k+4);k+=6;if(name==='XXXX'||k+length>payload.length||fields.length>=512)throw Error('Unsupported or malformed authored field');fields.push({type:name,data:payload.subarray(k,k+length)});k+=length;}
+  records.push({id:data.readUInt32LE(p+12),type,flags,fields});
+ }p=next;}};walk(24+data.readUInt32LE(4),data.length);return records;
+}
 /** Native field adapter re-resolves all IDs synchronously; no Skyrim wrappers. */
 export function nativeRecordReader(native:CatalogNative,plugins:PluginFact[]){
  const refOf=(id:number)=>{const p=plugins[id>>>24];if(!p||id>>>24>=254)throw Error('Unsupported resolved form');return (id&0xffffff).toString(16)+':'+p.filename;};

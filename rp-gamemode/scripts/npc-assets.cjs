@@ -1,0 +1,24 @@
+'use strict';
+// Owner-operated local root registration, never client activation or approval.
+const fs=require('node:fs'),path=require('node:path'),a=require('node:assert/strict');
+const {readConfined,canonical,sha,noLinks}=require('./g245-assets.cjs');
+function chooseFolder(){
+ a.equal(process.platform,'win32','Native folder selection requires Windows; pass a reviewed source path otherwise');
+ const shell=path.join(process.env.SystemRoot,'System32/WindowsPowerShell/v1.0/powershell.exe'),code="Add-Type -AssemblyName System.Windows.Forms; $picker=New-Object System.Windows.Forms.FolderBrowserDialog; $picker.Description='Select reviewed NPC source containing Data (no installation or activation)'; if($picker.ShowDialog() -eq 'OK'){[Console]::Out.Write([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($picker.SelectedPath)))}; $picker.Dispose()";
+ const run=require('node:child_process').spawnSync(shell,['-NoProfile','-STA','-Command',code],{encoding:'utf8',windowsHide:true});a.equal(run.status,0,'Local folder selection failed');const value=run.stdout.trim();return value?Buffer.from(value,'base64').toString('utf8'):null;
+}
+function registrationLock(root,action){
+ noLinks(root);const file=path.join(root,'asset-sources.lock');let fd;try{fd=fs.openSync(file,'wx',0o600);}catch(e){if(e.code==='EEXIST')throw Error('Source registration already active or interrupted; inspect the retained local lock before retrying');throw e;}const own=fs.fstatSync(fd);
+ try{fs.writeFileSync(fd,JSON.stringify({pid:process.pid,scope:'local-source-registration'}));fs.fsyncSync(fd);return action();}finally{fs.closeSync(fd);const current=fs.lstatSync(file);a.ok(!current.isSymbolicLink()&&current.ino===own.ino&&current.dev===own.dev&&current.nlink===1,'Source registration lock changed; preserved');fs.unlinkSync(file);}
+}
+function register(root,sourceRoot,plugin,confirmed){a.equal(confirmed,true,'Explicit local-source review required');const {root:target}=require('./g241-dev.cjs').guard(root);return registrationLock(target,()=>registerCore(target,sourceRoot,plugin,confirmed));}
+function registerCore(root,sourceRoot,plugin,confirmed){
+ a.equal(confirmed,true,'Pass --review-local-source after reviewing this local source');
+ const {root:target}=require('./g241-dev.cjs').guard(root);noLinks(path.resolve(sourceRoot));const source=fs.realpathSync(sourceRoot),data=path.join(source,'Data');a.ok(fs.statSync(data).isDirectory(),'Source must contain a Data directory');
+ const files=fs.readdirSync(data).filter(n=>/\.(esp|esm|esl)$/i.test(n));a.ok(files.length>0&&files.length<=64,'Source plugin bound');if(!plugin){a.equal(files.length,1,'Choose one listed plugin: '+files.join(', '));plugin=files[0];}a.ok(files.includes(plugin),'Plugin must be an immediate source Data file');readConfined(source,'Data/'+plugin,16*1024*1024);
+ const id='source-'+sha(Buffer.from(source+'\0'+plugin)).slice(0,16),file=path.join(target,'asset-sources.json'),old=fs.existsSync(file)?JSON.parse(readConfined(target,'asset-sources.json',65536)):[];a.ok(Array.isArray(old)&&old.length<8,'Reviewed source capacity');if(old.some(s=>s.id===id))return {id,alreadyReviewed:true};
+ const value=[...old,{id,label:plugin+' — local reviewed source',root:source,plugin,...(fs.existsSync(path.join(source,'previews/owner.png'))?{preview:'previews/owner.png'}:{}),ownedResources:[],reviewedTombstones:[],provenance:{author:'Unknown — review before approval',source:'Owner-selected local source',version:'Unspecified',permission:'Local inspection; owner review required',redistribution:'UNKNOWN',attribution:'Unspecified'}}];
+ const temp=path.join(target,'.asset-sources-'+process.pid+'.json'),fd=fs.openSync(temp,'wx');try{fs.writeFileSync(fd,canonical(value));fs.fsyncSync(fd);}finally{fs.closeSync(fd);}if(fs.existsSync(file)){a.equal(canonical(JSON.parse(readConfined(target,'asset-sources.json',65536))),canonical(old),'Source registration conflict');const backup=path.join(target,'asset-sources-before-'+Date.now()+'.json');fs.copyFileSync(file,backup,fs.constants.COPYFILE_EXCL);}fs.renameSync(temp,file);return {id,registered:true,activation:false,approval:false};
+}
+if(require.main===module){const [command,source,pluginOrFlag,flag]=process.argv.slice(2);a.equal(command,'register','Usage: node npc-assets.cjs register <source-with-Data|--choose-folder> [plugin.esp] --review-local-source');a.ok(flag==='--review-local-source'||pluginOrFlag==='--review-local-source','Explicit local-source review required before selecting a folder');const chosen=source==='--choose-folder'?chooseFolder():source;if(!chosen){console.log(JSON.stringify({cancelled:true}));}else{const h=JSON.parse(fs.readFileSync(path.resolve(__dirname,'../../build/rp-audit/g241d/owner-handoff.json')));console.log(JSON.stringify(register(h.isolatedRoot,chosen,pluginOrFlag==='--review-local-source'?undefined:pluginOrFlag,true)));}}
+module.exports={register,chooseFolder,registrationLock};

@@ -13,3 +13,12 @@ test('NPC loopback routes reuse single-use login, origin, session revocation and
  const review=await (await post('npc/review',f.input(),headers)).json();a.ok(review.token);a.equal((await post('npc/apply',{token:review.token},headers)).status,200);a.equal(f.count(),1);a.equal((await post('npc/apply',{token:review.token},headers)).status,400);
  a.equal((await post('draft',{},headers)).status,400);allowed=false;a.equal((await post('npc/snapshot',{},headers)).status,401);
 });
+
+test('asset intake uses the same live admin session, CSRF and origin gates without exposing filesystem paths',async t=>{
+ let live=true,calls=0;const auth=new EditorAuthority(()=>live?{principal:'owner',identity:'verified-session'}:null);
+ const http=new EditorHttpServer(auth,undefined,new Map([['/',{body:Buffer.from('Asset shell'),type:'text/html'}]]),(op,input,p)=>{a.equal(op,'assets/list');a.equal(p.principal,'owner');a.deepEqual(input,{});calls++;return {sources:[{id:'reviewed',label:'Reviewed source'}]};});const base=await http.listen(0);t.after(()=>http.close());
+ const post=(input={},headers={})=>fetch(base+'/api/npc/assets/list',{method:'POST',headers:{origin:base,'content-type':'application/json',...headers},body:JSON.stringify(input)});
+ a.equal((await fetch(base+'/npc-assets')).status,200);a.equal((await post()).status,401);a.equal(calls,0);
+ const login=await fetch(base+'/api/login',{method:'POST',headers:{origin:base,'content-type':'application/json'},body:JSON.stringify({grant:auth.issue(1)})}),data=await login.json(),cookie=login.headers.get('set-cookie').split(';')[0],headers={cookie,'x-fv-csrf':data.csrf};
+ a.equal((await post({},headers)).status,200);a.equal(calls,1);a.equal((await post({},{...headers,origin:'http://evil.test'})).status,403);a.equal((await post({},{cookie,'x-fv-csrf':'0'.repeat(64)})).status,401);live=false;a.equal((await post({},headers)).status,401);a.equal(calls,1);
+});
