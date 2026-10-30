@@ -49,6 +49,21 @@ export function mapDevelopmentModels(models:any[],proof:any,spec:DevelopmentIden
    models[i]=undefined;ok=false;continue;
   }
   if(model.baseId!==resolved.runtimeId){model.baseId=resolved.runtimeId;changed++;}
+  // This owner pass runs before FormView.applyAll. Correct the actual input to
+  // stock movement, rather than letting it start walking and fighting it later.
+  const pose=model.frostveilNpcPose;
+  if(pose?.policy?.movement==='STATIONARY'){
+   const cell=typeof pose.cell==='string'?/^([a-f0-9]{1,6}):((?:Skyrim|Update|Dawnguard|HearthFires|Dragonborn)\.esm)$/i.exec(pose.cell):null;
+   const plugin=cell&&proof.plugins?.find((p:any)=>p.filename.toLowerCase()===cell[2]!.toLowerCase());
+   if(pose.policy.version!==1||!cell||!plugin||!Number.isInteger(plugin.index)||plugin.index<0||plugin.index>=5||!parseInt(cell[1]!,16)||![pose.pos,pose.rot].every(a=>Array.isArray(a)&&a.length===3&&a.every((v:any)=>typeof v==='number'&&Number.isFinite(v)&&Math.abs(v)<1e7))){models[i]=undefined;ok=false;continue;}
+   const movement=model.movement,world=plugin.index*0x1000000+parseInt(cell[1]!,16);
+   if(movement&&(movement.runMode!=='Standing'||movement.speed!==0||movement.direction!==0||movement.isInJumpState!==false||movement.lookAt!==undefined||movement.worldOrCell!==world||!Array.isArray(movement.pos)||!Array.isArray(movement.rot)||pose.pos.some((v:number,i:number)=>v!==movement.pos[i])||pose.rot.some((v:number,i:number)=>v!==movement.rot[i]))){
+    Object.assign(movement,{pos:pose.pos.slice(),rot:pose.rot.slice(),worldOrCell:world,runMode:'Standing',speed:0,direction:0,isInJumpState:false,lookAt:undefined});
+    // FormView gates stock movement on this local change counter. Advance only
+    // when projection changes input, never once per stable frame.
+    model.numMovementChanges=(Number.isSafeInteger(model.numMovementChanges)&&model.numMovementChanges>=0&&model.numMovementChanges<Number.MAX_SAFE_INTEGER?model.numMovementChanges:0)+1;
+   }
+  }
  }
  return {ok,changed};
 }

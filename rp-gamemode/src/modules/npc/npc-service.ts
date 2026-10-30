@@ -44,22 +44,24 @@ function updateNpcPose(ctx:any){
  if(freshPose){actor.enableAI(true);actor.setDontMove(true);ctx.state.npcPoseActor=id;}
  actor.clearKeepOffsetFromActor();
  const movement=ctx._model.movement;
- const staleLocomotion=typeof movement?.runMode==='string'&&movement.runMode!=='Standing';
  if(movement){Object.assign(movement,{pos:p.pos.slice(),rot:p.rot.slice(),worldOrCell:worldId,runMode:'Standing',direction:0,speed:0,isInJumpState:false,lookAt:undefined});}
- // Standing in the network model does not clear the loaded behavior graph.
- // MovementGet reads SpeedSampled, so a stale walk can otherwise feed back to
- // the host forever while SetDontMove keeps the actor at its anchor.
- if(ctx.state.npcLocomotionErrorActor!==id)try{
-  const dirty=['SpeedSampled','Speed','SpeedDamped','Direction'].filter(name=>{const v=r.getAnimationVariableFloat(name);return Number.isFinite(v)&&Math.abs(v)>0.01;});
-  if(freshPose||staleLocomotion||dirty.length){
-   r.stopTranslation();
-   for(const name of dirty)r.setAnimationVariableFloat(name,0);
-   if(dirty.length&&ctx.state.npcLocomotionLoggedActor!==id){ctx.state.npcLocomotionLoggedActor=id;if(typeof sp.printConsole==='function')sp.printConsole('[Frostveil NPC] cleared stationary locomotion ref='+id+' variables='+dirty.join(','));}
-  }
- }catch(error){ctx.state.npcLocomotionErrorActor=id;if(typeof sp.printConsole==='function')sp.printConsole('[Frostveil NPC] locomotion native call failed ref='+id+': '+String(error));}
+ // Cancel old translation only for a new native reference or explicit anchor
+ // revision. Never clamp live animation floats: the engine owns its blending.
+ const anchor=p.cell+'|'+p.pos.join(',')+'|'+p.rot.join(',');
+ if(freshPose||ctx.state.npcTranslationAnchor!==anchor){ctx.state.npcTranslationAnchor=anchor;try{r.stopTranslation();}catch(error){if(typeof sp.printConsole==='function')sp.printConsole('[Frostveil NPC] stopTranslation failed ref='+id+': '+String(error));}}
  const yaw=Math.abs(((r.getAngleZ()-p.rot[2]+540)%360)-180);
- if(Math.hypot(r.getPositionX()-p.pos[0],r.getPositionY()-p.pos[1])>2||Math.abs(r.getPositionZ()-p.pos[2])>64||yaw>1||Math.abs(r.getAngleX())>1||Math.abs(r.getAngleY())>1){
+ const actual=[r.getPositionX(),r.getPositionY(),r.getPositionZ()],horizontal=Math.hypot(actual[0]-p.pos[0],actual[1]-p.pos[1]),vertical=Math.abs(actual[2]-p.pos[2]),pitch=Math.abs(r.getAngleX()),roll=Math.abs(r.getAngleY());
+ const corrected=horizontal>2||vertical>64||yaw>1||pitch>1||roll>1;
+ if(corrected){
+  ctx.state.npcPoseCorrections=(ctx.state.npcPoseCorrections??0)+1;
   sp.TESModPlatform.moveRefrToPosition(r,cell,world,p.pos[0],p.pos[1],p.pos[2],0,0,p.rot[2]*Math.PI/180);
+ }
+ // Bounded read-only measurements for the isolated owner test; no event/console
+ // interface and no native wrappers retained between updates.
+ const settings=sp.settings?.['skymp5-client'];
+ if(settings?.['server-ip']==='127.0.0.1'&&settings?.['server-port']===17777&&typeof sp.writeLogs==='function'){
+  if(freshPose||ctx.state.npcPoseDiagnosticAnchor!==anchor){ctx.state.npcPoseDiagnosticAnchor=anchor;ctx.state.npcPoseDiagnosticCount=0;ctx.state.npcPoseDiagnosticNext=0;}
+  const now=Date.now();if(ctx.state.npcPoseDiagnosticCount<20&&now>=ctx.state.npcPoseDiagnosticNext){ctx.state.npcPoseDiagnosticCount++;ctx.state.npcPoseDiagnosticNext=now+500;try{sp.writeLogs('rpNpcPose',JSON.stringify({ref:id,target:p.pos,actual,horizontal,vertical,yaw,pitch,roll,corrected,corrections:ctx.state.npcPoseCorrections??0,hostedByOther:ctx._model.isHostedByOther===true,speed:r.getAnimationVariableFloat('SpeedSampled'),damped:r.getAnimationVariableFloat('SpeedDamped'),moveState:r.getAnimationVariableBool('bInMoveState')}));}catch{}}
  }
 }
 function upright(location:TransformLocation):TransformLocation{return {...location,rot:[0,0,((location.rot[2]%360)+360)%360]};}
