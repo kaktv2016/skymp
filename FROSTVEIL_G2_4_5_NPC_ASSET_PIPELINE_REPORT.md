@@ -96,7 +96,7 @@ node "C:\Users\basba\OneDrive\Desktop\skyrim-rp\skymp\rp-gamemode\scripts\npc-as
 
 Select the reviewed source folder. For multiple plugins, rerun with the displayed plugin filename before the review flag. A reviewed root path may be supplied instead of `--choose-folder`; the dialog is owner-operated and cancellation writes nothing. Registration does not approve, activate or install anything. In Asset Library select the new source, record provenance, scan, inspect, stage and explicitly approve. New identities remain not spawn-enabled until deliberate client/server plugin activation, exact master/file hashes, qualified FormID/mapper and rendering proofs pass. Do not add a dummy NPC merely to test the importer. After those separate gates permit creation, use the unchanged NPC Management creation workflow and test appearance/equipment, streaming, reconnect and restart.
 
-**C — existing preservation:** all three registry records/UUIDs/dialogue/protection must remain. No import auto-spawn is allowed. Real owner acceptance is pending; automated fixture actors are not multiplayer evidence.
+**C — existing preservation:** all three registry records/UUIDs/dialogue/protection must remain. No import auto-spawn is allowed. Owner confirmed the existing-NPC preservation test passed on2026-10-31; this is single-client acceptance, not multiplayer evidence.
 
 ## Status and remaining limitations
 
@@ -112,17 +112,23 @@ Select the reviewed source folder. For multiple plugins, rerun with the displaye
 | DETERMINISTIC_STAGING | PASS | immutable snapshot and tamper/conflict bounds tested |
 | LICENSE_PROVENANCE | PARTIAL | authenticated operator ledger/local attestation; public rights/trust not established |
 | CATALOG_APPROVAL | PASS | immutable development intake only, not spawning-catalog promotion |
-| ADMIN_ASSET_UI | PASS | automated/browser fixture; real owner session acceptance pending |
+| ADMIN_ASSET_UI | PASS | automated/browser fixture plus owner scan/stage/approval and fresh-login history confirmation |
 | NEW_TEMPLATE_RUNTIME_IDENTITY | BLOCKED | current two-base proof unchanged; no new owner asset/profile proof |
 | NEW_TEMPLATE_RENDERING | PENDING_OWNER_ASSET | no new authored asset provided or invented |
-| EXISTING_NPC_PRESERVATION | PARTIAL | protected registry/dialogue hashes and three UUIDs preserved; owner post-deploy game acceptance pending |
+| EXISTING_NPC_PRESERVATION | PASS | protected registry/dialogue hashes and three UUIDs preserved; owner confirmed existing-NPC game checks passed2026-10-31 |
 | ANCHOR_AND_COMBAT | PARTIAL | untouched protection/dialogue baseline; slope bug explicitly DEFERRED |
 | ISOLATED_DEPLOYMENT | PASS | verified existing isolated server,30 seals, health and actual served UI bytes; no production/client change |
 | NATIVE_CRASH | BLOCKED | old0xC0000005 cause unresolved; diagnostics retained |
-| SINGLE_CLIENT_ACCEPTANCE | PENDING_OWNER | no automated owner/Skyrim acceptance claimed |
+| SINGLE_CLIENT_ACCEPTANCE | PASS | owner confirmed existing-asset intake/history and existing-NPC preservation; new authored rendering excluded |
 | MULTIPLAYER_ACCEPTANCE | DEFERRED | no G2.4.3 or capacity certification |
 
 No G2.4.6, dynamic Base/outfit switching or production promotion.
+
+### Owner acceptance —2026-10-31
+
+Owner screenshots show the same approval history after a fresh login: DISCOVERED_VALIDATED revision1, STAGED revision2 and APPROVED_DEV_RENDER_PENDING revision3, with RENDER_PENDING / NOT_HOT_LOADED retained. Evidence: `codex-clipboard-4f2ca57f-a29c-4d7b-8a33-4e07ef8f78e9.png` and `codex-clipboard-dfb0c348-44ec-45cd-b907-44e44b172f22.png` supplied in this conversation. Owner explicitly stated test2 passed: the requested Clerk/Warrior/HomHom preservation checks (original appearance/outfits, no duplicates, E dialogue and Rename/Move/Rotate). These are owner-reported in-game results, not automated rendering proof. Fresh-login persistence is confirmed; this owner test does not itself prove a new server-restart cycle.
+
+The existing-source G2.4.5 acceptance scope is complete. RENDER_TEST_REQUIRED/FACEGEN_RENDER and REVIEWED_INERT_TOMBSTONES remain accurately classified; cleared acknowledgement boxes after login do not undo recorded approval. New authored NPC rendering/identity, arbitrary dependency closure, public distribution, multiplayer, deferred slope behavior and the unresolved native crash retain their separate statuses above. No code, deployment, game data or server restart was needed to record acceptance.
 
 ## Deployment, diagnostics and rollback evidence
 
