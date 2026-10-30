@@ -5,7 +5,10 @@ async function verify(){const receipt=JSON.parse(fs.readFileSync(path.join(audit
  const now=protectedState(root);a.deepEqual(now.production,before.protected.production,'Production data/config changed');
  const journals=rows=>rows.filter(f=>f.path.endsWith('journal.jsonl'));a.deepEqual(journals(now.isolated),journals(before.protected.isolated),'NPC/dialogue definitions changed');
  const changedWorld=now.isolated.filter(f=>before.protected.isolated.find(v=>v.path===f.path)?.sha256!==f.sha256).map(v=>v.path);
- const parkedNPCs=changedWorld.map(file=>{const n=JSON.parse(fs.readFileSync(path.join(path.dirname(repo),file)));const id=n.dynamicFields?.['private.frostveil.npc'];a.ok(['c7ee4c2b-81bf-4e2a-86e3-c1aa5b599421','c780497d-41e1-451c-82f7-a96093c13988'].includes(id),'Unexpected nonfixture data changed');a.equal(n.isDisabled,true,'Restored development NPC must wait for mapper proof');return id;});
+ // Read-only diagnostic: native startup already validates the full registry chain.
+ // Include owner-created managed NPCs instead of assuming only the original pair.
+ const lines=fs.readFileSync(path.join(root,'npc-registry','7'.repeat(64),'journal.jsonl'),'utf8').trimEnd().split('\n'),record=JSON.parse(lines.at(-1));a.equal(createHash('sha256').update(record.body).digest('hex'),record.hash);const ids=JSON.parse(record.body).state.map(n=>n.id);
+ const parkedNPCs=changedWorld.map(file=>{const n=JSON.parse(fs.readFileSync(path.join(path.dirname(repo),file)));const id=n.dynamicFields?.['private.frostveil.npc'];a.ok(ids.includes(id),'Unexpected nonmanaged data changed');a.equal(n.isDisabled,true,'Restored development NPC must wait for mapper proof');return id;});
  for(const f of h.artifacts)a.equal(createHash('sha256').update(fs.readFileSync(path.join(root,f.path))).digest('hex'),f.sha256,'Runtime seal changed: '+f.path);
  const health=await(await fetch('http://127.0.0.1:17778/g241d-health.json')).json();a.equal(health.status,'SAFE_WAITING');a.equal(health.catalogHash,h.catalogHash);a.equal(health.profileHash,h.profileHash);a.equal(health.customAutoSpawns,0);
  const shell=path.join(process.env.SystemRoot??'C:/Windows','System32/WindowsPowerShell/v1.0/powershell.exe');

@@ -40,10 +40,23 @@ function updateNpcPose(ctx:any){
  // Do not move a streamed actor across cells here; the server owns streaming.
  if(!current||current.getFormID()!==worldId)return;
  const id=r.getFormID();
- if(ctx.state.npcPoseActor!==id){actor.enableAI(true);actor.setDontMove(true);ctx.state.npcPoseActor=id;}
+ const freshPose=ctx.state.npcPoseActor!==id;
+ if(freshPose){actor.enableAI(true);actor.setDontMove(true);ctx.state.npcPoseActor=id;}
  actor.clearKeepOffsetFromActor();
  const movement=ctx._model.movement;
+ const staleLocomotion=typeof movement?.runMode==='string'&&movement.runMode!=='Standing';
  if(movement){Object.assign(movement,{pos:p.pos.slice(),rot:p.rot.slice(),worldOrCell:worldId,runMode:'Standing',direction:0,speed:0,isInJumpState:false,lookAt:undefined});}
+ // Standing in the network model does not clear the loaded behavior graph.
+ // MovementGet reads SpeedSampled, so a stale walk can otherwise feed back to
+ // the host forever while SetDontMove keeps the actor at its anchor.
+ if(ctx.state.npcLocomotionErrorActor!==id)try{
+  const dirty=['SpeedSampled','Speed','SpeedDamped','Direction'].filter(name=>{const v=r.getAnimationVariableFloat(name);return Number.isFinite(v)&&Math.abs(v)>0.01;});
+  if(freshPose||staleLocomotion||dirty.length){
+   r.stopTranslation();
+   for(const name of dirty)r.setAnimationVariableFloat(name,0);
+   if(dirty.length&&ctx.state.npcLocomotionLoggedActor!==id){ctx.state.npcLocomotionLoggedActor=id;if(typeof sp.printConsole==='function')sp.printConsole('[Frostveil NPC] cleared stationary locomotion ref='+id+' variables='+dirty.join(','));}
+  }
+ }catch(error){ctx.state.npcLocomotionErrorActor=id;if(typeof sp.printConsole==='function')sp.printConsole('[Frostveil NPC] locomotion native call failed ref='+id+': '+String(error));}
  const yaw=Math.abs(((r.getAngleZ()-p.rot[2]+540)%360)-180);
  if(Math.hypot(r.getPositionX()-p.pos[0],r.getPositionY()-p.pos[1])>2||Math.abs(r.getPositionZ()-p.pos[2])>64||yaw>1||Math.abs(r.getAngleX())>1||Math.abs(r.getAngleY())>1){
   sp.TESModPlatform.moveRefrToPosition(r,cell,world,p.pos[0],p.pos[1],p.pos[2],0,0,p.rot[2]*Math.PI/180);

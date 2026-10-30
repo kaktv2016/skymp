@@ -4,6 +4,8 @@
 
 Baseline: SkyMP `dc0c2432`, Launcher `3d88c56f`. The owner confirmed the previous NPC system working, including the protection/dialogue baseline supplied in this mission. That does not certify detailed FaceGen, every outfit field, new management operations or multiplayer rendering.
 
+**Owner update, 2026-10-30:** Rename, new catalog NPC creation, Move and Rotate are confirmed working. The newly created Clerk displayed a walking animation while anchored; the hotfix below is deployed but its real Skyrim animation result is still PENDING_OWNER.
+
 ## Status
 
 | Area | Result | Scope |
@@ -144,3 +146,19 @@ If the isolated server is later stopped, use the existing `activate-and-play` co
 - Existing-NPC Base/outfit switching requires an independently proven recoverable lifecycle, reference/dialogue handling and streamed/reconnect rendering evidence. No unsafe workaround is advertised.
 - Detailed FaceGen/outfit proof, new workflow in Skyrim and real multi-client replication remain owner acceptance; no 50–100-player certification is implied by isolated tests.
 - Native 0xC0000005 remains unresolved. No G2.4.3 multiplayer phase, production promotion or unrelated feature was started.
+
+## Stationary locomotion hotfix — 2026-10-30
+
+Owner created managed NPC `dd84d54e-5231-42f1-9162-3ed4f623d28c` through the UI; server logs confirm one create at 17:08:01 followed by Move. The approved template/appearance was correct. This workflow provisions a new actor from an authored Base; it does not copy another instance's current idle state.
+
+Confirmed implementation gap: `updateNpcPose` set the network movement model to Standing and enforced SetDontMove/anchor, but did not clear a pending translation or loaded locomotion graph. `movementGet.ts` derives NPC speed/run mode from **SpeedSampled**, not the rewritten model. `movementApply.ts` can also start translation/offset movement before the neighbor updater runs. A nonzero graph therefore remains compatible with walking-in-place despite a correct anchor. The focused regression reproduced this exact disagreement (Standing model with SpeedSampled110); old code failed and patched code passed. The original actor's actual pre-fix graph floats were not captured, so a specific renderer trigger is not claimed proven beyond this gap and owner symptom.
+
+The repair uses installed ObjectReference `stopTranslation`, `getAnimationVariableFloat` and `setAnimationVariableFloat`; actual package declarations and native master graph indexes contain SpeedSampled, Speed, SpeedDamped and Direction. It stops translation for a fresh reference, stale movement model or dirty locomotion, and zeros only nonzero finite locomotion floats. Already-idle updates make no repeated setter/stop calls. It retains enabled AI, CastBlend/dialogue/idle/combat graph state, Ghost protection, position and yaw. No forced-idle event, graph-wide reset, shared ActorBase mutation or new DLL/installed client update was added. Native failures are reported once per reference without disabling the existing anchor. These newly invoked client setters still require the owner test; server-addon tests cannot execute Skyrim's behavior graph.
+
+Regression: **418/418 RP build/typecheck/tests** (`walk-regressions.log`), **73/73 client/assets** (`walk-client-assets.log`). Focused tests exercise dirty graph repair, 10,000 stable updates without native write/AI-reset/translation spam, later stale movement, unloaded/wrong-world guards, reference replacement and preserved idle/dialogue state. Other unchanged G2.4.4 native/editor/Launcher gates remain the earlier results above, not new gameplay proof.
+
+Owner explicitly closed Skyrim before deployment. The original verified engine1572 tree was stopped only after checking empty sessions, game closed, startup UUID, process ancestry and owned loopback ports. The previous delivery receipts were retained under `build/rp-audit/g244/delivery-before-walk-*`; original backup `deploy-zThPIl` is preserved. Latest code-only backup is **`build/rp-audit/g244/deploy-A639Pw`**, 82 files; the rollback commands above now use this latest paired runtime snapshot. Rollback preflight passed.
+
+New visible PowerShell **11960**, engine **3292**, startup UUID **30a6797f-dfa9-496a-9b9f-f74e5bb412f2**, SAFE_WAITING. Thirty runtime/UI seals, native capability, process/ports/HTTP/auth rejection checks passed. Registry/dialogue bytes and production/player data remain unchanged. Native startup parked all three existing managed NPCs pending identity proof; it did not delete/recreate them. Read-only deployment diagnostics now derive managed UUIDs from the checked, unchanged registry instead of assuming only the original pair. No production, Launcher release, asset or world migration.
+
+Owner retest: use the same development `play` command -> fresh `grant` -> `/npc identity`. Inspect the existing newly created NPC; do not create another. It should retain its name/outfit/UUID/anchor, stand with normal idle rather than stepping, support E and retain Move/Rotate/protection. Walk out of streaming range and return. Report whether the walking animation remains; diagnostics print `[Frostveil NPC] cleared stationary locomotion ...` or a bounded native-call error if the real runtime refuses it. Native 0xC0000005 remains unresolved and multiplayer deferred.
