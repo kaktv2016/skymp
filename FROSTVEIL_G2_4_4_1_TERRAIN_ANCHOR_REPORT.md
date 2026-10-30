@@ -1,6 +1,12 @@
 # G2.4.4.1 — Terrain-aware NPC anchor stabilization
 
-2026-10-30, Asia/Bangkok. Focused implementation, automated verification and isolated deployment complete. Real Skyrim visual acceptance pending.
+2026-10-30, Asia/Bangkok. Automated verification and isolated deployment completed, but owner retest reports the terrain symptom still appears unresolved. **Terrain fix not accepted; further work deferred at the owner's explicit request.**
+
+## Latest owner decision — deferred unresolved bug
+
+Owner: “ก็เหมือนจะยังแก้ไม่หายเอาบัคนี้เก็บไว้แก้ที่หลัง”. Treat the terrain acceptance as FAIL, with no claim that the latest predicate change resolves the visible symptom. Automated test results below remain valid only for their tested contracts. Stop further investigation/patching/deployment for this bug until the owner resumes it. No rollback was requested or performed; retain the deployed runtime, existing NPCs, evidence and code-only rollback backups. No server restart or player/world/economy change accompanies this update.
+
+Resume from the retained logs and current build, not by recreating NPCs. Capture fresh per-NPC timestamp/reason/outcome data against the latest runtime to distinguish residual POSITION/YAW correction from animation-only or native collision motion; do not assume the old pitch-only diagnosis explains the remaining symptom. The owner's latest message supplies no new per-NPC or terrain-specific result, so preserve earlier flat-ground/HomHom confirmations without asserting a new regression there.
 
 สรุป: log จริงพบว่าตัวละครอยู่ตรงจุดและหันถูกทิศแล้ว แต่ถูกดึงกลับเพราะมุมเอียงจาก native เพียงอย่างเดียว ตัวแก้แยกพิกัด/yaw ของเซิร์ฟเวอร์ออกจาก pitch/roll ที่เกมใช้แสดงผล โดยคงกรอบตำแหน่งเดิมและไม่เพิ่ม tolerance การหมุนอย่างเดียวรักษาตำแหน่งที่ลงพื้นแล้ว ส่วนการออกนอกกรอบจริงยังยกเลิก translation และดึงกลับ anchor เดิม ไม่มีการเปลี่ยน UUID หรือ registry
 
@@ -66,7 +72,7 @@ Use the existing development `play` -> `grant` -> `/npc identity` flow; do not r
 
 | Status | Result | Scope |
 |---|---|---|
-| TERRAIN_STATIONARY | PENDING_OWNER | demonstrated predicate fixed; visual slope proof pending |
+| TERRAIN_STATIONARY | FAIL | owner says latest fix still appears unresolved; further work DEFERRED by request |
 | FLAT_STATIONARY | PENDING_OWNER | prior owner baseline passed; new runtime retest pending |
 | HOMHOM_REGRESSION | PENDING_OWNER | prior hotfix owner-confirmed; new build pending |
 | ANCHOR_PRECISION | PARTIAL | automated original envelope and no rebase pass |
@@ -77,7 +83,7 @@ Use the existing development `play` -> `grant` -> `/npc identity` flow; do not r
 | RECONNECT | PENDING_OWNER | simulated/session regression passes, real retest pending |
 | PERSISTENCE | PARTIAL | native fresh fixture preserves UUID/state; real same-NPC retest pending |
 | NATIVE_CRASH | BLOCKED | historic0xC0000005 cause unresolved; diagnostics retained |
-| SINGLE_CLIENT_ACCEPTANCE | PENDING_OWNER | owner must verify terrain/visual outcome |
+| SINGLE_CLIENT_ACCEPTANCE | FAIL | latest terrain fix not accepted; owner deferred further work |
 | MULTIPLAYER_ACCEPTANCE | DEFERRED | no real two-client result |
 
 No G2.4.5 or production promotion.
