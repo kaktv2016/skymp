@@ -49,20 +49,33 @@ function updateNpcPose(ctx:any){
  // before a corrective move as well: MoveTo does not cancel that controller.
  // Never infer a correction from animation floats or clamp engine blending.
  const anchor=p.cell+'|'+p.pos.join(',')+'|'+p.rot.join(',');
- const yaw=Math.abs(((r.getAngleZ()-p.rot[2]+540)%360)-180);
- const actual=[r.getPositionX(),r.getPositionY(),r.getPositionZ()],horizontal=Math.hypot(actual[0]-p.pos[0],actual[1]-p.pos[1]),vertical=Math.abs(actual[2]-p.pos[2]),pitch=Math.abs(r.getAngleX()),roll=Math.abs(r.getAngleY());
- const corrected=horizontal>2||vertical>64||yaw>1||pitch>1||roll>1;
+ const actual=[r.getPositionX(),r.getPositionY(),r.getPositionZ()],pitch=r.getAngleX(),roll=r.getAngleY(),nativeYaw=r.getAngleZ();
+ if(![...actual,pitch,roll,nativeYaw].every(Number.isFinite))return;
+ const horizontal=Math.hypot(actual[0]-p.pos[0],actual[1]-p.pos[1]),vertical=Math.abs(actual[2]-p.pos[2]),yaw=Math.abs(((nativeYaw-p.rot[2]+540)%360)-180);
+ // Authored position/yaw are authoritative; native pitch/roll are presentation,
+ // not evidence of travel. Keep the original positional envelope, never rebase
+ // it to successive observations or force a grounded actor upright every frame.
+ const positionOutside=horizontal>2||vertical>64,yawOutside=yaw>1;
+ const corrected=positionOutside||yawOutside,reason=positionOutside?(yawOutside?'POSITION_AND_YAW':'POSITION'):(yawOutside?'YAW':'IN_BOUNDS');
  if(freshPose||ctx.state.npcTranslationAnchor!==anchor||corrected){ctx.state.npcTranslationAnchor=anchor;try{r.stopTranslation();}catch(error){if(typeof sp.printConsole==='function')sp.printConsole('[Frostveil NPC] stopTranslation failed ref='+id+': '+String(error));}}
  if(corrected){
   ctx.state.npcPoseCorrections=(ctx.state.npcPoseCorrections??0)+1;
-  sp.TESModPlatform.moveRefrToPosition(r,cell,world,p.pos[0],p.pos[1],p.pos[2],0,0,p.rot[2]*Math.PI/180);
+  const destination=positionOutside?p.pos:actual;
+  sp.TESModPlatform.moveRefrToPosition(r,cell,world,destination[0],destination[1],destination[2],pitch*Math.PI/180,roll*Math.PI/180,p.rot[2]*Math.PI/180);
  }
  // Bounded read-only measurements for the isolated owner test; no event/console
  // interface and no native wrappers retained between updates.
  const settings=sp.settings?.['skymp5-client'];
  if(settings?.['server-ip']==='127.0.0.1'&&settings?.['server-port']===17777&&typeof sp.writeLogs==='function'){
-  if(freshPose||ctx.state.npcPoseDiagnosticAnchor!==anchor){ctx.state.npcPoseDiagnosticAnchor=anchor;ctx.state.npcPoseDiagnosticCount=0;ctx.state.npcPoseDiagnosticNext=0;}
-  const now=Date.now();if(ctx.state.npcPoseDiagnosticCount<20&&now>=ctx.state.npcPoseDiagnosticNext){ctx.state.npcPoseDiagnosticCount++;ctx.state.npcPoseDiagnosticNext=now+500;try{sp.writeLogs('rpNpcPose',JSON.stringify({ref:id,target:p.pos,actual,horizontal,vertical,yaw,pitch,roll,corrected,corrections:ctx.state.npcPoseCorrections??0,hostedByOther:ctx._model.isHostedByOther===true,speed:r.getAnimationVariableFloat('SpeedSampled'),damped:r.getAnimationVariableFloat('SpeedDamped'),moveState:r.getAnimationVariableBool('bInMoveState')}));}catch{}}
+  const now=Date.now();
+  if(freshPose||ctx.state.npcPoseDiagnosticAnchor!==anchor){ctx.state.npcPoseDiagnosticAnchor=anchor;ctx.state.npcPoseDiagnosticCount=0;ctx.state.npcPoseDiagnosticNext=0;ctx.state.npcPoseDiagnosticStart=now;ctx.state.npcPoseDiagnosticPrevious=null;ctx.state.npcPoseDiagnosticStableSince=now;}
+  if(ctx.state.npcPoseDiagnosticCount<20&&now>=ctx.state.npcPoseDiagnosticNext){
+   const previous=ctx.state.npcPoseDiagnosticPrevious;
+   if(corrected||!previous||Math.hypot(...actual.map((v:number,i:number)=>v-previous[i]))>0.25)ctx.state.npcPoseDiagnosticStableSince=now;
+   const outcome=corrected?'CORRECTING':(previous&&now-ctx.state.npcPoseDiagnosticStableSince>=1000?'STABLE_IN_BOUNDS':'SETTLING_IN_BOUNDS');
+   ctx.state.npcPoseDiagnosticPrevious=actual.slice();ctx.state.npcPoseDiagnosticCount++;ctx.state.npcPoseDiagnosticNext=now+500;
+   try{sp.writeLogs('rpNpcPose',JSON.stringify({atMs:now,elapsedMs:now-ctx.state.npcPoseDiagnosticStart,ref:id,target:p.pos,actual,horizontal,vertical,yaw,pitch,roll,reason,outcome,corrected,corrections:ctx.state.npcPoseCorrections??0,hostedByOther:ctx._model.isHostedByOther===true,speed:r.getAnimationVariableFloat('SpeedSampled'),damped:r.getAnimationVariableFloat('SpeedDamped'),moveState:r.getAnimationVariableBool('bInMoveState')}));}catch{}
+  }
  }
 }
 function upright(location:TransformLocation):TransformLocation{return {...location,rot:[0,0,((location.rot[2]%360)+360)%360]};}

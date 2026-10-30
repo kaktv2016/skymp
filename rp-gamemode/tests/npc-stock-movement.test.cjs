@@ -16,4 +16,8 @@ test('real stock movement receives stationary self-offset instead of the walking
  const view=Object.create(viewModule.exports.FormView.prototype);Object.assign(view,{refrId:0xff000010,lastHarvestedApply:Date.now(),lastOpenApply:Date.now(),isSetNodeScaleApplied:true,isSetNodeTextureSetApplied:true,movState:{lastApply:Date.now(),lastNumChanges:7,everApplied:true,lastRehost:Date.now()},animState:{lastNumChanges:0,useAnimOverrides:false}});
  view.applyAll(ref,model);a.equal(native.length,0,'unchanged counter should exercise the stock cadence gate');
  mapDevelopmentModels([model],proof,spec);view.applyAll(ref,model);a.equal(native.length,1,'corrected pose must reach the stock controller immediately');const count=model.numMovementChanges;mapDevelopmentModels([model],proof,spec);a.equal(model.numMovementChanges,count,'stable frames must not force repeated movement applies');
+ // The pinned stock movement predicate checks XY/yaw, not native pitch/roll or
+ // small grounded Z differences. Do not invent a ground-height API to match it.
+ native.length=0;ref.getAngleX=()=>10.994688;ref.getAngleY=()=>-2;ref.getPositionZ=()=>34.6;modules['../extensions/objectReferenceEx'].ObjectReferenceEx.getPos=()=>[11,20,34.6];
+ module.exports.applyMovement(ref,model.movement,false);a.equal(native.filter(c=>c[0]==='translate').length,0,'accepted native tilt must not independently restart stock translation');a.equal(ref.getAngleX(),10.994688);a.deepEqual(model.frostveilNpcPose.pos,[10,20,30]);
 });
