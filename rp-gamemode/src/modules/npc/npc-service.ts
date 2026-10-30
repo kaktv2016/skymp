@@ -45,13 +45,14 @@ function updateNpcPose(ctx:any){
  actor.clearKeepOffsetFromActor();
  const movement=ctx._model.movement;
  if(movement){Object.assign(movement,{pos:p.pos.slice(),rot:p.rot.slice(),worldOrCell:worldId,runMode:'Standing',direction:0,speed:0,isInJumpState:false,lookAt:undefined});}
- // Cancel old translation only for a new native reference or explicit anchor
- // revision. Never clamp live animation floats: the engine owns its blending.
+ // A stock translation can start after the initial anchor pass. Cancel it
+ // before a corrective move as well: MoveTo does not cancel that controller.
+ // Never infer a correction from animation floats or clamp engine blending.
  const anchor=p.cell+'|'+p.pos.join(',')+'|'+p.rot.join(',');
- if(freshPose||ctx.state.npcTranslationAnchor!==anchor){ctx.state.npcTranslationAnchor=anchor;try{r.stopTranslation();}catch(error){if(typeof sp.printConsole==='function')sp.printConsole('[Frostveil NPC] stopTranslation failed ref='+id+': '+String(error));}}
  const yaw=Math.abs(((r.getAngleZ()-p.rot[2]+540)%360)-180);
  const actual=[r.getPositionX(),r.getPositionY(),r.getPositionZ()],horizontal=Math.hypot(actual[0]-p.pos[0],actual[1]-p.pos[1]),vertical=Math.abs(actual[2]-p.pos[2]),pitch=Math.abs(r.getAngleX()),roll=Math.abs(r.getAngleY());
  const corrected=horizontal>2||vertical>64||yaw>1||pitch>1||roll>1;
+ if(freshPose||ctx.state.npcTranslationAnchor!==anchor||corrected){ctx.state.npcTranslationAnchor=anchor;try{r.stopTranslation();}catch(error){if(typeof sp.printConsole==='function')sp.printConsole('[Frostveil NPC] stopTranslation failed ref='+id+': '+String(error));}}
  if(corrected){
   ctx.state.npcPoseCorrections=(ctx.state.npcPoseCorrections??0)+1;
   sp.TESModPlatform.moveRefrToPosition(r,cell,world,p.pos[0],p.pos[1],p.pos[2],0,0,p.rot[2]*Math.PI/180);

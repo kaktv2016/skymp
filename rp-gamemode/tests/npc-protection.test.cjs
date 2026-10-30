@@ -1,7 +1,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const {NpcService}=require('../.test-build/modules/npc/npc-service.js');
 
-test('stationary anchor never clamps engine animation blending and cancels translation only for reference or anchor changes',t=>{
+test('stable stationary anchor never clamps engine blending or repeatedly cancels translation',t=>{
  const f=setup(t);f.run('create','clerk');const p=[...f.forms.values()][0].frostveilNpcPose;
  const graph={SpeedSampled:110,Speed:110,SpeedDamped:75,Direction:0.25,CastBlend:0.7};let translations=0,writes=0,ai=true,id=5,loaded=true,world=60;const diagnostics=[];
  const actor={isGhost:()=>false,setGhost(){},stopCombat(){},stopCombatAlarm(){},enableAI:v=>ai=v,setDontMove:v=>assert.equal(v,true),clearKeepOffsetFromActor(){}};
@@ -16,6 +16,21 @@ test('stationary anchor never clamps engine animation blending and cancels trans
  const samples=[];let now=1000;ctx.sp.settings={'skymp5-client':{'server-ip':'127.0.0.1','server-port':17777}};ctx.sp.writeLogs=(key,line)=>samples.push(JSON.parse(line));r.getAnimationVariableBool=()=>true;
  const measured=require('node:vm').runInNewContext('(function(ctx){'+f.properties.frostveilNpcPose.updateNeighbor+'})',{Date:{now:()=>now}});for(let i=0;i<100;i++){now+=500;measured(ctx);}assert.equal(samples.length,20);assert.equal(samples[0].corrections,0);assert.equal(writes,0);assert.equal(translations,2);
 });
+test('a translation started after initial anchoring is cancelled before correcting drift, preserving grounded idle',t=>{
+ const f=setup(t);f.run('create','clerk');const p=[...f.forms.values()][0].frostveilNpcPose;
+ let pos=[0,0,0],translating=false,stops=0,moves=0;const order=[];
+ const actor={isGhost:()=>false,setGhost(){},stopCombat(){},stopCombatAlarm(){},enableAI(){},setDontMove(){},clearKeepOffsetFromActor(){}};
+ const r={isDeleted:()=>false,is3DLoaded:()=>true,getFormID:()=>5,getWorldSpace:()=>({getFormID:()=>60}),getPositionX:()=>pos[0],getPositionY:()=>pos[1],getPositionZ:()=>pos[2],getAngleX:()=>0,getAngleY:()=>0,getAngleZ:()=>0,stopTranslation(){stops++;translating=false;order.push('stop');},setAnimationVariableFloat:()=>assert.fail('Do not clamp animation'),getAnimationVariableFloat:()=>0};
+ const target={getFormID:()=>60},ctx={value:p,refr:r,state:{},sp:{Actor:{from:()=>actor},Game:{getFormFromFile:()=>target},Cell:{from:()=>null},WorldSpace:{from:()=>target},TESModPlatform:{moveRefrToPosition(){moves++;order.push('move');pos=[0,0,0];}}},_model:{movement:{}}};
+ const update=new Function('ctx',f.properties.frostveilNpcPose.updateNeighbor);update(ctx);assert.equal(stops,1);
+ // An already-running/late stock translation is independent of the corrected
+ // movement model. Moving the reference alone does not cancel that controller.
+ translating=true;pos=[2.6,0,0];order.length=0;update(ctx);
+ assert.equal(translating,false,'late translation must not continue after a corrective move');assert.deepEqual(order,['stop','move']);assert.equal(stops,2);assert.equal(moves,1);
+ for(let i=0;i<1000;i++){if(translating)pos[0]+=2.6;update(ctx);}assert.equal(moves,1);assert.equal(stops,2);
+ pos=[1.4,0,4.6];update(ctx);assert.equal(moves,1,'ground settling within existing tolerances is preserved');assert.equal(stops,2);
+});
+
 test('synchronous hit veto preserves prior rejection, fails closed for non-boolean results and disposes without replacing other hooks',()=>{
  const {EventRouter}=require('../.test-build/core/event-router.js'),prior=()=>false,raw={onHitAttempt:prior},router=new EventRouter(raw);let called=0;
  const stop=router.registerVeto('onHitAttempt',()=>{called++;return true;});assert.equal(raw.onHitAttempt(1,2),false);assert.equal(called,0);stop();assert.equal(raw.onHitAttempt,prior);
