@@ -153,3 +153,11 @@ Branches: SkyMP dev/npc-activation-g241d→frostveil (kaktv2016/skymp), Launcher
 - SkyMP Asset Library UI/browser fixture: b6af20d0c6c252b543ed35aa716f528e95623e89.
 - Launcher local owner activation/recovery: 22233220d85ae0de55f4554a3905edb90a2350b4.
 - Both authorized pushes succeeded; git ls-remote matched those branch tips. This report is delivered as a subsequent documentation commit. No upstream push/force push or unrelated WIP changes.
+
+### Rejoin diagnostics hotfix —2026-10-31
+
+Owner play failed using old console11104/startup0ccf8210. Live inventory confirmed no Skyrim, isolated node/console, UDP17777/TCP17778/UI13210 listeners. The old log ended READY PASS, with no terminal exit record; cause of the process stopping is unproven (no crash/reboot/manual-close attribution). play reads a persisted successful receipt and then checks actual liveness; it correctly refused launch, but misleadingly labelled the dead old console PROCESS_CREATION.
+
+Launcher local helper now marks rejoin-only missing-process failures SERVER_NOT_RUNNING, while fresh starts retain PROCESS_CREATION. All native-failure precedence, process ancestry, profile/catalog hashes and loopback port/health gates remain mandatory. No auto-restart, installed-profile changes or Skyrim launch added. RED regression reproduced the mislabel;17 focused startup/seal/recovery tests and typecheck pass. Backups/failure/green logs retained under build/rp-audit/g246/rejoin-hotfix. Launcher commit c6899ea pushed to authorized owner branch.
+
+Verified the same isolated target idle and preserved protected hashes; restarted through existing start-verified.mjs. New console22236→supervisor9352→engine3148, startup5dd612e4-c2f8-4b67-acf8-9d1fb0feb060. Real rejoin all gates READY, UDP/TCP loopback ownership verified. Protected world/registry/dialogue/production hashes are identical across this restart. Owner can rerun the exact absolute play command; Skyrim not launched by agent. Do not close the server console while using it.
