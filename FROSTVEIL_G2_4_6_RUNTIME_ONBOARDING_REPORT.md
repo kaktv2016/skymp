@@ -119,22 +119,22 @@ Actual new v2 owner acceptance remains pending. No new third NPC or multiplayer 
 |---|---|---|
 | RUNTIME_IDENTITY_SPEC | PASS | canonical bounded v2 tests |
 | DYNAMIC_APPROVED_BASE_MAPPING | PASS | generic tests/real2 identities; Skyrim pending |
-| CLIENT_PLUGIN_VERIFICATION | PARTIAL | pinned API/file/simulated protocol; owner handshake pending |
+| CLIENT_PLUGIN_VERIFICATION | PASS | existing two-base profile; owner screenshot confirms identity verified/mapper armed; new asset excluded |
 | SERVER_PLUGIN_VERIFICATION | PASS | actual2 forms/resources and invalid fixtures |
 | DEVELOPMENT_PROFILE_PREPARATION | PASS | plans/private fixtures; new installed activation owner-only |
 | CATALOG_RUNTIME_PROMOTION | PASS | journal/restart/scoped merges/recovery |
 | ADMIN_UI_RUNTIME_WORKFLOW | PASS | automated/browser fixture; owner pending |
 | NEW_NPC_TEMPLATE_CREATION | PENDING_OWNER_ASSET | original lifecycle reused; no fake actor |
-| EXISTING_NPC_COMPATIBILITY | PARTIAL | assignments/journals/tests pass; current Skyrim pending |
+| EXISTING_NPC_COMPATIBILITY | PASS | automated preservation plus owner confirms reconnect, E, Rename/Move/Rotate and passive protection |
 | NPC_UUID_PRESERVATION | PASS | all3 unchanged |
 | ANCHOR_AND_COMBAT | PARTIAL | original tests; slope issue DEFERRED |
-| DIALOGUE_COMPATIBILITY | PARTIAL | tests/journal preserved; current owner check pending |
-| STREAMING_RECONNECT | PARTIAL | automated session/lifecycle; new real flow pending |
+| DIALOGUE_COMPATIBILITY | PASS | tests/journal preserved; owner confirms E dialogue with existing NPCs |
+| STREAMING_RECONNECT | PARTIAL | existing NPC reconnect owner-confirmed; distinct cell-streaming/new asset/server-restart acceptance not reported |
 | ISOLATED_DEPLOYMENT | PASS | actual process/ports/health/auth/seals/UI |
 | NEW_TEMPLATE_RUNTIME_PROOF | PENDING_OWNER_ASSET | genuine asset absent |
 | NEW_TEMPLATE_RENDER_PROOF | PENDING_OWNER_ASSET | structural validation is not rendering |
 | NATIVE_CRASH | BLOCKED | original0xC0000005 unresolved |
-| SINGLE_CLIENT_ACCEPTANCE | PENDING_OWNER | checklist above |
+| SINGLE_CLIENT_ACCEPTANCE | PASS | existing-NPC regression scope owner-confirmed; new asset/rendering and multiplayer excluded |
 | MULTIPLAYER_ACCEPTANCE | DEFERRED | no2-client/capacity claim |
 
 Supported full ESP/approved NPC/owned fixed OTFT and existing reviewed race/head/body/outfit resource envelope only. ESL/light/unknown closure/changed active plugin revisions conflicting with immutable assignments fail closed. No arbitrary installed-mod support, dynamic Base/equipment switching, terrain/crash fix, production distribution or G2.4.3 multiplayer.
@@ -167,3 +167,9 @@ Verified the same isolated target idle and preserved protected hashes; restarted
 Owner reports: "ลองออกเข้าใหม่แล้ว npc อยู่เหมือนเดิม" (NPCs remained after leaving and reconnecting). Screenshot codex-clipboard-a014c16f-3a58-4d1e-8541-cb502dc89132.png shows Identity verified · mapper armed, three managed NPCs (Clerk, Warrior, HomHom), two appearance configurations and the original Clerk UUID c7ee4c2b-81bf-4e2a-86e3-c1aa5b599421/template/outfit/policies/dialogue. This provides actual owner evidence for successful client identity/mapper acknowledgement and existing NPC presence after reconnect. It is not proof of a new third base, complete FaceGen rendering, a fresh server-restart persistence test, two-client replication or all Rename/Move/Rotate/E/protection tests. Those unreported acceptance items remain pending; prior status rows must be read with this dated update.
 
 The owner separately confirmed restarting the computer before the later SERVER_NOT_RUNNING failure for console22236. That explains that stopped-server instance; no native crash is inferred. The isolated server was restarted and verified READY with console19840/startup022292d1-2687-492f-8cde-698f0ccb6bb0. No game/profile/data changes were made to record acceptance.
+
+### Existing-NPC gameplay acceptance completed —2026-10-31
+
+Owner explicitly confirms: E dialogue, Rename/Move/Rotate and passive protection PASS. Together with the prior reconnect confirmation and Identity verified · mapper armed screenshot, this completes G246 single-client regression acceptance for the existing NPCs. This is owner-reported gameplay evidence; no new automated tests or server restart were needed for this documentation update. The table above now reflects these confirmations. Earlier pending statements describe pre-acceptance evidence and are superseded only for these explicitly confirmed existing-NPC checks.
+
+A new owner-authored third NPC runtime/render proof remains PENDING_OWNER_ASSET. Distinct cell-streaming and server-restart acceptance are not inferred from reconnect. Uneven-terrain anchors remain deferred, native0xC0000005 unresolved and multiplayer deferred. No new production/rendering/capacity certification is implied.
