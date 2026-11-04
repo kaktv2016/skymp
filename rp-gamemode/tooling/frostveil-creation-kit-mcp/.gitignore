@@ -1,0 +1,4 @@
+node_modules/
+dist/
+adapter/bin/
+adapter/obj/
