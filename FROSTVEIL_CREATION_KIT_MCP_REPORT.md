@@ -318,3 +318,13 @@ Changes: this report, implementation plan, and the dedicated tooling package
 (schemas/service/SDK entry, C# adapter, lockfiles, build/install helpers, tests).
 Generated binaries, proprietary assets, private config backups and receipts are
 excluded. Commit/push receipts are recorded after verification below.
+
+Verified delivery: implementation commit
+**00846df60f144a1ee576e2ba2b4da79ef70d09a6** pushed successfully to
+`frostveil/dev/npc-activation-g241d`; `git ls-remote` matched that exact hash.
+This receipt is added by a subsequent documentation commit. No upstream or
+force push, signing override, runtime deployment or proprietary asset commit.
+Final package tests: **3/3 PASS** (51.9 seconds); relevant existing suites:
+**28/28 PASS**. npm and transitive NuGet vulnerability checks reported no known
+vulnerabilities. In-session source/diff/security review completed; no independent
+native bridge or in-game acceptance is implied.
