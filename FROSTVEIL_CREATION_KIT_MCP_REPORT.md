@@ -1,5 +1,95 @@
 # Frostveil Creation Kit MCP — 2026-11-04
 
+## Update 2026-11-05 — fresh installation and Windows PowerShell fixes
+
+**Current installed-game compatibility: BLOCKED_BASELINE_CHANGED.** The dated
+2026-11-04 delivery sections below are historical evidence, not certification of
+the new installation. The owner's reproduced errors exposed hardcoded game paths
+and reliance on a Codex command available only in the agent's PATH.
+
+Read-only inspection now finds Steam through its registry/libraryfolders metadata
+at `D:\Steam`, with Skyrim at
+`D:\Steam\steamapps\common\Skyrim Special Edition`. SkyrimSE.exe reports
+**1.7.104.0**; CreationKit.exe and installed FrostveilNPCTest.esp are absent.
+Current Skyrim.esm SHA-256 is
+`e198c3b85e5e48e0c92a6580d8f66e644256b68d812ee32b61735cf9b753df73`;
+the reviewed authoring baseline is
+`2bbc77fdec35a70ef96b710f8c525e50a1db9e63e11a391a0eb9ee8f56d36107`.
+No game downgrade, CK/mod installation, runtime launch or compatibility approval
+was attempted. FaceGen remains MANUAL_REQUIRED.
+
+Changes are confined to the tooling package and this report:
+
+- `src/installation.ts` discovers Steam libraries, deduplicates Windows path
+  aliases by case and rejects redirected/ambiguous installations. An explicit
+  process-level `FROSTVEIL_CK_GAME` can select an installed game; it cannot bypass
+  the approved master hash check. No arbitrary path parameter was added to MCP.
+- Missing CK is a diagnostic result (`creationKit:null`, `NOT_INSTALLED`), not
+  a subprocess exception. Installation inspection reports actual and approved
+  master hashes and the compatibility classification separately from file versions.
+- Original NPC inspection reads the real preserved G241 approved staging package,
+  verifies its immutable catalog/plugin hashes, and reports `sourcePath` and
+  `sourceKind:APPROVED_FROSTVEIL_STAGING`. It does not pretend the source is
+  installed in the new game. Nothing was copied into the new game.
+- Authoring defaults to the detected game's master and **refuses** the new hash.
+  An explicit process-only `FROSTVEIL_CK_MASTER` may name an archived master inside
+  this tool's private audit tree; it must still match the approved hash. Plans and
+  receipts identify archived authoring and say runtimeCompatibility NOT_CERTIFIED.
+  There is no automatic archived-master fallback for live authoring.
+- Regression tests explicitly use the real original Skyrim.esm retained at
+  `build/rp-audit/creation-kit-mcp/work/snapshots/<approved hash>/Skyrim.esm`.
+  A missing/tampered fixture fails rather than skipping or substituting the new
+  master. Real NPC/OTFT roundtrip/security tests still run. The G245 scanner test
+  uses real native record reads from that frozen master and an empty isolated
+  catalog; it verifies missing FaceGen is blocked and all five frozen assets are
+  unchanged. **It does not validate the changed game, its archives or the old
+  complete runtime profile.** Historical full-profile evidence is not renewed.
+- `scripts/codex.ps1` resolves Codex from PATH, CODEX_CLI_PATH, or verified desktop
+  app binaries under LOCALAPPDATA. It does not modify the user's PATH or install
+  another CLI. `install.ps1` shares the resolver and handles the JSON array behavior
+  of Windows PowerShell **5.1**. Its idempotent path was tested with Codex absent
+  from PATH; existing registration and all other servers remained unchanged.
+  A pre-fix verification attempt exposed the PowerShell nesting issue; config was
+  compared/restored from its immediate backup before the final checks.
+- `npm test` now builds first, preventing stale dist/adapter files after updates.
+  `npm run doctor` starts a fresh stdio MCP client for read-only source/installation
+  diagnostics; a successful diagnostic run does not mean a blocked game is approved.
+
+Owner commands in **Windows PowerShell**, from the existing package directory:
+
+```powershell
+cd 'C:\Users\basba\OneDrive\Desktop\skyrim-rp\skymp\rp-gamemode\tooling\frostveil-creation-kit-mcp'
+npm test
+npm run doctor
+.\scripts\codex.ps1 mcp list
+```
+
+`npm test` exercises the archived, hash-approved real authoring fixtures. `doctor`
+must honestly show Skyrim 1.7.104.0, CK NOT_INSTALLED and
+BLOCKED_BASELINE_CHANGED for the current installation. Do not install old assets
+or change approved hashes merely to turn this status green. Runtime support for
+the new version requires a separate compatibility assessment and existing owner
+approval gates. The old master is available for isolated authoring regression only.
+
+The MCP server name/stdio entry are unchanged and remain registered; another
+registration is unnecessary. Open a **new Codex chat/session** after the update.
+The existing chat's already running MCP process retains the old JavaScript and
+continues to use its old path until restarted; editing dist cannot reload it.
+Fresh-client verification is recorded in
+`build/rp-audit/creation-kit-mcp/2026-11-05-doctor.json` and dated test logs.
+Final hotfix checks: **6/6 package tests PASS**, **28/28 existing catalog/importer
+regressions PASS**, zero skipped tests, build with zero warnings/errors. Fresh
+MCP diagnostics passed and explicitly reported BLOCKED_BASELINE_CHANGED rather
+than approving the changed game. PowerShell 5.1 with Codex removed from PATH
+successfully listed the existing MCP; idempotent installation preserved all
+configurations. The five archived assets remained hash-identical. No live
+game/server deployment, archive reapproval or production trust change occurred.
+Source delivery uses the existing authorized `frostveil/dev/npc-activation-g241d`
+branch; the hotfix commit is available in Git history. Private dated proof/logs
+remain under build/rp-audit and are not committed.
+
+## Historical delivery — 2026-11-04
+
 **Delivery: PARTIAL overall; functional headless authoring and Codex connection PASS.**
 Native Creation Kit editing/export remains unavailable. No GUI control, screenshots,
 OCR, input simulation, injected DLL, Skyrim launch, actor creation, catalog approval,

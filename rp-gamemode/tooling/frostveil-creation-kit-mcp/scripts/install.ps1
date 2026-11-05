@@ -1,4 +1,6 @@
 $ErrorActionPreference='Stop'
+. (Join-Path $PSScriptRoot 'resolve-codex.ps1')
+$cli=Get-FrostveilCodex
 function StableJson($value){
  if($null -eq $value){return 'null'}
  if($value -is [System.Management.Automation.PSCustomObject]){
@@ -12,7 +14,9 @@ $packageRoot=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $entry=Join-Path $packageRoot 'dist/index.js'
 if(!(Test-Path -LiteralPath $entry)){throw 'Build the package before registration'}
 $node=(Get-Command node -CommandType Application | Select-Object -First 1).Source
-$servers=@(codex mcp list --json | ConvertFrom-Json)
+# Windows PowerShell 5.1 emits a JSON array as one pipeline item. Assign it
+# directly so later pipelines/foreach enumerate servers, not a nested array.
+$servers=& $cli mcp list --json | ConvertFrom-Json
 if($LASTEXITCODE -ne 0){throw 'Cannot read existing Codex MCP configurations'}
 $existing=@($servers | Where-Object name -EQ 'frostveil_creation_kit')
 if($existing.Count -gt 0){
@@ -24,9 +28,9 @@ $backupDir=Join-Path $codexDir ('backups/frostveil-creation-kit-'+[guid]::NewGui
 New-Item -ItemType Directory -Path $backupDir | Out-Null
 $config=Join-Path $codexDir 'config.toml'
 if(Test-Path -LiteralPath $config){Copy-Item -LiteralPath $config -Destination (Join-Path $backupDir 'config.toml')}
-codex mcp add frostveil_creation_kit -- $node $entry
+& $cli mcp add frostveil_creation_kit -- $node $entry
 if($LASTEXITCODE -ne 0){throw "Registration failed; original config backup: $backupDir"}
-$after=@(codex mcp list --json | ConvertFrom-Json)
+$after=& $cli mcp list --json | ConvertFrom-Json
 if($LASTEXITCODE -ne 0){throw 'Cannot verify MCP list'}
 $servers | ConvertTo-Json -Depth 40 | Set-Content -LiteralPath (Join-Path $backupDir 'before-list.json')
 $after | ConvertTo-Json -Depth 40 | Set-Content -LiteralPath (Join-Path $backupDir 'after-list.json')

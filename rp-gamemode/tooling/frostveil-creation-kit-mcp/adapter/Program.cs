@@ -16,13 +16,17 @@ try {
  object result=op switch {
   "inspect"=>Inspect(r.GetProperty("path").GetString()!),
   "resolve"=>Resolve(r.GetProperty("master").GetString()!),
-  "installation"=>new {creationKit=FileVersionInfo.GetVersionInfo(Path.Combine(r.GetProperty("game").GetString()!,"CreationKit.exe")).FileVersion,skyrim=FileVersionInfo.GetVersionInfo(Path.Combine(r.GetProperty("game").GetString()!,"SkyrimSE.exe")).FileVersion,mutagen=typeof(SkyrimMod).Assembly.GetName().Version!.ToString(),nativeBridgeInstalled=false},
+  "installation"=>Installation(r.GetProperty("game").GetString()!),
   "create"=>Create(r),
   _=>throw new Exception("Unsupported adapter operation")
  };
  Console.WriteLine(JsonSerializer.Serialize(result));
 }catch(Exception e){Console.Error.WriteLine(e);Environment.ExitCode=2;}
 
+static object Installation(string game){
+ var ck=Path.Combine(game,"CreationKit.exe");var skyrim=Path.Combine(game,"SkyrimSE.exe");
+ return new {game,creationKit=File.Exists(ck)?FileVersionInfo.GetVersionInfo(ck).FileVersion:null,creationKitStatus=File.Exists(ck)?"INSTALLED":"NOT_INSTALLED",skyrim=FileVersionInfo.GetVersionInfo(skyrim).FileVersion,mutagen=typeof(SkyrimMod).Assembly.GetName().Version!.ToString(),nativeBridgeInstalled=false,runtimeCompatibility="NOT_CERTIFIED"};
+}
 static object Inspect(string file){
  using var mod=SkyrimMod.CreateFromBinaryOverlay(file,SkyrimRelease.SkyrimSE);
  return new {plugin=mod.ModKey.ToString(),masters=mod.ModHeader.MasterReferences.Select(m=>m.Master.ToString()).ToArray(),

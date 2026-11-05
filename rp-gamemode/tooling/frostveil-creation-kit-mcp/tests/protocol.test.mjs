@@ -6,12 +6,13 @@ import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
 import {Client} from '@modelcontextprotocol/client';
 import {StdioClientTransport} from '@modelcontextprotocol/client/stdio';
+import {approvedMaster} from './fixtures.mjs';
 const pkg=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const repo=path.resolve(pkg,'../../..');
 test('actual MCP initializes, discovers, inspects real source and authors verified scratch ESP',async()=>{
  const work=fs.mkdtempSync(path.join(repo,'build/rp-audit/creation-kit-mcp/test-'));
  const client=new Client({name:'frostveil-verification',version:'1'});
- const transport=new StdioClientTransport({command:process.execPath,args:[path.join(pkg,'dist/index.js')],env:{...process.env,FROSTVEIL_CK_WORK:work},stderr:'pipe'});
+ const transport=new StdioClientTransport({command:process.execPath,args:[path.join(pkg,'dist/index.js')],env:{...process.env,FROSTVEIL_CK_WORK:work,FROSTVEIL_CK_MASTER:approvedMaster()},stderr:'pipe'});
  let stderr='';transport.stderr?.on('data',b=>stderr+=b);
  try {
   await client.connect(transport);
@@ -19,9 +20,13 @@ test('actual MCP initializes, discovers, inspects real source and authors verifi
   const called=new Set(),progress=[];
   const call=async(name,args={},options)=>{called.add(name);const r=await client.callTool({name,arguments:args},options);a.ok(!r.isError,JSON.stringify(r));return JSON.parse(r.content[0].text);};
   const caps=await call('ck_capabilities',{}, {onprogress:p=>progress.push(p.progress)});a.equal(caps.facegen,'MANUAL_REQUIRED');a.deepEqual(progress,[0,2]);
-  a.equal((await call('ck_inspect_installation')).creationKit,'1.7.99.0');
+  const installation=await call('ck_inspect_installation');
+  a.ok(['INSTALLED','NOT_INSTALLED','NOT_FOUND'].includes(installation.creationKitStatus));
+  if(installation.creationKitStatus!=='INSTALLED')a.equal(installation.creationKit,null);
+  if(installation.game){a.match(installation.installedMasterSha256,/^[a-f0-9]{64}$/);a.ok(['MATCHES_APPROVED_BASELINE','BLOCKED_BASELINE_CHANGED'].includes(installation.installedMasterCompatibility));}
   a.ok((await call('ck_list_plugins')).plugins.includes('FrostveilNPCTest.esp'));
   const source=await call('ck_list_npcs',{plugin:'FrostveilNPCTest.esp'});a.equal(source.npcs.filter(n=>!n.deleted).length,2);
+  a.equal(source.sourceKind,'APPROVED_FROSTVEIL_STAGING');a.ok(fs.existsSync(source.sourcePath));
   const info=await call('ck_get_npc',{plugin:'FrostveilNPCTest.esp',localId:0x5901});a.equal(info.npc.editorId,'FV_GuildClerk_Test');
   a.equal((await call('ck_list_outfits',{plugin:'FrostveilNPCTest.esp'})).outfits.length,2);
   a.equal((await call('ck_validate_plugin',{plugin:'FrostveilNPCTest.esp'})).valid,true);
@@ -31,6 +36,7 @@ test('actual MCP initializes, discovers, inspects real source and authors verifi
   const args={planId:plan.planId,reviewHash:plan.reviewHash,operationId:'guild-mage'};
   const dry=await call('ck_create_npc',{...args,dryRun:true});a.equal(dry.status,'DRY_RUN');
   const created=await call('ck_create_npc',args);a.equal(created.status,'VERIFIED_STAGED');a.equal(created.backend,'MUTAGEN_HEADLESS');
+  a.equal(created.authoringMode,'APPROVED_ARCHIVED_MASTER');a.equal(created.runtimeCompatibility,'NOT_CERTIFIED');
   a.equal((await call('ck_create_npc',args)).sha256,created.sha256);
   const valid=await call('ck_validate_plugin',{plugin:created.plugin});a.equal(valid.valid,true);a.equal(valid.npcs.length,1);a.equal(valid.outfits.length,1);
   a.deepEqual(valid.masters,['Skyrim.esm']);a.equal(valid.npcs[0].sex,'female');

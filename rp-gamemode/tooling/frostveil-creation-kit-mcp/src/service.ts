@@ -7,6 +7,7 @@ import {randomUUID} from 'node:crypto';
 import a from 'node:assert/strict';
 import {inflateSync} from 'node:zlib';
 import {schemas,type ToolName,type NpcSpec} from './schemas.js';
+import {discoverGame} from './installation.js';
 
 const require=createRequire(import.meta.url);
 export const pkg=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -14,7 +15,6 @@ export const repo=path.resolve(pkg,'../../..');
 const shared=require(path.join(repo,'rp-gamemode/scripts/g245-assets.cjs'));
 const {sha,canonical,noLinks,readConfined,directory}=shared;
 const loader=require(path.join(pkg,'dist/catalog-loader.cjs'));
-const game='C:/Program Files (x86)/Steam/steamapps/common/Skyrim Special Edition';
 const audit=path.join(repo,'build/rp-audit/creation-kit-mcp');
 const sdk=path.join(repo,'.local/tools/dotnet-sdk-10/dotnet.exe');
 const adapter=path.join(pkg,'adapter/bin/Release/net10.0/Adapter.dll');
@@ -28,12 +28,17 @@ function decode(bytes:Buffer,size:number){const r=inflateSync(bytes,{maxOutputLe
 
 export class Service {
  readonly root:string;
+ readonly game:string|undefined;
+ readonly masterOverride:string|undefined;
  private active=0;
- constructor(root=process.env.FROSTVEIL_CK_WORK??path.join(audit,'work')){
+ constructor(root=process.env.FROSTVEIL_CK_WORK??path.join(audit,'work'),options:{game?:string;master?:string}={}){
   const relative=path.relative(audit,path.resolve(root));
   ensure(relative&&!relative.startsWith('..')&&!path.isAbsolute(relative),'PATH','Work root must be a child of project audit root');
   directory(repo,'build/rp-audit/creation-kit-mcp');this.root=directory(audit,relative.split(path.sep).join('/'));
   for(const name of ['plans','operations','snapshots'])directory(this.root,name);
+  this.game=discoverGame({explicit:options.game});
+  this.masterOverride=options.master??process.env.FROSTVEIL_CK_MASTER;
+  if(this.masterOverride){const rel=path.relative(audit,path.resolve(this.masterOverride));ensure(path.isAbsolute(this.masterOverride)&&rel&&!rel.startsWith('..')&&!path.isAbsolute(rel),'PATH','Archived authoring master must be inside the private creation-kit-mcp audit tree');noLinks(this.masterOverride);}
  }
  async adapter(request:Record<string,unknown>):Promise<any>{
   noLinks(sdk);noLinks(adapter);
@@ -61,16 +66,25 @@ export class Service {
   return names.flatMap(id=>{const dir=this.operation(id);noLinks(dir);if(!fs.existsSync(path.join(dir,'receipt.json')))return [];const r=this.receipt(id);return [{...r,id}];});
  }
  source(plugin:string){
-  if(plugin==='FrostveilNPCTest.esp')return path.join(game,'Data',plugin);
+  if(plugin==='FrostveilNPCTest.esp'){
+   const {catalog,packageRoot}=this.baseline(),file=path.join(packageRoot,'Data',plugin);
+   ensure(catalog.plugins.some((p:any)=>p.filename===plugin&&p.sha256===sha(safeRead(file))),'TAMPER','Approved fixture differs from catalog');return file;
+  }
   const found=this.artifacts().filter(r=>r.plugin===plugin&&r.status==='VERIFIED_STAGED');
   ensure(found.length>0,'NOT_FOUND','No verified artifact for plugin');
   const r=found[0],file=path.join(this.operation(r.id),'Data',plugin);
   ensure(sha(safeRead(file))===r.sha256,'TAMPER','Staged artifact hash changed');return file;
  }
- async inspect(plugin:string){const s=this.snapshot(this.source(plugin));const result=await this.adapter({op:'inspect',path:s.file});ensure(sha(safeRead(s.file))===s.hash,'CONFLICT','Snapshot changed during inspection');return {backend:'MUTAGEN_HEADLESS',sha256:s.hash,...result};}
+ async inspect(plugin:string){const sourcePath=this.source(plugin),s=this.snapshot(sourcePath);const result=await this.adapter({op:'inspect',path:s.file});ensure(sha(safeRead(s.file))===s.hash,'CONFLICT','Snapshot changed during inspection');return {backend:'MUTAGEN_HEADLESS',sha256:s.hash,sourcePath,sourceKind:plugin==='FrostveilNPCTest.esp'?'APPROVED_FROSTVEIL_STAGING':'VERIFIED_SCRATCH_STAGING',...result};}
+ masterSnapshot(){
+  const file=this.masterOverride??(this.game?path.join(this.game,'Data/Skyrim.esm'):undefined);
+  ensure(file,'INSTALLATION_REQUIRED','No installed Skyrim master found; configure FROSTVEIL_CK_GAME or an explicit approved archived FROSTVEIL_CK_MASTER');
+  const master=this.snapshot(file),expected=this.approvedCatalog().plugins.find((p:any)=>p.filename==='Skyrim.esm')?.sha256;
+  ensure(master.hash===expected,'BASELINE_MISMATCH',`Authoring blocked: Skyrim.esm hash ${master.hash} differs from approved ${expected}. No game/runtime approval was changed. An explicitly configured hash-approved archived master may be used for isolated legacy authoring only.`);
+  return {...master,source:file};
+ }
  async plan(spec:NpcSpec){
-  const master=this.snapshot(path.join(game,'Data/Skyrim.esm'));
-  ensure(this.approvedCatalog().plugins.some((p:any)=>p.filename==='Skyrim.esm'&&p.sha256===master.hash),'TAMPER','Installed master differs from approved Frostveil baseline');
+  const master=this.masterSnapshot();
   const refs=await this.adapter({op:'resolve',master:master.file});
   // Use the same reviewed vanilla dependency envelope; headparts are inspected
   // by type/sex/race in the adapter and identities are bound to the master hash.
@@ -78,7 +92,7 @@ export class Service {
   const p:Plan={spec,masterHash:master.hash,refs,plugin:'FrostveilMCP_'+seed.slice(0,12)+'.esp',policy:'OWNED_FULL_ESP_FEMALE_NORD_VANILLA_WARLOCK_V1'};
   const planId=sha(canonical(p)),file=path.join(this.root,'plans',planId+'.json');
   if(!fs.existsSync(file))exclusive(file,canonical(p));else ensure(sha(safeRead(file))===planId,'TAMPER','Plan changed');
-  return {backend:'MUTAGEN_HEADLESS',status:'REVIEW_REQUIRED',planId,reviewHash:sha('SCRATCH_ONLY:'+planId),...p,localIds:{npc:0x800,outfit:0x801},spawnable:false,facegen:'MANUAL_REQUIRED',notice:'Review resolved references; authorize only this immutable scratch plan by passing reviewHash to ck_create_npc. No promotion, installation or runtime activation.'};
+  return {backend:'MUTAGEN_HEADLESS',status:'REVIEW_REQUIRED',planId,reviewHash:sha('SCRATCH_ONLY:'+planId),...p,masterSource:master.source,authoringMode:this.masterOverride?'APPROVED_ARCHIVED_MASTER':'INSTALLED_APPROVED_MASTER',runtimeCompatibility:'NOT_CERTIFIED',localIds:{npc:0x800,outfit:0x801},spawnable:false,facegen:'MANUAL_REQUIRED',notice:'Review resolved references; authorize only this immutable scratch plan by passing reviewHash to ck_create_npc. No promotion, installation or runtime activation.'};
  }
  async create(input:any,signal?:AbortSignal){
   const file=path.join(this.root,'plans',input.planId+'.json'),b=safeRead(file,65536);
@@ -91,7 +105,7 @@ export class Service {
    const receipt=this.receipt(input.operationId);ensure(receipt.requestHash===requestHash,'CONFLICT','OperationId already used for another request');
    ensure(sha(safeRead(path.join(dir,'Data',receipt.plugin)))===receipt.sha256,'TAMPER','Completed output changed');return receipt;
   }
-  const master=this.snapshot(path.join(game,'Data/Skyrim.esm'));ensure(master.hash===p.masterHash,'CONFLICT','Master changed since planning');
+  const master=this.masterSnapshot();ensure(master.hash===p.masterHash,'CONFLICT','Master changed since planning');
   const resolved=await this.adapter({op:'resolve',master:master.file});
   const spec=schemas.ck_plan_npc_creation.parse(p.spec),seed=sha(canonical({spec,masterHash:master.hash,refs:resolved}));
   ensure(canonical(p.refs)===canonical(resolved)&&p.plugin==='FrostveilMCP_'+seed.slice(0,12)+'.esp'&&p.policy==='OWNED_FULL_ESP_FEMALE_NORD_VANILLA_WARLOCK_V1','TAMPER','Plan references or identity differ from approved preset');
@@ -103,14 +117,14 @@ export class Service {
    const pending=directory(dir,'pending'),data=directory(dir,'Data'),out=path.join(pending,p.plugin);
    await this.adapter({op:'create',output:out,spec:p.spec,refs:p.refs});
    const checked=await this.validate(out,p.plugin,p);
-   ensure(this.snapshot(path.join(game,'Data/Skyrim.esm')).hash===p.masterHash,'CONFLICT','Master changed during write');
+   ensure(this.masterSnapshot().hash===p.masterHash,'CONFLICT','Master changed during write');
    const bytes=safeRead(out),hash=sha(bytes),destination=path.join(data,p.plugin);
    ensure(hash===checked.sha256,'CONFLICT','Output changed after validation');
    signal?.throwIfAborted();
    // Promote a *verified staging artifact* with create-new semantics. Never
    // rename over an existing/source file. Completion receipt is the commit point.
    exclusive(destination,bytes);
-   const receipt={backend:'MUTAGEN_HEADLESS',status:'VERIFIED_STAGED',operationId:input.operationId,requestHash,planId:input.planId,plugin:p.plugin,sha256:hash,sourceRoot:dir,spawnable:false,facegen:'MANUAL_REQUIRED',validation:checked};
+   const receipt={backend:'MUTAGEN_HEADLESS',status:'VERIFIED_STAGED',operationId:input.operationId,requestHash,planId:input.planId,plugin:p.plugin,sha256:hash,sourceRoot:dir,masterSource:master.source,authoringMode:this.masterOverride?'APPROVED_ARCHIVED_MASTER':'INSTALLED_APPROVED_MASTER',runtimeCompatibility:'NOT_CERTIFIED',spawnable:false,facegen:'MANUAL_REQUIRED',validation:checked};
    ensure(sha(safeRead(destination))===hash,'CONFLICT','Staged output changed before commit');
    commitJson(path.join(dir,'receipt.json'),receipt);return receipt;
   }catch(e){exclusive(path.join(dir,'failure.json'),canonical({status:'FAILED',message:String(e),retained:true}));throw e;}
@@ -153,12 +167,18 @@ export class Service {
   signal?.throwIfAborted();
   const args:any=schemas[name].parse(input);
   switch(name){
-   case 'ck_capabilities':return {backend:'MUTAGEN_HEADLESS',headless:'HEADLESS_SUPPORTED',preset:'unique female Nord; vanilla headparts; Warlock Robes and Boots',native:'UNSUPPORTED',nativeBridgeInstalled:false,facegen:'MANUAL_REQUIRED',update:'HEADLESS_SUPPORTED_IMMUTABLE_REPLACEMENT_PLAN',promotion:'MANUAL_REQUIRED',screenControl:false};
-   case 'ck_inspect_installation':return {backend:'MUTAGEN_HEADLESS',...await this.adapter({op:'installation',game}),editorControl:false};
+   case 'ck_capabilities':return {backend:'MUTAGEN_HEADLESS',headless:'HEADLESS_SUPPORTED',installedGame:this.game??null,authoringMode:this.masterOverride?'EXPLICIT_ARCHIVED_MASTER':'INSTALLED_MASTER_REQUIRES_BASELINE_HASH_CHECK',runtimeCompatibility:'NOT_CERTIFIED',preset:'unique female Nord; vanilla headparts; Warlock Robes and Boots',native:'UNSUPPORTED',nativeBridgeInstalled:false,facegen:'MANUAL_REQUIRED',update:'HEADLESS_SUPPORTED_IMMUTABLE_REPLACEMENT_PLAN',promotion:'MANUAL_REQUIRED',screenControl:false};
+   case 'ck_inspect_installation':{
+    if(!this.game)return {backend:'MUTAGEN_HEADLESS',status:'INSTALLATION_REQUIRED',game:null,creationKit:null,creationKitStatus:'NOT_FOUND',editorControl:false};
+    const installation=await this.adapter({op:'installation',game:this.game});
+    const installedMasterSha256=sha(safeRead(path.join(this.game,'Data/Skyrim.esm'),512*1024*1024));
+    const approvedMasterSha256=this.approvedCatalog().plugins.find((p:any)=>p.filename==='Skyrim.esm')?.sha256;
+    return {backend:'MUTAGEN_HEADLESS',...installation,installedMasterSha256,approvedMasterSha256,installedMasterCompatibility:installedMasterSha256===approvedMasterSha256?'MATCHES_APPROVED_BASELINE':'BLOCKED_BASELINE_CHANGED',authoringMode:this.masterOverride?'EXPLICIT_ARCHIVED_MASTER':'INSTALLED_MASTER',editorControl:false};
+   }
    case 'ck_list_plugins':return {backend:'MUTAGEN_HEADLESS',plugins:['FrostveilNPCTest.esp',...new Set(this.artifacts().map(r=>r.plugin))]};
    case 'ck_list_npcs':return this.inspect(args.plugin);
-   case 'ck_get_npc':{const r=await this.inspect(args.plugin);const npc=r.npcs.find((n:any)=>n.localId===args.localId);ensure(npc,'NOT_FOUND','NPC not found');return {backend:r.backend,sha256:r.sha256,npc};}
-   case 'ck_list_outfits':{const r=await this.inspect(args.plugin);return {backend:r.backend,outfits:r.outfits};}
+   case 'ck_get_npc':{const r=await this.inspect(args.plugin);const npc=r.npcs.find((n:any)=>n.localId===args.localId);ensure(npc,'NOT_FOUND','NPC not found');return {backend:r.backend,sha256:r.sha256,sourcePath:r.sourcePath,sourceKind:r.sourceKind,npc};}
+   case 'ck_list_outfits':{const r=await this.inspect(args.plugin);return {backend:r.backend,sourcePath:r.sourcePath,sourceKind:r.sourceKind,outfits:r.outfits};}
    case 'ck_plan_npc_creation':return this.plan(args);
    case 'ck_create_npc':return this.create(args,signal);
    case 'ck_update_npc':{
@@ -182,7 +202,7 @@ export class Service {
    case 'ck_get_operation_status':{const dir=this.operation(args.operationId);if(!fs.existsSync(dir))return {backend:'MUTAGEN_HEADLESS',status:'NOT_FOUND'};noLinks(dir);return fs.existsSync(path.join(dir,'receipt.json'))?this.receipt(args.operationId):{backend:'MUTAGEN_HEADLESS',status:fs.existsSync(path.join(dir,'failure.json'))?'FAILED':'INTERRUPTED_OR_RUNNING',evidencePreserved:true};}
   }
  }
- approvedCatalog(){
+ baseline(){
   const h=JSON.parse(safeRead(path.join(repo,'build/rp-audit/g241d/owner-handoff.json'),65536).toString());
   require(path.join(repo,'rp-gamemode/scripts/g241-dev.cjs')).guard(h.isolatedRoot);
   const config=JSON.parse(safeRead(path.join(h.isolatedRoot,'g241d-config.json'),1024*1024).toString());
@@ -190,8 +210,11 @@ export class Service {
   const expected=require(path.join(repo,'rp-gamemode/scripts/g241d-resources.cjs')).HASH;
   const c=JSON.parse(catalog.toString());
   ensure(require(path.join(pkg,'dist/template-catalog.cjs')).catalogHash(c)===expected&&c.catalogHash===expected,'TAMPER','Existing catalog approval hash mismatch');
-  return c;
+  const packageRoot=path.resolve(h.isolatedRoot,config.packageDirectory),relative=path.relative(h.isolatedRoot,packageRoot);
+  ensure(relative&&!relative.startsWith('..')&&!path.isAbsolute(relative),'PATH','Approved package outside isolated root');noLinks(packageRoot);
+  return {catalog:c,packageRoot};
  }
+ approvedCatalog(){return this.baseline().catalog;}
  async validateOriginal(){
   const c=this.approvedCatalog(),file=this.source('FrostveilNPCTest.esp'),bytes=safeRead(file);
   ensure(c.plugins.some((p:any)=>p.filename==='FrostveilNPCTest.esp'&&p.sha256===sha(bytes)),'TAMPER','Original plugin differs from approved catalog');

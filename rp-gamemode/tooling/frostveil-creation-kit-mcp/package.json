@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc && node scripts/build-validators.mjs && node scripts/build-adapter.mjs",
+    "pretest": "npm run build",
+    "doctor": "node scripts/doctor.mjs",
     "test": "node --test tests/*.test.mjs",
     "start": "node dist/index.js"
   },

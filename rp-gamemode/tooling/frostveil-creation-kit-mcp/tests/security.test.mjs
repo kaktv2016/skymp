@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {Service,repo} from '../dist/service.js';
+import {approvedMaster} from './fixtures.mjs';
 const sha=b=>createHash('sha256').update(b).digest('hex');
 const audit=path.join(repo,'build/rp-audit/creation-kit-mcp');
 const fresh=()=>fs.mkdtempSync(path.join(audit,'security-'));
@@ -19,7 +20,7 @@ test('paths reject outside roots, junction roots, hardlinks, traversal and unkno
  await a.rejects(s.invoke('ck_create_npc',{operationId:'hardlink',planId:'a'.repeat(64),reviewHash:'a'.repeat(64)}),/hardlinked/);
 });
 test('real authoring rejects forged plans, conflicts, races, tampering and interrupted operations; sources unchanged',async()=>{
- const s=new Service(fresh()),source='C:/Program Files (x86)/Steam/steamapps/common/Skyrim Special Edition/Data/FrostveilNPCTest.esp';
+ const s=new Service(fresh(),{master:approvedMaster()}),source=s.source('FrostveilNPCTest.esp');
  const before=sha(fs.readFileSync(source));
  const p=await s.invoke('ck_plan_npc_creation',{editorId:'FV_SecurityMage',displayName:'Security Mage',height:1.03});
  const args={planId:p.planId,reviewHash:p.reviewHash,operationId:'real-security'};
