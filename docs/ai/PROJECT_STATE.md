@@ -2,6 +2,8 @@
 
 Use the [active milestone pointer](ACTIVE_MILESTONE.md) for approval and routing. Keep execution progress, evidence and project-wide context here.
 
+The [documentation handoff smoke](MILESTONE_HANDOFF.md#observed-documentation-example) verified fresh receipt and checkpoint resume. The example is closed and remains available in Git history.
+
 Baseline checked on 2026-11-09 (Asia/Bangkok). Check HEAD, remote, worktrees and runtime again at intake. These values are an audit record.
 
 | Repository | Audited baseline |

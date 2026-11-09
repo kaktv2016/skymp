@@ -7,6 +7,7 @@ Use NOT_STARTED, IN_PROGRESS, AUTO_VERIFIED, OWNER_PENDING, BLOCKED, DEFERRED, a
 | Item | Automated or native evidence | Owner status |
 |---|---|---|
 | Workflow bootstrap | [Setup report](FROSTVEIL_AI_WORKFLOW_SETUP_REPORT.md) | Gameplay check out of scope |
+| Documentation handoff smoke | AUTO_VERIFIED through a fresh Codex receipt and matching Context Manager resume. See the [evidence](MILESTONE_HANDOFF.md#observed-documentation-example). | Owner and runtime checks out of scope |
 | Multi-agent orchestration | Trusted project config, four named roles and three-way local turn overlap verified. Source review passed sequentially. Parallel source review BLOCKED at the standalone shell. See [verification](FROSTVEIL_MULTI_AGENT_VERIFICATION_REPORT.md). | Gameplay check out of scope |
 | Blueprint Editor regression pilot | AUTO_VERIFIED in jsdom. Blueprint Gates B and C, a refresh-disabled negative control, and independent review. See the [pilot evidence index](PROJECT_STATE.md#blueprint-editor-regression-pilot). | Owner and native checks are outside the editor test scope |
 | G2.4.6 existing NPCs | [Onboarding report](../../FROSTVEIL_G2_4_6_RUNTIME_ONBOARDING_REPORT.md), including identity and protected assignment checks | ACCEPTED for mapper, reconnect, E dialogue, Rename/Move/Rotate and passive protection only |

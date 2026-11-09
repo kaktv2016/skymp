@@ -30,3 +30,9 @@ pwsh -NoProfile -File scripts/ai/milestone-handoff.ps1 -Action Load
 Valid pointer statuses are `NONE`, `APPROVED`, `IN_PROGRESS`, `AUTO_VERIFIED`, `OWNER_PENDING`, `BLOCKED`, `DEFERRED`, and `ACCEPTED`. `NONE` uses only the schema and status fields. Other states keep the approval pin and prior approval history. A wait or closeout pointer cannot authorize continuing work.
 
 Run `pwsh -NoProfile -File scripts/ai/test-milestone-handoff.ps1` for the handoff contract. The tests use disposable Git repositories and the existing Context Manager scripts. Product gates apply to affected product code.
+
+## Observed documentation example
+
+On 2026-11-09 (Asia/Bangkok), Control pinned `handoff-docs-smoke` revision 1 to `d160d549b4a49dad51b05e590f14d82324f9e110` and recorded approval in `4effb9ed8251f8d8ddd0bbc83cde58c7b0e41d27`. Fresh Codex thread `01a1c00b-69e9-7560-acfe-ad93857374d0` used one fixed read-only App Server adapter call to the actual loader. The receiving prompt carried no specification or pin. The receiver returned the exact revision, pin, first task `receive-pinned-handoff`, gate `DOCS-HANDOFF-RECEIVE` and `INITIALIZE`, with zero unexpected tool calls. The first probe reached the test adapter's 15-second deadline. The successful retry allowed more time for the unchanged loader.
+
+The handoff fixture passed 27 checks. The existing Context Manager contract passed 31 checks and the workflow contract passed. After the smoke, loading the same approval returned `CONTINUE` from checkpoint revision 1 with the receive task completed and only the evidence task pending. The example ends at `ACCEPTED` and its closeout checkpoint records both tasks. Evidence is retained in the local Context Manager directory for `handoff-d5ea25cf5b3bb8738ac504e7fc8a8db77295a0af`. No gameplay or runtime check applies.
