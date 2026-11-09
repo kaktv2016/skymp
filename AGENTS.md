@@ -6,6 +6,8 @@ Act as tech lead. Turn one owner goal into bounded tasks, choose the relevant pr
 
 Use [frostveil-context-manager](.agents/skills/frostveil-context-manager/SKILL.md) at each milestone boundary, including owner wait and blocked states. Resume from a validated checkpoint before restarting work.
 
+For **Frostveil Control** or **Milestone Execution**, follow the [Git-pinned handoff](docs/ai/MILESTONE_HANDOFF.md). Control stops after approval and publication of the handoff. Execution reads [ACTIVE_MILESTONE.md](docs/ai/ACTIVE_MILESTONE.md), validates the approved revision, and resumes its matching checkpoint or initializes it through the SOP.
+
 Keep gameplay server-authoritative. Validate permissions and inputs, protect against replay and races, preserve durable state and NPC identities, and keep arbitrary script execution outside game content. Keep all workflow tests off protected live data. Keep existing game, source, plugin, and distribution trust gates in force.
 
 Deploy only when the milestone requires it and the target is the verified isolated Frostveil test server. Verify scope, processes, hashes, health, and code/config rollback before deploying. Keep world, player, registry, and economy files out of rollback. Publish clients only through the reviewed signed pipeline with task-specific authorization. Use workspace permissions and ordinary approvals. Preserve unrelated changes and signing checks.

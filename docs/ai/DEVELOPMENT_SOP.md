@@ -4,6 +4,8 @@ Start a fresh Codex session in SkyMP. Use [project state](PROJECT_STATE.md), [ar
 
 ## Milestone flow
 
+For a Control-to-Execution handoff, follow the [milestone handoff runbook](MILESTONE_HANDOFF.md). Control prepares and records the owner-approved Git pin without starting implementation. Execution validates the tracked pointer and approved documents before intake, then uses the revision-specific Context Manager checkpoint to resume or initialize.
+
 | Stage | Exit evidence |
 |---|---|
 | INTAKE | One owner goal with named repositories, intended environment, and authorization boundaries. |

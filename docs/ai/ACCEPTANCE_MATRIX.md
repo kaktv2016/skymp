@@ -1,5 +1,7 @@
 # Acceptance matrix
 
+The approved criteria live in the milestone's `ACCEPTANCE.md` under the [handoff workflow](MILESTONE_HANDOFF.md). This matrix records observed results and evidence.
+
 Use NOT_STARTED, IN_PROGRESS, AUTO_VERIFIED, OWNER_PENDING, BLOCKED, DEFERRED, and ACCEPTED. Attach command receipts to automation and a dated scenario/build to owner evidence. Track source, native fixture, actual runtime, owner result, and production decision separately.
 
 | Item | Automated or native evidence | Owner status |

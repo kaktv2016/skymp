@@ -1,5 +1,7 @@
 # Frostveil project state
 
+Use the [active milestone pointer](ACTIVE_MILESTONE.md) for approval and routing. Keep execution progress, evidence and project-wide context here.
+
 Baseline checked on 2026-11-09 (Asia/Bangkok). Check HEAD, remote, worktrees and runtime again at intake. These values are an audit record.
 
 | Repository | Audited baseline |

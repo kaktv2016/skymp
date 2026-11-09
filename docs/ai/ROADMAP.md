@@ -1,5 +1,7 @@
 # Frostveil milestone roadmap
 
+Use this roadmap to select candidate work. The [active milestone pointer](ACTIVE_MILESTONE.md) identifies the approved revision for execution.
+
 Keep the existing [project roadmap](../../ROADMAP.md) and dated reports as history. Use this index for owner-selected next work.
 
 | Item | Status | Intake or resumption condition |
