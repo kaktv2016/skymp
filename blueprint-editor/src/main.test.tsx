@@ -87,8 +87,16 @@ describe('Blueprint Studio UI',()=>{
   await waitFor(()=>expect(calls.find(c=>c.op==='draft')?.payload.graph.nodes.find((n:any)=>n.id==='welcome').text).toBe('ยินดีต้อนรับ ใหม่ที่ยังไม่เซฟ'));
  });
  it('refreshes mounted handle bounds when text wraps without a choice-count change',async()=>{
-  const user=await enter();await user.click(within(screen.getByLabelText('Graph canvas')).getByText('menu'));updateInternals.mockClear();
-  await user.type(screen.getAllByLabelText('Choice label')[0]!,'W'.repeat(120));
+  const user=await enter();await user.click(within(screen.getByLabelText('Graph canvas')).getByText('menu'));
+  const choices=screen.getAllByLabelText<HTMLTextAreaElement>('Choice label');
+  const choice=choices[0]!;const originalText=choice.value;
+  const output=screen.getByRole('button',{name:'Trace choice 1: '+originalText});
+  const heightBefore=Number.parseInt(output.parentElement!.style.height,10);
+  await user.click(choice);choice.setSelectionRange(choice.value.length,choice.value.length);updateInternals.mockClear();
+  const wrappedText='W'.repeat(120);await user.paste(wrappedText);
+  expect(choice.value).toBe(originalText+wrappedText);
+  expect(Number.parseInt(output.parentElement!.style.height,10)).toBeGreaterThan(heightBefore);
+  expect(screen.getAllByLabelText('Choice label')).toHaveLength(2);
   expect(updateInternals.mock.calls.some(([id])=>id==='menu')).toBe(true);
  });
  it('keeps a keyboard-focused choice highlighted after the pointer leaves',async()=>{

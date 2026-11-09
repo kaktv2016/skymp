@@ -12,3 +12,11 @@ Baseline checked on 2026-11-09 (Asia/Bangkok). Check HEAD, remote, worktrees and
 - Uneven-terrain stationary behavior is DEFERRED at owner request. The [last retest](../../FROSTVEIL_G2_4_4_1_TERRAIN_ANCHOR_REPORT.md) still saw the symptom. The historical native `0xC0000005` remains BLOCKED on a verified cause. Real multiplayer is DEFERRED.
 - The registered CK MCP reported Skyrim `1.6.1170.0`, Creation Kit `1.7.99.0`, and installed/approved master SHA-256 `2bbc77fdec35a70ef96b710f8c525e50a1db9e63e11a391a0eb9ee8f56d36107`. Receipt `ed6271ca-4d1a-48f1-b2ab-b04faba34133`. This checks the installed master for headless authoring. Runtime compatibility remains `NOT_CERTIFIED`; native FaceGen export requires manual CK.
 - Bootstrap evidence and delivery are in the [setup report](FROSTVEIL_AI_WORKFLOW_SETUP_REPORT.md). No gameplay milestone is active under this bootstrap.
+
+## Blueprint Editor regression pilot
+
+The [bootstrap run](FROSTVEIL_AI_WORKFLOW_SETUP_REPORT.md) built successfully and passed 89 of 90 Blueprint tests. The handle refresh case exceeded its 5-second timeout both in the suite and when isolated. At pilot intake, the clean `3ab4048c` baseline passed 90 of 90 and the isolated case took 4.11 seconds.
+
+A controlled jsdom probe appended the same 120 characters by typing and by pasting. Typing took 2,766 ms across 120 input events. Pasting took 57 ms in one event. Both grew the first choice row from 44 to 198 px, kept two choices, and refreshed the menu handles. The [regression case](../../blueprint-editor/src/main.test.tsx) now pastes once and checks the final text, row growth, choice count, and refresh. The 5-second timeout still applies. With the geometry-triggered refresh disabled in a disposable fixture, the case failed at the refresh assertion.
+
+The pilot uses automated editor evidence. The Context Manager checkpoint `blueprint-editor-regression-pilot` indexes local timing, negative-control, review, and gate receipts. Use the same checkout to validate or recover the checkpoint.
