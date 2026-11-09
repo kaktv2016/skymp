@@ -3,9 +3,9 @@
 ```json
 {
   "schema": 1,
-  "milestone": "handoff-docs-smoke",
+  "milestone": "launcher-v2-w00-baseline",
   "revision": 1,
-  "approvedCommit": "d160d549b4a49dad51b05e590f14d82324f9e110",
-  "status": "ACCEPTED"
+  "approvedCommit": "7ea1ca4fb6f14e118e9a8c87ffa0f50b3f6d36e3",
+  "status": "APPROVED"
 }
 ```
