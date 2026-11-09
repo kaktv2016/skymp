@@ -25,3 +25,9 @@ The [bootstrap run](FROSTVEIL_AI_WORKFLOW_SETUP_REPORT.md) built successfully an
 A controlled jsdom probe appended the same 120 characters by typing and by pasting. Typing took 2,766 ms across 120 input events. Pasting took 57 ms in one event. Both grew the first choice row from 44 to 198 px, kept two choices, and refreshed the menu handles. The [regression case](../../blueprint-editor/src/main.test.tsx) now pastes once and checks the final text, row growth, choice count, and refresh. The 5-second timeout still applies. With the geometry-triggered refresh disabled in a disposable fixture, the case failed at the refresh assertion.
 
 The pilot uses automated editor evidence. The Context Manager checkpoint `blueprint-editor-regression-pilot` indexes local timing, negative-control, review, and gate receipts. Use the same checkout to validate or recover the checkpoint.
+
+## Launcher V2 W00 revision 1
+
+The [W00 audit](../launcher-v2/w00/README.md) records the pinned Launcher baseline, release and WIP evidence, and the existing Steam preparation and Restore paths. The proposed first profile is Windows x64 with Steam Skyrim English `1.6.1170.0` and the normal-player flow. The complete signed client/native and compatible server pin, released-GUI cold batch, and owner Play/join/reconnect/Restore checks remain future pilot evidence.
+
+W00 is **BLOCKED** on approved live inventory roots and the selected active profile. Confirm canonical Steam library/installation, Launcher state/configuration, cache/depot/staging, and Restore/journal/backup scope before collecting live metadata. Context Manager checkpoint `handoff-1862f2ad67923410e1ba9b7cd773d068334d357c` indexes the private inventory, receipts, and original Launcher preservation fingerprints. W00-A2 remains open in the [acceptance matrix](ACCEPTANCE_MATRIX.md).
