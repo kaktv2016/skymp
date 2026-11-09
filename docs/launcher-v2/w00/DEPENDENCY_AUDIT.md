@@ -20,7 +20,7 @@
 | Decision or evidence | Owner | Required result |
 |---|---|---|
 | ADR candidate — exact supported profile and matched artifacts | Launcher release owner with SkyMP maintainer | Approve one authenticated cohort, SKSE/bootstrap and native/client/server identity set and exclude unsupported profiles. |
-| ADR candidate — Restore and space preflight | Launcher maintainer with QA | Demonstrate safe capacity checks and a recoverable preimage set for the chosen profile. The W00 inventory awaits approved roots separately. The proposed pilot excludes broader cleanup. |
+| ADR candidate — Restore and space preflight | Launcher maintainer with QA | Demonstrate safe capacity checks and a recoverable preimage set for the chosen profile. Use the W00 inventory as a dated baseline for the approved scope. The proposed pilot excludes broader cleanup. |
 | Provider acceptance evidence | Launcher QA and owner | Verify the released GUI cold batch, warm path and expired-session recovery with the existing provider. An alternate provider is outside the proposed pilot. |
 | Release evidence | Release owner | Clear the applicable NSIS and signed metadata gates and bind the verified package before owner Play/join/reconnect/Restore. |
 

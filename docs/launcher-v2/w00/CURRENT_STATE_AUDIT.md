@@ -43,6 +43,16 @@
 
 **OBSERVED — W00-A2 continuation.** Launcher `settings.directory` matches the Steam App 489830 installation derived from its app manifest. The manifest records English and the selected executable reports `1.6.1170.0`. The authenticated managed-store grant binds this installation to the selected profile and its separate recovery store.
 
-**OBSERVED — approved Launcher data only.** The private `STORAGE_INVENTORY.json` records 1,243 unique file IDs on one volume, 41,830,176,184 logical bytes and 41,832,978,256 allocated main-stream bytes. No hardlinked names were observed within that root. The current authenticated journal is in `modpack` state and binds 29 observed Restore preimages and 28 other observed journal images by reference, file name and size. This evidence supports preserving those files. It does not attest their contents or a successful Restore. Ownership is UNKNOWN for 1,118 file rows. Zero bytes qualify as confirmed reclaimable so far.
+**OBSERVED — owner-approved inventory.** The inventory covers four recursive roots and six exact Steam and profile configuration files. Two metadata snapshots agreed on paths, file identities, link counts, and logical and allocated sizes. The totals use one row per volume and file ID. The inventory found no hardlinks or named data streams in scope. Totals cover file data in the approved scope and exclude filesystem overhead and free capacity elsewhere on each volume.
 
-**BLOCKED — W00-A2.** Recursive inventory requires separate approval for the identified Steam game, historical depot acquisition and bootstrap fixture roots listed in the private discovery receipt. Full-volume totals, duplicate/reclaim eligibility and the final W00 review remain open. Keep the original blocked inventory and continuation receipts through the same Context Manager checkpoint. [Approved acceptance](../../ai/milestones/launcher-v2-w00-baseline/ACCEPTANCE.md)
+| Volume | Unique files | Logical bytes | Allocated bytes | UNKNOWN ownership files | UNKNOWN ownership allocated bytes | Confirmed reclaimable bytes |
+|---|---:|---:|---:|---:|---:|---:|
+| Launcher data and profile configuration volume | 1,247 | 41,830,183,726 | 41,832,994,640 | 1,118 | 12,540,894,056 | 0 |
+| Steam, depot and fixture volume | 33,280 | 92,278,055,549 | 92,327,850,048 | 18,365 | 15,380,999,776 | 0 |
+| Total | 34,527 | 134,108,239,275 | 134,160,844,688 | 19,483 | 27,921,893,832 | 0 |
+
+**OBSERVED — required and protected files.** The selected game and exact profile inputs are protected. The authenticated current journal remains in `modpack` state. All 29 declared Restore preimages and 28 other observed journal images matched by reference, file name and size. Three sampled preimages also match their journal SHA-256. This is evidence of dependencies. Successful Restore and the content integrity of unsampled preimages remain unverified.
+
+**OBSERVED — seven duplicate groups.** Bounded SHA-256 checks matched 16 copies of seven pinned Skyrim, SKSE and SkyMP files across the active game, historical depot acquisition and retained bootstrap fixture. Each copy has a distinct file ID. The fixture marker matches the pinned bootstrap contract. Active runtime, retained build evidence, potential Restore dependencies and UNKNOWN ownership are excluded from reclaimable bytes. No file has sufficient proof of both disposability and recovery independence.
+
+The completed private `STORAGE_INVENTORY.json` is bound by SHA-256 through the Context Manager inventory receipt. The earlier blocked and partial evidence remains available. [Approved acceptance](../../ai/milestones/launcher-v2-w00-baseline/ACCEPTANCE.md)
