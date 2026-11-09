@@ -22,6 +22,8 @@ Start a fresh Codex session in SkyMP. Use [project state](PROJECT_STATE.md), [ar
 
 At intake record **goal**, **scope and exclusions**, **dependencies**, **systems to preserve**, **risks**, **machine criteria**, **owner criteria**, **rollback**, **Definition of Done**, and **evidence requirements**. Define a rollback that restores code/config by exact identity while leaving player, world, registry, and economy data intact. Done means applicable automated gates, independent review, authorized integration, and deployment evidence are recorded. Owner-gated milestones remain OWNER_PENDING until that evidence arrives. A build may be AUTO_VERIFIED with native, owner, or release checks still pending. Production readiness has a separate decision and authorization.
 
+Each stage boundary includes a successful checkpoint save through [Context Manager](CONTEXT_MANAGER.md). Main runs the save command before transitioning or reporting `OWNER_PENDING`, `BLOCKED`, `DEFERRED`, or closeout. Save before compaction or chat handoff, then validate and recover completed and pending work when resuming. A checkpoint failure prevents claiming the boundary was saved.
+
 ## Main and subagents
 
 Main chooses project skills, confirms prerequisites, hands out bounded tasks, and owns the final patch and handoff. Use `frostveil_researcher` for source/requirements, `frostveil_engineer` for a bounded implementation, `frostveil_qa` for fixtures and receipts, and `frostveil_reviewer` for independent review. Give each task a baseline, allowed paths, required reading, success conditions and expected outputs. Keep raw logs in private evidence storage. Request assigned task, files inspected/changed, verified observations, test evidence, risks, blockers, and next action from each agent.

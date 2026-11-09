@@ -14,6 +14,8 @@ Owner goal, intended repository and environment, known constraints.
 3. Assign bounded tasks with disjoint writes. Run the three-repair QA loop and applicable gates. Require an independent review of significant changes.
 4. Integrate, record receipts and update the acceptance matrix and state. Use frostveil-release for an authorized isolated deploy.
 
+Use frostveil-context-manager to save every milestone boundary, including `OWNER_PENDING` and `BLOCKED`, and to validate prior work on resumption.
+
 **Outputs and blockers**
 
 Milestone plan, integrated diff and evidence, one owner handoff. Stop or mark blocked when authorization, dependencies, source identity, or validation needed for the goal is missing.
