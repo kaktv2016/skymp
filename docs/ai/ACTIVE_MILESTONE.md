@@ -3,9 +3,9 @@
 ```json
 {
   "schema": 1,
-  "milestone": "launcher-v2-w00-baseline",
+  "milestone": "launcher-v2-pilot-restore-preflight",
   "revision": 1,
-  "approvedCommit": "7ea1ca4fb6f14e118e9a8c87ffa0f50b3f6d36e3",
-  "status": "ACCEPTED"
+  "approvedCommit": "4265d30cbd6c6196eaf4b20a180e1cec33a4e902",
+  "status": "APPROVED"
 }
 ```
